@@ -45,6 +45,7 @@ import {
 } from '../components/SchoolComposables';
 import { SchoolLogo } from '../components/SchoolLogo';
 import { PrincipalAvatar } from '../components/PrincipalAvatar';
+import { RoleAvatar } from '../components/RoleAvatar';
 import { StudentAvatar } from '../components/StudentAvatar';
 import { useStringResource } from '../theme/LocaleContext';
 import { AccountantRoot } from './accountant/AccountantRoot';
@@ -58,7 +59,7 @@ import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
-import { TeacherHomeTab } from './teacher/TeacherHomeTab';
+import { TeacherDashboardTab } from './teacher/TeacherDashboardTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
 export interface RoleTabSpec {
@@ -156,6 +157,11 @@ export function getRoleTabs(role: UserRole): RoleTabSpec[] {
     case UserRole.ACCOUNTANT:
       return [
         {
+          id: 'dashboard',
+          labelKey: 'tab_dashboard',
+          icon: <LayoutDashboard className="w-5 h-5" />,
+        },
+        {
           id: 'collect',
           labelKey: 'tab_collect',
           icon: <Wallet className="w-5 h-5" />,
@@ -169,11 +175,6 @@ export function getRoleTabs(role: UserRole): RoleTabSpec[] {
           id: 'reports',
           labelKey: 'tab_reports',
           icon: <BarChart3 className="w-5 h-5" />,
-        },
-        {
-          id: 'defaulters',
-          labelKey: 'tab_defaulters',
-          icon: <AlertTriangle className="w-5 h-5" />,
         },
         {
           id: 'more',
@@ -543,13 +544,15 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
     if (currentTab.id === 'home') {
       return (
-        <TeacherHomeTab
+        <TeacherDashboardTab
           teacherProfile={session.profile}
           classesMap={classesMap}
           onOpenSectionAttendance={(secId) => {
             setTeacherSelectedSectionId(secId);
             onTabChange(1); // Open Attendance tab
           }}
+          onSwitchTab={onTabChange}
+          onOpenSettings={handleGuardedOpenSettings}
         />
       );
     }
@@ -620,7 +623,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   return (
     <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] parent-skin`}>
       {/* Curved Navy Top Bar */}
-      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL ? '' : 'ps-header-lite'} ${session.role === UserRole.PRINCIPAL ? 'ps-principal' : ''}`}>
+      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT ? '' : 'ps-principal'}`}>
         <div className="flex items-center justify-between gap-2.5">
           {/* Left / Start Slot: Parent Child Switcher OR Role Header */}
           {session.role === UserRole.PARENT && selectedChild ? (
@@ -674,14 +677,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             </button>
           ) : (
             <div className="flex items-center gap-2.5 min-w-0">
-              {session.role !== UserRole.PRINCIPAL && (
-                <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
-                  <SchoolLogo size={36} />
-                </div>
-              )}
-              {session.role === UserRole.PRINCIPAL && currentTab.id === 'dashboard' ? (
+              {(currentTab.id === 'dashboard' || currentTab.id === 'home') ? (
                 <>
-                  <PrincipalAvatar size={62} />
+                  {session.role === UserRole.PRINCIPAL ? <PrincipalAvatar size={62} /> : <RoleAvatar role={session.role} size={62} />}
                   <div className="min-w-0 py-0.5">
                     <h1
                       className={`font-heading text-[18px] font-bold text-white ${
@@ -756,12 +754,12 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             </button>
           </div>
         </div>
-        {(session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL) && (
+        {
           <div className="ps-deco ps-books ps-logo-badge">
             <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
           </div>
-        )}
-        {session.role === UserRole.PRINCIPAL && (
+        }
+        {session.role !== UserRole.PARENT && (
           <>
             <svg className="ps-deco ps-building" viewBox="0 0 220 170" fill="none" stroke="#fff" strokeWidth="2" aria-hidden="true">
               <rect x="30" y="70" width="160" height="100" />
@@ -778,7 +776,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       </header>
 
       {/* Main Scrollable Tab Body */}
-      <div className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role === UserRole.PRINCIPAL ? 'ps-doodle' : ''}`}>
+      <div className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role !== UserRole.PARENT ? 'ps-doodle' : ''}`}>
         {session.role === UserRole.PARENT ? (
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (

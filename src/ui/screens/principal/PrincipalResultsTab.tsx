@@ -66,17 +66,6 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
     return <EmptyState title={t('rs_no_exams')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />;
   }
 
-  const toggle = async () => {
-    if (!exam) return;
-    setBusy(true);
-    setError(null);
-    const next = exam.status === ExamStatus.PUBLISHED ? ExamStatus.MARKS_ENTRY : ExamStatus.PUBLISHED;
-    const r = await AppModule.examRepository.updateExamStatus(exam.id, next, principal.id);
-    setBusy(false);
-    if (!r.ok) return setError(r.error.message);
-    void loadExams();
-  };
-
   const classOptions = lookups.classes.filter((c) => campus === 'ALL' || c.campusId === campus);
   const gradeColors = [CHART.green, CHART.blue, CHART.navy, CHART.amber, CHART.orange, CHART.red, CHART.grey];
 
@@ -86,16 +75,7 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
         <select className={selectCls} value={exam?.id ?? ''} onChange={(e) => setExamId(e.target.value)}>
           {exams.map((e) => (<option key={e.id} value={e.id}>{examName(e, language)}</option>))}
         </select>
-        {exam && (
-          <div className="flex items-center justify-between gap-2">
-            <ExamStatusChip status={exam.status} />
-            <div className="w-44">
-              <PrimaryButton text={exam.status === ExamStatus.PUBLISHED ? t('ex_btn_unpublish') : t('ex_btn_publish')} variant={exam.status === ExamStatus.PUBLISHED ? 'outline' : 'orange'} loading={busy} onClick={() => void toggle()} />
-            </div>
-          </div>
-        )}
-        {exam?.status !== ExamStatus.PUBLISHED && <p className="text-[11px] text-[#6B7385]">{t('rs_publish_hint')}</p>}
-        {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+        {exam && <ExamStatusChip status={exam.status} />}
         <TabRow
           tabs={[{ id: 'ALL', label: t('campus_both') }, ...lookups.campuses.map((c) => ({ id: c.id, label: language === 'ur' ? c.nameUr : c.nameEn }))]}
           selected={campus}

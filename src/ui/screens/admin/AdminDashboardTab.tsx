@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { ArrowLeft, ArrowRight, GraduationCap, LayoutDashboard, MoreHorizontal, Settings as SettingsIcon, Sliders, Users } from 'lucide-react';
+import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { Profile, Role, StudentStatus } from '../../../domain/models/models';
 import { StringKey } from '../../../res/strings';
@@ -10,7 +12,7 @@ import { PrincipalSummaryDashboard } from '../principal/PrincipalSummaryDashboar
 const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
 
 /** Admin dashboard = the principal dashboard plus a small system overview. */
-export const AdminDashboardTab: React.FC<{
+export const AdminOverviewTab: React.FC<{
   lookups: AccountantLookups;
   onSwitchTab: (index: number) => void;
 }> = ({ lookups, onSwitchTab }) => {
@@ -72,6 +74,39 @@ export const AdminDashboardTab: React.FC<{
         )}
       </SchoolCard>
       <PrincipalSummaryDashboard lookups={lookups} onSwitchTab={onSwitchTab} />
+    </div>
+  );
+};
+
+/** Admin home: shortcut tiles. The system overview and school summaries open from their own tile. */
+export const AdminDashboardTab: React.FC<{
+  lookups: AccountantLookups;
+  onSwitchTab: (index: number) => void;
+  onOpenSettings: () => void;
+}> = ({ lookups, onSwitchTab, onOpenSettings }) => {
+  const { stringResource: t, isRtl } = useStringResource();
+  const [showOverview, setShowOverview] = useState(false);
+  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+  const ic = 'w-6 h-6';
+  if (showOverview) {
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => setShowOverview(false)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          <BackIcon className="w-4 h-4" />
+          <span>{t('back_button_label')}</span>
+        </button>
+        <AdminOverviewTab lookups={lookups} onSwitchTab={onSwitchTab} />
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <HomeTile tone="teal" label={t('ad_sys_title')} icon={<LayoutDashboard className={ic} />} onClick={() => setShowOverview(true)} />
+      <HomeTile tone="orange" label={t('tab_setup')} icon={<Sliders className={ic} />} onClick={() => onSwitchTab(1)} />
+      <HomeTile tone="purple" label={t('tab_users')} icon={<Users className={ic} />} onClick={() => onSwitchTab(2)} />
+      <HomeTile tone="green" label={t('tab_students')} icon={<GraduationCap className={ic} />} onClick={() => onSwitchTab(3)} />
+      <HomeTile tone="indigo" label={t('tab_more')} icon={<MoreHorizontal className={ic} />} onClick={() => onSwitchTab(4)} />
+      <HomeTile tone="blue" label={t('settings_title')} icon={<SettingsIcon className={ic} />} onClick={onOpenSettings} />
     </div>
   );
 };

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Profile } from '../../../domain/models/models';
 import { useAccountantLookups } from './AccountantShared';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useStringResource } from '../../theme/LocaleContext';
+import { AccountantDashboardTab } from './AccountantDashboardTab';
 import { AccountantCollectTab } from './AccountantCollectTab';
 import { AccountantDefaultersTab } from './AccountantDefaultersTab';
 import { AccountantMoreTab } from './AccountantMoreTab';
@@ -26,8 +29,31 @@ export const AccountantRoot: React.FC<AccountantRootProps> = ({
 }) => {
   const lookups = useAccountantLookups();
   const [collectStudentId, setCollectStudentId] = useState<string | null>(null);
+  const [showDefaulters, setShowDefaulters] = useState(false);
+  const { stringResource: t, isRtl } = useStringResource();
+  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   switch (tabId) {
+    case 'dashboard':
+      if (showDefaulters) {
+        return (
+          <div className="space-y-3">
+            <button type="button" onClick={() => setShowDefaulters(false)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+              <BackIcon className="w-4 h-4" />
+              <span>{t('back_button_label')}</span>
+            </button>
+            <AccountantDefaultersTab
+              lookups={lookups}
+              onReceivePayment={(id) => {
+                setCollectStudentId(id);
+                setShowDefaulters(false);
+                onSwitchTab(1);
+              }}
+            />
+          </div>
+        );
+      }
+      return <AccountantDashboardTab onSwitchTab={onSwitchTab} onOpenDefaulters={() => setShowDefaulters(true)} onOpenSettings={onOpenSettings} />;
     case 'collect':
       return (
         <AccountantCollectTab
@@ -41,16 +67,6 @@ export const AccountantRoot: React.FC<AccountantRootProps> = ({
       return <AccountantVouchersTab accountant={accountant} lookups={lookups} />;
     case 'reports':
       return <AccountantReportsTab lookups={lookups} />;
-    case 'defaulters':
-      return (
-        <AccountantDefaultersTab
-          lookups={lookups}
-          onReceivePayment={(id) => {
-            setCollectStudentId(id);
-            onSwitchTab(0);
-          }}
-        />
-      );
     case 'more':
       return (
         <AccountantMoreTab
