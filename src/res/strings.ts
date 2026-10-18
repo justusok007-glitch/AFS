@@ -556,7 +556,74 @@ export type StringKey =
   | 'pr_profile_attendance'
   | 'pr_profile_fees'
   | 'pr_notices_soon'
-  | 'pr_tab_attendance_hint';
+  | 'pr_tab_attendance_hint'
+  | 'ad_sys_title'
+  | 'ad_sys_users_by_role'
+  | 'ad_sys_students_by_campus'
+  | 'ad_sys_audit_count'
+  | 'ad_users_new_btn'
+  | 'ad_users_search'
+  | 'ad_users_all_roles'
+  | 'ad_users_all_status'
+  | 'ad_users_active'
+  | 'ad_users_inactive'
+  | 'ad_users_none'
+  | 'ad_form_title'
+  | 'ad_form_role'
+  | 'ad_form_name_en'
+  | 'ad_form_name_ur'
+  | 'ad_form_phone'
+  | 'ad_form_campus'
+  | 'ad_form_campus_all'
+  | 'ad_form_create_btn'
+  | 'ad_err_name_en'
+  | 'ad_err_name_ur'
+  | 'ad_err_phone'
+  | 'ad_err_campus'
+  | 'ad_err_generic'
+  | 'ad_cred_title'
+  | 'ad_cred_once'
+  | 'ad_cred_login_id'
+  | 'ad_cred_password'
+  | 'ad_cred_copy'
+  | 'ad_cred_copied'
+  | 'ad_cred_print'
+  | 'ad_cred_done'
+  | 'ad_slips_btn'
+  | 'ad_slips_empty'
+  | 'ad_slips_clear'
+  | 'ad_slip_install'
+  | 'ad_slip_children'
+  | 'ad_detail_reset'
+  | 'ad_detail_reset_confirm'
+  | 'ad_detail_deactivate'
+  | 'ad_detail_reactivate'
+  | 'ad_detail_deactivate_confirm'
+  | 'ad_detail_confirm'
+  | 'ad_detail_self_warning'
+  | 'ad_children_title'
+  | 'ad_children_none'
+  | 'ad_children_unlink'
+  | 'ad_children_link_search'
+  | 'ad_children_link'
+  | 'ad_rel_FATHER'
+  | 'ad_rel_MOTHER'
+  | 'ad_rel_GUARDIAN'
+  | 'ad_assign_title'
+  | 'ad_assign_none'
+  | 'ad_assign_add'
+  | 'ad_assign_section'
+  | 'ad_assign_subject'
+  | 'ad_assign_no_subject'
+  | 'ad_assign_attendance'
+  | 'ad_assign_marks'
+  | 'ad_assign_delete'
+  | 'ad_assign_pick_section'
+  | 'ad_audit_title'
+  | 'ad_audit_none'
+  | 'ad_audit_by'
+  | 'ad_soon_setup'
+  | 'ad_soon_students';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1115,6 +1182,73 @@ export const stringsEn: Record<StringKey, string> = {
   pr_profile_fees: 'Fees',
   pr_notices_soon: 'Notices and message oversight will appear here in a later update.',
   pr_tab_attendance_hint: 'Marked attendance only; leave days are not counted.',
+  ad_sys_title: 'System overview',
+  ad_sys_users_by_role: 'Users by role',
+  ad_sys_students_by_campus: 'Students by campus',
+  ad_sys_audit_count: 'Audit log entries',
+  ad_users_new_btn: 'New user',
+  ad_users_search: 'Search by name, login ID or phone',
+  ad_users_all_roles: 'All roles',
+  ad_users_all_status: 'All',
+  ad_users_active: 'Active',
+  ad_users_inactive: 'Inactive',
+  ad_users_none: 'No users match',
+  ad_form_title: 'Create user',
+  ad_form_role: 'Role',
+  ad_form_name_en: 'Full name (English)',
+  ad_form_name_ur: 'Full name (Urdu)',
+  ad_form_phone: 'Phone',
+  ad_form_campus: 'Campus',
+  ad_form_campus_all: 'All campuses',
+  ad_form_create_btn: 'Create user',
+  ad_err_name_en: 'Enter the full name in English.',
+  ad_err_name_ur: 'Enter the full name in Urdu.',
+  ad_err_phone: 'Enter a valid phone number (10–13 digits).',
+  ad_err_campus: 'Choose a campus for this role.',
+  ad_err_generic: 'Could not complete this action. Please try again.',
+  ad_cred_title: 'Login details',
+  ad_cred_once: 'Shown only once. Write it down or print the slip now.',
+  ad_cred_login_id: 'Login ID',
+  ad_cred_password: 'Password',
+  ad_cred_copy: 'Copy',
+  ad_cred_copied: 'Copied',
+  ad_cred_print: 'Print slip',
+  ad_cred_done: 'Done',
+  ad_slips_btn: 'Credential slips',
+  ad_slips_empty: 'Slips appear here for users you create or reset in this session.',
+  ad_slips_clear: 'Clear queue',
+  ad_slip_install: 'Install the Al Furqan School app on your phone and sign in with these details. Keep the password private.',
+  ad_slip_children: 'Student(s)',
+  ad_detail_reset: 'Reset password',
+  ad_detail_reset_confirm: 'Generate a new password for this user? The old one stops working.',
+  ad_detail_deactivate: 'Deactivate',
+  ad_detail_reactivate: 'Reactivate',
+  ad_detail_deactivate_confirm: 'This user will no longer be able to sign in.',
+  ad_detail_confirm: 'Confirm',
+  ad_detail_self_warning: 'You cannot deactivate your own account.',
+  ad_children_title: 'Linked students',
+  ad_children_none: 'No students linked yet.',
+  ad_children_unlink: 'Unlink',
+  ad_children_link_search: 'Search a student to link',
+  ad_children_link: 'Link',
+  ad_rel_FATHER: 'Father',
+  ad_rel_MOTHER: 'Mother',
+  ad_rel_GUARDIAN: 'Guardian',
+  ad_assign_title: 'Teaching assignments',
+  ad_assign_none: 'No assignments yet.',
+  ad_assign_add: 'Add assignment',
+  ad_assign_section: 'Section',
+  ad_assign_subject: 'Subject',
+  ad_assign_no_subject: 'No specific subject (class teacher)',
+  ad_assign_attendance: 'Can mark attendance',
+  ad_assign_marks: 'Can enter marks',
+  ad_assign_delete: 'Remove',
+  ad_assign_pick_section: 'Choose a section.',
+  ad_audit_title: 'Audit log',
+  ad_audit_none: 'No audit entries yet.',
+  ad_audit_by: 'by',
+  ad_soon_setup: 'School setup (classes, fees, holidays, grading) is the next update.',
+  ad_soon_students: 'Student admission and profiles are the next update.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -1674,4 +1808,71 @@ export const stringsUr: Record<StringKey, string> = {
   pr_profile_fees: 'فیس',
   pr_notices_soon: 'نوٹسز اور پیغامات کی نگرانی بعد کی اپڈیٹ میں یہاں شامل ہوگی۔',
   pr_tab_attendance_hint: 'صرف لگی ہوئی حاضری شمار ہوتی ہے؛ رخصت کے دن شمار نہیں ہوتے۔',
+  ad_sys_title: 'نظام کا خلاصہ',
+  ad_sys_users_by_role: 'کردار کے لحاظ سے صارفین',
+  ad_sys_students_by_campus: 'کیمپس کے لحاظ سے طلبہ',
+  ad_sys_audit_count: 'آڈٹ لاگ اندراجات',
+  ad_users_new_btn: 'نیا صارف',
+  ad_users_search: 'نام، لاگ ان آئی ڈی یا فون سے تلاش کریں',
+  ad_users_all_roles: 'تمام کردار',
+  ad_users_all_status: 'سب',
+  ad_users_active: 'فعال',
+  ad_users_inactive: 'غیر فعال',
+  ad_users_none: 'کوئی صارف نہیں ملا',
+  ad_form_title: 'صارف بنائیں',
+  ad_form_role: 'کردار',
+  ad_form_name_en: 'پورا نام (انگریزی)',
+  ad_form_name_ur: 'پورا نام (اردو)',
+  ad_form_phone: 'فون',
+  ad_form_campus: 'کیمپس',
+  ad_form_campus_all: 'تمام کیمپس',
+  ad_form_create_btn: 'صارف بنائیں',
+  ad_err_name_en: 'پورا نام انگریزی میں لکھیں۔',
+  ad_err_name_ur: 'پورا نام اردو میں لکھیں۔',
+  ad_err_phone: 'درست فون نمبر لکھیں (10 تا 13 ہندسے)۔',
+  ad_err_campus: 'اس کردار کے لیے کیمپس منتخب کریں۔',
+  ad_err_generic: 'یہ عمل مکمل نہیں ہو سکا۔ دوبارہ کوشش کریں۔',
+  ad_cred_title: 'لاگ ان کی تفصیلات',
+  ad_cred_once: 'صرف ایک بار دکھایا جاتا ہے۔ ابھی لکھ لیں یا سلپ پرنٹ کریں۔',
+  ad_cred_login_id: 'لاگ ان آئی ڈی',
+  ad_cred_password: 'پاس ورڈ',
+  ad_cred_copy: 'کاپی',
+  ad_cred_copied: 'کاپی ہو گیا',
+  ad_cred_print: 'سلپ پرنٹ کریں',
+  ad_cred_done: 'مکمل',
+  ad_slips_btn: 'کریڈینشل سلپس',
+  ad_slips_empty: 'اس سیشن میں بنائے یا ری سیٹ کیے گئے صارفین کی سلپس یہاں آئیں گی۔',
+  ad_slips_clear: 'قطار صاف کریں',
+  ad_slip_install: 'اپنے فون پر الفرقان اسکول ایپ انسٹال کریں اور ان تفصیلات سے لاگ ان کریں۔ پاس ورڈ خفیہ رکھیں۔',
+  ad_slip_children: 'طالب علم',
+  ad_detail_reset: 'پاس ورڈ ری سیٹ کریں',
+  ad_detail_reset_confirm: 'اس صارف کے لیے نیا پاس ورڈ بنائیں؟ پرانا پاس ورڈ کام کرنا بند کر دے گا۔',
+  ad_detail_deactivate: 'غیر فعال کریں',
+  ad_detail_reactivate: 'دوبارہ فعال کریں',
+  ad_detail_deactivate_confirm: 'یہ صارف اب لاگ ان نہیں کر سکے گا۔',
+  ad_detail_confirm: 'تصدیق',
+  ad_detail_self_warning: 'آپ اپنا اکاؤنٹ غیر فعال نہیں کر سکتے۔',
+  ad_children_title: 'منسلک طلبہ',
+  ad_children_none: 'ابھی کوئی طالب علم منسلک نہیں۔',
+  ad_children_unlink: 'منسلک ختم کریں',
+  ad_children_link_search: 'منسلک کرنے کے لیے طالب علم تلاش کریں',
+  ad_children_link: 'منسلک کریں',
+  ad_rel_FATHER: 'والد',
+  ad_rel_MOTHER: 'والدہ',
+  ad_rel_GUARDIAN: 'سرپرست',
+  ad_assign_title: 'تدریسی ذمہ داریاں',
+  ad_assign_none: 'ابھی کوئی ذمہ داری نہیں۔',
+  ad_assign_add: 'ذمہ داری شامل کریں',
+  ad_assign_section: 'سیکشن',
+  ad_assign_subject: 'مضمون',
+  ad_assign_no_subject: 'کوئی خاص مضمون نہیں (کلاس ٹیچر)',
+  ad_assign_attendance: 'حاضری لگا سکتا ہے',
+  ad_assign_marks: 'نمبر درج کر سکتا ہے',
+  ad_assign_delete: 'ہٹائیں',
+  ad_assign_pick_section: 'سیکشن منتخب کریں۔',
+  ad_audit_title: 'آڈٹ لاگ',
+  ad_audit_none: 'ابھی کوئی آڈٹ اندراج نہیں۔',
+  ad_audit_by: 'بذریعہ',
+  ad_soon_setup: 'اسکول سیٹ اپ (کلاسز، فیس، چھٹیاں، گریڈنگ) اگلی اپڈیٹ میں آئے گا۔',
+  ad_soon_students: 'طلبہ کا داخلہ اور پروفائلز اگلی اپڈیٹ میں آئیں گے۔',
 };

@@ -284,3 +284,29 @@
     page-break-before: always;
   }
 }
+
+/* ---- Credential slips: 8 per A4 (2 columns x 4 rows) ---- */
+.cred-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+}
+.cred-slip {
+  border: 1px dashed #14284b;
+  border-radius: 8px;
+  padding: 8px 10px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  color: #1b2233;
+  background: #fff;
+}
+@media (max-width: 480px) {
+  .cred-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media print {
+  .cred-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

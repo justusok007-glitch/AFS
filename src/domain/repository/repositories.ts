@@ -18,6 +18,7 @@ import {
   ExamStatus,
   ExamSubject,
   AttendanceReport,
+  NewProfileInput,
   AttendanceReportFilter,
   FeeCollectionReport,
   PrincipalDashboard,
@@ -431,6 +432,16 @@ export interface SettingsRepository {
     initialPassword: string | null,
     actor: Profile
   ): Promise<AppResult<Profile>>;
+  /** Creates a user with an auto-generated Login ID (P00001 / T0001 / PR01 / AC01 / AD01) and an 8-character password. */
+  createProfile(
+    input: NewProfileInput,
+    actor: Profile
+  ): Promise<AppResult<{ profile: Profile; password: string }>>;
+  /** Generates and stores a new 8-character password. The password is returned once. */
+  resetPassword(
+    profileId: string,
+    actor: Profile
+  ): Promise<AppResult<{ profile: Profile; password: string }>>;
   setProfileActive(
     profileId: string,
     isActive: boolean,

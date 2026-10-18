@@ -223,6 +223,14 @@ export interface Profile {
   isActive: boolean;
 }
 
+export interface NewProfileInput {
+  role: Role;
+  fullName: string;
+  fullNameUr: string;
+  phone: string;
+  campusId: string | null;
+}
+
 export interface Student {
   id: string;
   admissionNo: string;

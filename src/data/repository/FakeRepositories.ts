@@ -1,6 +1,7 @@
 import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
+  NewProfileInput,
   AttendanceReport,
   AttendanceReportFilter,
   AttendanceReportSectionRow,
@@ -92,6 +93,14 @@ import {
   shiftYearMonth,
   today,
 } from '../../domain/clock';
+
+/** 8 characters, no look-alikes (0/O, 1/l/I). */
+function generateReadablePassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const bytes = new Uint32Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+}
 
 const STORAGE_KEYS = {
   LOCAL_DB: 'afs_okara_local_db_v2',
@@ -2787,6 +2796,132 @@ export class FakeSettingsRepository implements SettingsRepository {
       return true;
     });
     return AppResult.success(filtered);
+  }
+
+  async createProfile(
+    input: NewProfileInput,
+    actor: Profile
+  ): Promise<AppResult<{ profile: Profile; password: string }>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({
+        kind: 'UnauthorizedRole',
+        message: 'Only the Admin can create users.',
+      });
+    }
+    const fullName = input.fullName.trim();
+    const fullNameUr = input.fullNameUr.trim();
+    const phone = input.phone.replace(/[\s-]/g, '');
+    if (fullName.length < 3) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'Full name (English) is required.',
+      });
+    }
+    if (fullNameUr.length < 2) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'Full name (Urdu) is required.',
+      });
+    }
+    if (!/^\+?\d{10,13}$/.test(phone)) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'Enter a valid phone number.',
+      });
+    }
+    const needsCampus =
+      input.role === Role.PARENT ||
+      input.role === Role.TEACHER ||
+      input.role === Role.ACCOUNTANT;
+    if (needsCampus && !input.campusId) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'Campus is required for this role.',
+      });
+    }
+
+    const db = getOrSeedLocalDatabase();
+    const spec: Record<string, { prefix: string; digits: number }> = {
+      [Role.PARENT]: { prefix: 'P', digits: 5 },
+      [Role.TEACHER]: { prefix: 'T', digits: 4 },
+      [Role.PRINCIPAL]: { prefix: 'PR', digits: 2 },
+      [Role.ACCOUNTANT]: { prefix: 'AC', digits: 2 },
+      [Role.ADMIN]: { prefix: 'AD', digits: 2 },
+    };
+    const { prefix, digits } = spec[input.role];
+    let maxNum = 0;
+    db.profiles.forEach((p) => {
+      const m = new RegExp(`^${prefix}(\\d{${digits}})$`).exec(p.loginId);
+      if (m) maxNum = Math.max(maxNum, Number(m[1]));
+    });
+    const loginId = `${prefix}${String(maxNum + 1).padStart(digits, '0')}`;
+    const password = generateReadablePassword();
+    const id = `usr_${loginId.toLowerCase()}`;
+    const profile: Profile = {
+      id,
+      loginId,
+      role: input.role,
+      fullName,
+      fullNameUr,
+      phone,
+      campusId: needsCampus ? input.campusId : input.campusId ?? null,
+      language: 'ur',
+      isActive: true,
+    };
+    db.profiles.push(profile);
+    db.passwordsByUserId[id] = password;
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'CREATE_PROFILE',
+      tableName: 'profiles',
+      recordId: id,
+      oldValue: null,
+      newValue: `${loginId} (${input.role})`,
+      reason: 'User created by admin',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success({ profile, password });
+  }
+
+  async resetPassword(
+    profileId: string,
+    actor: Profile
+  ): Promise<AppResult<{ profile: Profile; password: string }>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({
+        kind: 'UnauthorizedRole',
+        message: 'Only the Admin can reset passwords.',
+      });
+    }
+    const db = getOrSeedLocalDatabase();
+    const profile = db.profiles.find((p) => p.id === profileId);
+    if (!profile) {
+      return AppResult.failure({
+        kind: 'NotFound',
+        entity: 'Profile',
+        id: profileId,
+        message: 'User not found.',
+      });
+    }
+    const password = generateReadablePassword();
+    db.passwordsByUserId[profileId] = password;
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'RESET_PASSWORD',
+      tableName: 'profiles',
+      recordId: profileId,
+      oldValue: null,
+      newValue: null,
+      reason: `Password reset for ${profile.loginId}`,
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success({ profile, password });
   }
 
   async saveProfile(

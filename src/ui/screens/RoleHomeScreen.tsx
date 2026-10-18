@@ -46,6 +46,7 @@ import {
 import { SchoolLogo } from '../components/SchoolLogo';
 import { useStringResource } from '../theme/LocaleContext';
 import { AccountantRoot } from './accountant/AccountantRoot';
+import { AdminRoot } from './admin/AdminRoot';
 import { PrincipalRoot } from './principal/PrincipalRoot';
 import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
@@ -705,6 +706,14 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (
           renderTeacherTabBody()
+        ) : session.role === UserRole.ADMIN ? (
+          <AdminRoot
+            admin={session.profile}
+            tabId={currentTab.id}
+            onSwitchTab={onTabChange}
+            onOpenSettings={handleGuardedOpenSettings}
+            onLogout={handleGuardedLogout}
+          />
         ) : session.role === UserRole.PRINCIPAL ? (
           <PrincipalRoot
             tabId={currentTab.id}
