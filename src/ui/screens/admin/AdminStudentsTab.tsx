@@ -6,6 +6,7 @@ import {
   Phone,
   Plus,
   Search,
+  Upload,
   UserMinus,
   Users,
 } from 'lucide-react';
@@ -14,8 +15,9 @@ import { today } from '../../../domain/clock';
 import { formatSchoolDate } from '../../../domain/formatters/SchoolFormatters';
 import {
   Gender,
+  OpeningFees,
   ParentAttendanceSummary,
-  ParentRelation,
+  ParentSpec,
   Profile,
   Role,
   Student,
@@ -42,12 +44,14 @@ import {
 import { StudentFeeAccount } from '../accountant/StudentFeeAccount';
 import { percentColor, selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
+import { AdminBulkStudents } from './AdminBulkStudents';
 import { SlipSheet } from './AdminUsersTab';
 
 type View =
   | { kind: 'list' }
   | { kind: 'admit' }
   | { kind: 'promote' }
+  | { kind: 'bulk' }
   | { kind: 'profile'; studentId: string };
 
 const PAGE = 50;
@@ -155,6 +159,23 @@ export const AdminStudentsTab: React.FC<{
       </>
     );
   }
+  if (view.kind === 'bulk') {
+    return (
+      <>
+        {slipPrint}
+        <AdminBulkStudents
+          admin={admin}
+          sectionOptions={sectionOptions}
+          onAddSlip={onAddSlip}
+          onPrintSlips={setPrintSlips}
+          onClose={() => {
+            setTick((n) => n + 1);
+            setView({ kind: 'list' });
+          }}
+        />
+      </>
+    );
+  }
   if (view.kind === 'promote') {
     return (
       <PromotionWizard
@@ -200,8 +221,9 @@ export const AdminStudentsTab: React.FC<{
       {slipPrint}
       <div className="grid grid-cols-2 gap-2.5">
         <PrimaryButton text={t('st_new_btn')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setView({ kind: 'admit' })} />
-        <PrimaryButton text={t('st_promote_btn')} variant="outline" icon={<Users className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'promote' })} />
+        <PrimaryButton text={t('st_bulk_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'bulk' })} />
       </div>
+      <PrimaryButton text={t('st_promote_btn')} variant="outline" icon={<Users className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'promote' })} />
 
       <SchoolCard className="space-y-2.5">
         <SchoolTextField label={t('st_search')} value={query} onValueChange={setQuery} leadingIcon={<Search className="w-4 h-4" />} />
@@ -268,6 +290,16 @@ const StudentForm: React.FC<{
   const [dob, setDob] = useState(existing?.dateOfBirth ?? '');
   const [admDate, setAdmDate] = useState(existing?.admissionDate ?? today());
   const [phone, setPhone] = useState(existing?.guardianPhone ?? '');
+  const [phone2, setPhone2] = useState(existing?.guardianPhone2 ?? '');
+  const [parentUser, setParentUser] = useState('');
+  const [parentPw, setParentPw] = useState('');
+  const [actualFee, setActualFee] = useState('');
+  const [netFee, setNetFee] = useState('');
+  const [annual, setAnnual] = useState('');
+  const [annualPaid, setAnnualPaid] = useState(false);
+  const [admFee, setAdmFee] = useState('');
+  const [admPaid, setAdmPaid] = useState(false);
+  const [netTouched, setNetTouched] = useState(false);
   const [sectionId, setSectionId] = useState(existing?.sectionId ?? '');
   const [parentMode, setParentMode] = useState<'none' | 'create' | 'link'>('none');
   const [parentQuery, setParentQuery] = useState('');
@@ -285,6 +317,27 @@ const StudentForm: React.FC<{
     })();
   }, [parentMode]);
 
+  // Prefill the fee boxes from the class fee structure whenever the section changes.
+  useEffect(() => {
+    if (existing || !sectionId) return;
+    const sec = lookups.sectionsMap[sectionId];
+    if (!sec) return;
+    let cancelled = false;
+    void (async () => {
+      const r = await AppModule.feeRepository.getClassFeeStructures(sec.classId);
+      if (cancelled || !r.ok) return;
+      const amt = (head: string) => r.data.find((x) => x.feeHeadId === head)?.amount ?? 0;
+      setActualFee(String(amt('fh_tuition')));
+      if (!netTouched) setNetFee(String(amt('fh_tuition')));
+      setAnnual(String(amt('fh_annual')));
+      setAdmFee(String(amt('fh_admission')));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionId, existing, lookups.sectionsMap]);
+
   const parentMatches = parents
     .filter((p) => {
       const q = parentQuery.trim().toLowerCase();
@@ -298,11 +351,19 @@ const StudentForm: React.FC<{
     if (nameUr.trim().length < 2) e.nameUr = t('st_err_name_ur');
     if (father.trim().length < 3) e.father = t('st_err_father');
     if (!/^\+?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) e.phone = t('st_err_phone');
-    if (!dob || dob >= today()) e.dob = t('st_err_dob');
+    if (dob && dob >= today()) e.dob = t('st_err_dob');
+    if (phone2.trim() && !/^\+?\d{10,13}$/.test(phone2.replace(/[\s-]/g, ''))) e.phone2 = t('st_err_phone');
     if (!sectionId) e.section = t('st_err_section');
     if (!admDate || admDate > today()) e.adm = t('st_err_admission_date');
     if (!existing && parentMode === 'create' && fatherUr.trim().length < 2) e.fatherUr = t('st_err_father_ur');
     if (!existing && parentMode === 'link' && !parentId) e.parent = t('st_parent_pick');
+    const money = (v: string) => (v.trim() === '' ? 0 : Number(v));
+    const amounts = [actualFee, netFee, annual, admFee].map(money);
+    if (!existing) {
+      if (amounts.some((n) => !Number.isInteger(n) || n < 0)) e.fees = t('st_err_fee');
+      else if (amounts[1] > amounts[0]) e.fees = t('st_err_net_gt');
+      if (parentMode === 'create' && parentPw.trim() && parentPw.trim().length < 6) e.parentPw = t('st_err_pw');
+    }
     setErrors(e);
     setFormError(null);
     if (Object.keys(e).length) return;
@@ -321,6 +382,7 @@ const StudentForm: React.FC<{
           dateOfBirth: dob,
           admissionDate: admDate,
           guardianPhone: phone.replace(/[\s-]/g, ''),
+          guardianPhone2: phone2.replace(/[\s-]/g, '') || undefined,
           sectionId,
           campusId: cl?.campusId ?? existing.campusId,
         },
@@ -331,29 +393,31 @@ const StudentForm: React.FC<{
       return onSaved(r.data);
     }
 
+    const parent: ParentSpec | undefined =
+      parentMode === 'create'
+        ? { mode: 'create', fatherNameUr: fatherUr, loginId: parentUser.trim() || undefined, password: parentPw.trim() || undefined }
+        : parentMode === 'link'
+          ? { mode: 'link', parentId }
+          : undefined;
+    const opening: OpeningFees = {
+      actualFee: amounts[0],
+      netFee: amounts[1],
+      annualCharges: amounts[2],
+      annualPaid,
+      admissionFee: amounts[3],
+      admissionPaid: admPaid,
+    };
     const r = await AppModule.studentRepository.admitStudent(
-      { name, nameUr, fatherName: father, gender, dateOfBirth: dob, sectionId, admissionDate: admDate, guardianPhone: phone },
+      { name, nameUr, fatherName: father, gender, dateOfBirth: dob, sectionId, admissionDate: admDate, guardianPhone: phone, guardianPhone2: phone2, parent, opening },
       admin
     );
-    if (!r.ok) {
-      setSaving(false);
-      return setFormError(r.error.message);
-    }
-    let cred: CredentialSlip | undefined;
-    if (parentMode === 'create') {
-      const pr = await AppModule.settingsRepository.createProfile(
-        { role: Role.PARENT, fullName: father, fullNameUr: fatherUr, phone, campusId: r.data.campusId },
-        admin
-      );
-      if (pr.ok) {
-        await AppModule.studentRepository.linkParent(pr.data.profile.id, r.data.id, ParentRelation.FATHER);
-        cred = { profile: pr.data.profile, password: pr.data.password };
-      } else setFormError(pr.error.message);
-    } else if (parentMode === 'link' && parentId) {
-      await AppModule.studentRepository.linkParent(parentId, r.data.id, ParentRelation.FATHER);
-    }
     setSaving(false);
-    onSaved(r.data, cred);
+    if (!r.ok) return setFormError(r.error.message);
+    const cred: CredentialSlip | undefined =
+      r.data.parent && r.data.parentPassword
+        ? { profile: r.data.parent, password: r.data.parentPassword }
+        : undefined;
+    onSaved(r.data.student, cred);
   };
 
   return (
@@ -375,7 +439,7 @@ const StudentForm: React.FC<{
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold">{t('st_dob')}</label>
+          <label className="block text-xs font-semibold">{t('st_dob_opt')}</label>
           <input type="date" dir="ltr" className={selectCls} value={dob} max={today()} onChange={(e) => setDob(e.target.value)} />
           {errors.dob && <p className="text-xs font-medium text-[#D64545]">{errors.dob}</p>}
         </div>
@@ -394,6 +458,26 @@ const StudentForm: React.FC<{
         {errors.section && <p className="text-xs font-medium text-[#D64545]">{errors.section}</p>}
       </div>
       <SchoolTextField label={t('st_phone')} value={phone} onValueChange={setPhone} errorText={errors.phone} forceLtrValue />
+      <SchoolTextField label={t('st_phone2')} value={phone2} onValueChange={setPhone2} errorText={errors.phone2} forceLtrValue />
+
+      {!existing && (
+        <div className="space-y-2 border-t border-[#E4E8F0] pt-3">
+          <label className="block text-xs font-bold text-[#14284B]">{t('st_fees_heading')}</label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <SchoolTextField label={t('st_actual_fee')} value={actualFee} onValueChange={(v) => { setActualFee(v); if (!netTouched) setNetFee(v); }} forceLtrValue />
+            <SchoolTextField label={t('st_net_fee')} value={netFee} onValueChange={(v) => { setNetFee(v); setNetTouched(true); }} forceLtrValue />
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 items-end">
+            <SchoolTextField label={t('st_annual_charges')} value={annual} onValueChange={setAnnual} forceLtrValue />
+            <TabRow tabs={[{ id: 'no' as const, label: t('st_unpaid') }, { id: 'yes' as const, label: t('st_paid') }]} selected={annualPaid ? 'yes' : 'no'} onSelect={(v) => setAnnualPaid(v === 'yes')} />
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 items-end">
+            <SchoolTextField label={t('st_admission_fee')} value={admFee} onValueChange={setAdmFee} forceLtrValue />
+            <TabRow tabs={[{ id: 'no' as const, label: t('st_unpaid') }, { id: 'yes' as const, label: t('st_paid') }]} selected={admPaid ? 'yes' : 'no'} onSelect={(v) => setAdmPaid(v === 'yes')} />
+          </div>
+          {errors.fees && <p className="text-xs font-medium text-[#D64545]">{errors.fees}</p>}
+        </div>
+      )}
 
       {!existing && (
         <div className="space-y-2 border-t border-[#E4E8F0] pt-3">
@@ -408,7 +492,11 @@ const StudentForm: React.FC<{
             onSelect={(m) => { setParentMode(m); setParentId(''); }}
           />
           {parentMode === 'create' && (
-            <div dir="rtl"><SchoolTextField label={t('st_father_ur')} value={fatherUr} onValueChange={setFatherUr} errorText={errors.fatherUr} /></div>
+            <div className="space-y-2">
+              <div dir="rtl"><SchoolTextField label={t('st_father_ur')} value={fatherUr} onValueChange={setFatherUr} errorText={errors.fatherUr} /></div>
+              <SchoolTextField label={t('st_parent_username')} value={parentUser} onValueChange={setParentUser} forceLtrValue />
+              <SchoolTextField label={t('st_parent_password')} value={parentPw} onValueChange={setParentPw} errorText={errors.parentPw} forceLtrValue />
+            </div>
           )}
           {parentMode === 'link' && (
             <div className="space-y-1.5">
@@ -462,9 +550,9 @@ const StudentProfile: React.FC<{
   const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
-    const [s, all] = await Promise.all([
+    const [s, ps] = await Promise.all([
       AppModule.studentRepository.getById(studentId),
-      AppModule.settingsRepository.getProfiles(Role.PARENT, null),
+      AppModule.studentRepository.parentsOfStudent(studentId),
     ]);
     if (!s.ok) {
       setFailed(true);
@@ -472,13 +560,7 @@ const StudentProfile: React.FC<{
       return;
     }
     setStudent(s.data);
-    const links: Profile[] = [];
-    if (all.ok) {
-      for (const p of all.data) {
-        const c = await AppModule.studentRepository.childrenOfParent(p.id);
-        if (c.ok && c.data.some((x) => x.id === studentId)) links.push(p);
-      }
-    }
+    const links: Profile[] = ps.ok ? ps.data : [];
     setParents(links);
     setLoading(false);
   }, [studentId]);
@@ -574,7 +656,7 @@ const StudentProfile: React.FC<{
               <div className="font-urdu text-sm" dir="rtl">{student.nameUr}</div>
               <div>{t('st_father')}: <b>{student.fatherName}</b></div>
               <div>{t('st_gender')}: <b>{t(`st_gender_${student.gender}` as StringKey)}</b></div>
-              <div>{t('st_dob')}: <b dir="ltr">{formatSchoolDate(student.dateOfBirth)}</b></div>
+              {student.dateOfBirth && <div>{t('st_dob')}: <b dir="ltr">{formatSchoolDate(student.dateOfBirth)}</b></div>}
               <div>{t('st_admission_date')}: <b dir="ltr">{formatSchoolDate(student.admissionDate)}</b></div>
               <div>{t('st_roll')}: <b dir="ltr">{student.rollNo}</b></div>
               <div className="flex items-center gap-2">
@@ -583,6 +665,14 @@ const StudentProfile: React.FC<{
                   <Phone className="w-3.5 h-3.5 text-[#F28C28]" />{student.guardianPhone}
                 </a>
               </div>
+              {student.guardianPhone2 && (
+                <div className="flex items-center gap-2">
+                  <span>{t('st_phone2')}:</span>
+                  <a href={`tel:${student.guardianPhone2}`} dir="ltr" className="font-bold text-[#14284B] inline-flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-[#F28C28]" />{student.guardianPhone2}
+                  </a>
+                </div>
+              )}
             </div>
           </SchoolCard>
 

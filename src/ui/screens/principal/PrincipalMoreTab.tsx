@@ -120,7 +120,7 @@ export const PrincipalMoreTab: React.FC<{
           <StudentNameBlock student={profile} classLabel={studentClassLabel(profile, lookups, language)} />
           <div className="text-xs space-y-0.5">
             <div>{t('acc_father_label')}: <b>{profile.fatherName}</b></div>
-            <div>{t('pr_profile_dob')}: <b dir="ltr">{formatSchoolDate(profile.dateOfBirth)}</b></div>
+            {profile.dateOfBirth && <div>{t('pr_profile_dob')}: <b dir="ltr">{formatSchoolDate(profile.dateOfBirth)}</b></div>}
             <div>{t('pr_profile_admission')}: <b dir="ltr">{formatSchoolDate(profile.admissionDate)}</b></div>
             <div className="flex items-center gap-2">
               <span>{t('pr_profile_phone')}:</span>

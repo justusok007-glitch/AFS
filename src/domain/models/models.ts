@@ -223,15 +223,72 @@ export interface Profile {
   isActive: boolean;
 }
 
+/** Fees recorded at admission / bulk import. Paid flags mean "already collected before this app". */
+export interface OpeningFees {
+  actualFee: number;
+  netFee: number;
+  annualCharges: number;
+  annualPaid: boolean;
+  admissionFee: number;
+  admissionPaid: boolean;
+}
+
+export type ParentSpec =
+  | { mode: 'create'; fatherNameUr: string; loginId?: string; password?: string }
+  | { mode: 'link'; parentId: string };
+
 export interface NewStudentInput {
   name: string;
   nameUr: string;
   fatherName: string;
   gender: Gender;
+  /** Optional: empty string when unknown. */
   dateOfBirth: string;
   sectionId: string;
   admissionDate: string;
   guardianPhone: string;
+  guardianPhone2?: string;
+  parent?: ParentSpec;
+  opening?: OpeningFees;
+}
+
+export interface AdmitResult {
+  student: Student;
+  /** Set when a parent account was created or reused through ParentSpec. */
+  parent: Profile | null;
+  /** Only set when a NEW account was created (show the credential slip). */
+  parentPassword: string | null;
+}
+
+export interface ImportStudentRow {
+  line: number;
+  name: string;
+  nameUr: string;
+  fatherName: string;
+  fatherNameUr: string;
+  phone1: string;
+  phone2: string;
+  username: string;
+  password: string;
+  actualFee: number | null;
+  netFee: number | null;
+  annualCharges: number | null;
+  annualPaid: boolean;
+  admissionFee: number | null;
+  admissionPaid: boolean;
+}
+
+export interface ImportStudentResult {
+  line: number;
+  ok: boolean;
+  error: string | null;
+  warnings: string[];
+  studentName: string;
+  admissionNo: string | null;
+  parentLoginId: string | null;
+  parentCreated: boolean;
+  profile: Profile | null;
+  password: string | null;
 }
 
 export interface NewProfileInput {
@@ -240,6 +297,9 @@ export interface NewProfileInput {
   fullNameUr: string;
   phone: string;
   campusId: string | null;
+  /** Admin-chosen Login ID / password (bulk import); generated when omitted. */
+  loginId?: string;
+  password?: string;
 }
 
 export interface Student {
@@ -256,6 +316,7 @@ export interface Student {
   admissionDate: string; // LocalDate
   status: StudentStatus;
   guardianPhone: string;
+  guardianPhone2?: string;
 }
 
 export interface ParentStudent {

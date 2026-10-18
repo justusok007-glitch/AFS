@@ -20,6 +20,9 @@ import {
   AttendanceReport,
   NewProfileInput,
   NewStudentInput,
+  AdmitResult,
+  ImportStudentRow,
+  ImportStudentResult,
   AttendanceReportFilter,
   FeeCollectionReport,
   PrincipalDashboard,
@@ -97,7 +100,16 @@ export interface StudentRepository {
   admitStudent(
     input: NewStudentInput,
     actor: Profile
-  ): Promise<AppResult<Student>>;
+  ): Promise<AppResult<AdmitResult>>;
+  /** Bulk admit into one section. dryRun validates everything and saves nothing. */
+  importStudents(
+    sectionId: string,
+    rows: ImportStudentRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportStudentResult[]>>;
+  /** Parent accounts linked to a student. */
+  parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>>;
   /** Moves a student to another section (and campus when the section belongs to the other campus). */
   transferStudent(
     studentId: string,

@@ -705,7 +705,34 @@ export type StringKey =
   | 'st_father_ur'
   | 'st_err_father_ur'
   | 'st_view_profile'
-  | 'st_att_monthly';
+  | 'st_att_monthly'
+  | 'st_phone2'
+  | 'st_dob_opt'
+  | 'st_parent_username'
+  | 'st_parent_password'
+  | 'st_fees_heading'
+  | 'st_actual_fee'
+  | 'st_net_fee'
+  | 'st_annual_charges'
+  | 'st_admission_fee'
+  | 'st_paid'
+  | 'st_unpaid'
+  | 'st_err_fee'
+  | 'st_err_net_gt'
+  | 'st_bulk_btn'
+  | 'st_bulk_title'
+  | 'st_bulk_hint'
+  | 'st_bulk_template'
+  | 'st_bulk_checking'
+  | 'st_bulk_import'
+  | 'st_bulk_done'
+  | 'st_bulk_new_parents'
+  | 'st_bulk_print'
+  | 'st_bulk_pick_section'
+  | 'st_bulk_err_status'
+  | 'st_bulk_err_number'
+  | 'st_bulk_err_cols'
+  | 'st_err_pw';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1413,6 +1440,33 @@ export const stringsEn: Record<StringKey, string> = {
   st_err_father_ur: 'Enter the father\'s name in Urdu to create the parent account.',
   st_view_profile: 'Student profile',
   st_att_monthly: 'Monthly attendance',
+  st_phone2: 'Phone 2 (optional)',
+  st_dob_opt: 'Date of birth (optional)',
+  st_parent_username: 'Parent user name (blank = auto)',
+  st_parent_password: 'Parent password (blank = auto)',
+  st_fees_heading: 'Fees',
+  st_actual_fee: 'Actual fee (monthly)',
+  st_net_fee: 'Net fee (monthly, after concession)',
+  st_annual_charges: 'Annual charges',
+  st_admission_fee: 'Admission fee',
+  st_paid: 'Paid',
+  st_unpaid: 'Unpaid',
+  st_err_fee: 'Enter fee amounts as whole numbers.',
+  st_err_net_gt: 'Net fee cannot be more than the actual fee.',
+  st_bulk_btn: 'Import students (CSV)',
+  st_bulk_title: 'Bulk admit students',
+  st_bulk_hint: 'Pick the class and section, then upload a CSV (save from Excel as \'CSV UTF-8\') with these columns in this order: Student Name En, Student Name Ur, Father Name Eng, Father Name Ur, Phone 1, Phone 2, User Name, Password, Actual Fee, Net Fee, Annual Charges, Annual Charges Status (Paid/Unpaid), Admission Fee, Admission Fee Status. Students sharing one User Name share one parent account.',
+  st_bulk_template: 'Download template',
+  st_bulk_checking: 'Checking rows...',
+  st_bulk_import: 'Import students',
+  st_bulk_done: 'Students imported. Parent slips were added to the queue.',
+  st_bulk_new_parents: 'new parent accounts',
+  st_bulk_print: 'Print parent slips',
+  st_bulk_pick_section: 'Choose class and section first',
+  st_bulk_err_status: 'Status must be Paid or Unpaid',
+  st_bulk_err_number: 'Amount is not a number',
+  st_bulk_err_cols: 'Row has too few columns',
+  st_err_pw: 'Password must be at least 6 characters.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2121,4 +2175,31 @@ export const stringsUr: Record<StringKey, string> = {
   st_err_father_ur: 'پیرنٹ اکاؤنٹ بنانے کے لیے والد کا نام اردو میں لکھیں۔',
   st_view_profile: 'طالب علم پروفائل',
   st_att_monthly: 'ماہانہ حاضری',
+  st_phone2: 'فون 2 (اختیاری)',
+  st_dob_opt: 'تاریخ پیدائش (اختیاری)',
+  st_parent_username: 'پیرنٹ یوزر نیم (خالی = خودکار)',
+  st_parent_password: 'پیرنٹ پاس ورڈ (خالی = خودکار)',
+  st_fees_heading: 'فیس',
+  st_actual_fee: 'اصل فیس (ماہانہ)',
+  st_net_fee: 'خالص فیس (ماہانہ، رعایت کے بعد)',
+  st_annual_charges: 'سالانہ چارجز',
+  st_admission_fee: 'داخلہ فیس',
+  st_paid: 'ادا شدہ',
+  st_unpaid: 'غیر ادا شدہ',
+  st_err_fee: 'فیس کی رقم پوری عدد میں لکھیں۔',
+  st_err_net_gt: 'خالص فیس اصل فیس سے زیادہ نہیں ہو سکتی۔',
+  st_bulk_btn: 'طلبہ درآمد کریں (CSV)',
+  st_bulk_title: 'طلبہ اکٹھے داخل کریں',
+  st_bulk_hint: 'کلاس اور سیکشن چنیں، پھر CSV اپ لوڈ کریں (ایکسل سے \'CSV UTF-8\' محفوظ کریں) جس میں کالم اسی ترتیب میں ہوں: Student Name En, Student Name Ur, Father Name Eng, Father Name Ur, Phone 1, Phone 2, User Name, Password, Actual Fee, Net Fee, Annual Charges, Annual Charges Status (Paid/Unpaid), Admission Fee, Admission Fee Status۔ ایک ہی یوزر نیم والے طلبہ ایک پیرنٹ اکاؤنٹ شیئر کرتے ہیں۔',
+  st_bulk_template: 'ٹیمپلیٹ ڈاؤن لوڈ کریں',
+  st_bulk_checking: 'قطاریں چیک ہو رہی ہیں...',
+  st_bulk_import: 'طلبہ درآمد کریں',
+  st_bulk_done: 'طلبہ درآمد ہو گئے۔ پیرنٹ سلپس قطار میں شامل ہو گئیں۔',
+  st_bulk_new_parents: 'نئے پیرنٹ اکاؤنٹس',
+  st_bulk_print: 'پیرنٹ سلپس پرنٹ کریں',
+  st_bulk_pick_section: 'پہلے کلاس اور سیکشن چنیں',
+  st_bulk_err_status: 'اسٹیٹس Paid یا Unpaid ہونا چاہیے',
+  st_bulk_err_number: 'رقم عدد نہیں ہے',
+  st_bulk_err_cols: 'قطار میں کالم کم ہیں',
+  st_err_pw: 'پاس ورڈ کم از کم 6 حروف کا ہو۔',
 };

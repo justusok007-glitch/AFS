@@ -1,6 +1,12 @@
 import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
+  AdmitResult,
+  ConcessionType,
+  Gender,
+  ImportStudentResult,
+  ImportStudentRow,
+  OpeningFees,
   NewProfileInput,
   NewStudentInput,
   AttendanceReport,
@@ -253,6 +259,306 @@ function buildMonthlyVoucherItems(
   return items;
 }
 
+// ----------------------------------------------------------------------------
+// Admin helpers shared by single admission, bulk import and createProfile.
+// They mutate the given snapshot and NEVER save it; the caller decides.
+// ----------------------------------------------------------------------------
+
+type Fail = { ok: false; message: string };
+
+function auditId(): string {
+  return `aud_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+/** Excel drops the leading 0 of Pakistani mobiles (3001234567) - put it back. */
+function normalizePkPhone(raw: string): string {
+  const d = raw.replace(/[\s\-()]/g, '');
+  return /^3\d{9}$/.test(d) ? `0${d}` : d;
+}
+
+function createProfileInDb(
+  db: LocalDatabaseSnapshot,
+  input: NewProfileInput,
+  actorId: string
+): { ok: true; profile: Profile; password: string } | Fail {
+  const fail = (message: string): Fail => ({ ok: false, message });
+  const fullName = input.fullName.trim();
+  const fullNameUr = input.fullNameUr.trim();
+  const phone = normalizePkPhone(input.phone);
+  if (fullName.length < 3) return fail('Full name (English) is required.');
+  if (fullNameUr.length < 2) return fail('Full name (Urdu) is required.');
+  if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid phone number.');
+  const needsCampus =
+    input.role === Role.PARENT ||
+    input.role === Role.TEACHER ||
+    input.role === Role.ACCOUNTANT;
+  if (needsCampus && !input.campusId) return fail('Campus is required for this role.');
+
+  let loginId: string;
+  const custom = input.loginId?.trim();
+  if (custom) {
+    if (!/^[A-Za-z0-9_.-]{3,20}$/.test(custom)) {
+      return fail('User name must be 3-20 letters, digits, dot, dash or underscore.');
+    }
+    loginId = custom.toUpperCase();
+    if (db.profiles.some((p) => p.loginId.toUpperCase() === loginId)) {
+      return fail(`User name ${loginId} is already taken.`);
+    }
+  } else {
+    const spec: Record<string, { prefix: string; digits: number }> = {
+      [Role.PARENT]: { prefix: 'P', digits: 5 },
+      [Role.TEACHER]: { prefix: 'T', digits: 4 },
+      [Role.PRINCIPAL]: { prefix: 'PR', digits: 2 },
+      [Role.ACCOUNTANT]: { prefix: 'AC', digits: 2 },
+      [Role.ADMIN]: { prefix: 'AD', digits: 2 },
+    };
+    const { prefix, digits } = spec[input.role];
+    let maxNum = 0;
+    db.profiles.forEach((p) => {
+      const m = new RegExp(`^${prefix}(\\d{${digits}})$`).exec(p.loginId);
+      if (m) maxNum = Math.max(maxNum, Number(m[1]));
+    });
+    loginId = `${prefix}${String(maxNum + 1).padStart(digits, '0')}`;
+  }
+
+  const customPw = input.password?.trim();
+  if (customPw && customPw.length < 6) return fail('Password must be at least 6 characters.');
+  const password = customPw || generateReadablePassword();
+  const id = `usr_${loginId.toLowerCase()}`;
+  const profile: Profile = {
+    id,
+    loginId,
+    role: input.role,
+    fullName,
+    fullNameUr,
+    phone,
+    campusId: input.campusId ?? null,
+    language: 'ur',
+    isActive: true,
+  };
+  db.profiles.push(profile);
+  db.passwordsByUserId[id] = password;
+  db.auditLogs.unshift({
+    id: auditId(),
+    action: 'CREATE_PROFILE',
+    tableName: 'profiles',
+    recordId: id,
+    oldValue: null,
+    newValue: `${loginId} (${input.role})`,
+    reason: 'User created by admin',
+    changedBy: actorId,
+    changedAt: new Date().toISOString(),
+  });
+  return { ok: true, profile, password };
+}
+
+/** Current-month voucher holding tuition + annual + admission, so reports and defaulters see it. */
+function addOpeningVoucher(
+  db: LocalDatabaseSnapshot,
+  student: Student,
+  classId: string,
+  campusCode: string,
+  o: OpeningFees
+): void {
+  const month = today().slice(0, 7);
+  const classTuition =
+    db.classFeeStructures.find((c) => c.classId === classId && c.feeHeadId === 'fh_tuition')
+      ?.amount ?? 2000;
+  if (o.netFee !== classTuition) {
+    db.studentConcessions.push({
+      studentId: student.id,
+      feeHeadId: 'fh_tuition',
+      type: ConcessionType.OVERRIDE,
+      value: o.netFee,
+      reason: `Set at admission (actual fee ${o.actualFee}, net fee ${o.netFee})`,
+    });
+  }
+  const items: FeeVoucherItem[] = [
+    {
+      feeHeadId: 'fh_tuition',
+      description: `Monthly Tuition Fee (${month})`,
+      amount: o.netFee,
+      waivedAmount: 0,
+      paidAmount: 0,
+    },
+  ];
+  if (o.annualCharges > 0) {
+    items.push({
+      feeHeadId: 'fh_annual',
+      description: `Annual Charges (${month})`,
+      amount: o.annualCharges,
+      waivedAmount: 0,
+      paidAmount: o.annualPaid ? o.annualCharges : 0,
+    });
+  }
+  if (o.admissionFee > 0) {
+    items.push({
+      feeHeadId: 'fh_admission',
+      description: 'Admission Fee',
+      amount: o.admissionFee,
+      waivedAmount: 0,
+      paidAmount: o.admissionPaid ? o.admissionFee : 0,
+    });
+  }
+  const prefix = campusCode === 'G' ? 'G-' : 'B-';
+  const maxSeq = db.feeVouchers
+    .filter((v) => v.voucherNo.startsWith(prefix))
+    .reduce((m, v) => Math.max(m, Number(v.voucherNo.slice(2)) || 0), 0);
+  const voucherNo = `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  const paid = items.reduce((s, i) => s + (i.paidAmount ?? 0), 0);
+  db.feeVouchers.push({
+    id: `vch_${voucherNo.toLowerCase()}`,
+    voucherNo,
+    studentId: student.id,
+    campusId: student.campusId,
+    billingMonth: month,
+    issueDate: `${month}-01`,
+    dueDate: `${month}-10`,
+    items,
+    status: paid >= total ? VoucherStatus.PAID : paid > 0 ? VoucherStatus.PARTIAL : VoucherStatus.UNPAID,
+  });
+}
+
+function admitStudentInDb(
+  db: LocalDatabaseSnapshot,
+  input: NewStudentInput,
+  actor: Profile
+): { ok: true; data: AdmitResult; warnings: string[] } | Fail {
+  const fail = (message: string): Fail => ({ ok: false, message });
+  const warnings: string[] = [];
+  const name = input.name.trim();
+  const nameUr = input.nameUr.trim();
+  const fatherName = input.fatherName.trim();
+  const phone = normalizePkPhone(input.guardianPhone);
+  const phone2 = normalizePkPhone(input.guardianPhone2 ?? '');
+  const dob = input.dateOfBirth.trim();
+  if (name.length < 3) return fail('Student name (English) is required.');
+  if (nameUr.length < 2) return fail('Student name (Urdu) is required.');
+  if (fatherName.length < 3) return fail("Father's name is required.");
+  if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid guardian phone number.');
+  if (phone2 && !/^\+?\d{10,13}$/.test(phone2)) return fail('Phone 2 is not a valid number.');
+  if (dob) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return fail('Date of birth is not valid.');
+    if (dob >= today()) return fail('Date of birth must be in the past.');
+    const age = Number(today().slice(0, 4)) - Number(dob.slice(0, 4));
+    if (age < 2 || age > 25) return fail('Date of birth looks wrong for a student.');
+  }
+  if (!input.admissionDate || input.admissionDate > today()) {
+    return fail('Admission date cannot be in the future.');
+  }
+  const section = db.sections.find((x) => x.id === input.sectionId);
+  const cls = section ? db.classes.find((c) => c.id === section.classId) : undefined;
+  if (!section || !cls) return fail('Choose a class and section.');
+  const campus = db.campuses.find((c) => c.id === cls.campusId);
+  if (!campus) return fail('Campus not found for this section.');
+
+  const duplicate = db.students.some(
+    (s) =>
+      s.status === StudentStatus.ACTIVE &&
+      s.name.trim().toLowerCase() === name.toLowerCase() &&
+      s.fatherName.trim().toLowerCase() === fatherName.toLowerCase() &&
+      (s.dateOfBirth === dob || !s.dateOfBirth || !dob)
+  );
+  if (duplicate) return fail('A student with the same name and father already exists.');
+
+  let opening: OpeningFees | undefined;
+  if (input.opening) {
+    const o = input.opening;
+    const nums = [o.actualFee, o.netFee, o.annualCharges, o.admissionFee];
+    if (nums.some((n) => !Number.isInteger(n) || n < 0)) {
+      return fail('Fee amounts must be whole numbers, zero or more.');
+    }
+    if (o.netFee > o.actualFee) return fail('Net fee cannot be more than the actual fee.');
+    opening = o;
+  }
+
+  // Parent account is resolved BEFORE anything is written so a failure leaves no half-admission.
+  let parent: Profile | null = null;
+  let parentPassword: string | null = null;
+  if (input.parent?.mode === 'link') {
+    const wantedId = input.parent.parentId;
+    parent = db.profiles.find((p) => p.id === wantedId && p.role === Role.PARENT) ?? null;
+    if (!parent) return fail('Selected parent account was not found.');
+  } else if (input.parent?.mode === 'create') {
+    const spec = input.parent;
+    if (spec.fatherNameUr.trim().length < 2) return fail("Father's name (Urdu) is required.");
+    const wanted = spec.loginId?.trim().toUpperCase();
+    const existing = wanted
+      ? db.profiles.find((p) => p.loginId.toUpperCase() === wanted)
+      : undefined;
+    if (existing) {
+      if (existing.role !== Role.PARENT) {
+        return fail(`User name ${wanted} belongs to a non-parent account.`);
+      }
+      parent = existing;
+      warnings.push(`Linked to existing parent account ${existing.loginId}`);
+    } else {
+      const created = createProfileInDb(
+        db,
+        {
+          role: Role.PARENT,
+          fullName: fatherName,
+          fullNameUr: spec.fatherNameUr,
+          phone,
+          campusId: campus.id,
+          loginId: spec.loginId,
+          password: spec.password,
+        },
+        actor.id
+      );
+      if (!created.ok) return created;
+      parent = created.profile;
+      parentPassword = created.password;
+    }
+  }
+
+  const seqOf = (id: string) => Number(/(\d+)$/.exec(id)?.[1] ?? 0);
+  const nextSeq =
+    db.students
+      .filter((s) => s.campusId === campus.id)
+      .reduce((m, s) => Math.max(m, seqOf(s.admissionNo)), 0) + 1;
+  const nextIdNum = db.students.reduce((m, s) => Math.max(m, seqOf(s.id)), 0) + 1;
+  const roll =
+    db.students
+      .filter((s) => s.sectionId === section.id)
+      .reduce((m, s) => Math.max(m, s.rollNo), 0) + 1;
+
+  const student: Student = {
+    id: `stu_${String(nextIdNum).padStart(3, '0')}`,
+    admissionNo: `AFS-${campus.code}-${input.admissionDate.slice(0, 4)}-${String(nextSeq).padStart(3, '0')}`,
+    name,
+    nameUr,
+    fatherName,
+    gender: input.gender,
+    dateOfBirth: dob,
+    campusId: campus.id,
+    sectionId: section.id,
+    rollNo: roll,
+    admissionDate: input.admissionDate,
+    status: StudentStatus.ACTIVE,
+    guardianPhone: phone,
+    ...(phone2 ? { guardianPhone2: phone2 } : {}),
+  };
+  db.students.push(student);
+  if (parent && !db.parentStudents.some((ps) => ps.parentId === parent!.id && ps.studentId === student.id)) {
+    db.parentStudents.push({ parentId: parent.id, studentId: student.id, relation: ParentRelation.FATHER });
+  }
+  if (opening) addOpeningVoucher(db, student, cls.id, campus.code, opening);
+  db.auditLogs.unshift({
+    id: auditId(),
+    action: 'CREATE_STUDENT',
+    tableName: 'students',
+    recordId: student.id,
+    oldValue: null,
+    newValue: `${student.admissionNo} - ${student.name}`,
+    reason: 'New student admission',
+    changedBy: actor.id,
+    changedAt: new Date().toISOString(),
+  });
+  return { ok: true, data: { student, parent, parentPassword }, warnings };
+}
+
 // ============================================================================
 // 1. FAKE AUTH REPOSITORY
 // ============================================================================
@@ -478,7 +784,7 @@ export class FakeStudentRepository implements StudentRepository {
   async admitStudent(
     input: NewStudentInput,
     actor: Profile
-  ): Promise<AppResult<Student>> {
+  ): Promise<AppResult<AdmitResult>> {
     await simulateLocalDelay();
     if (actor.role !== Role.ADMIN) {
       return AppResult.failure({
@@ -486,80 +792,123 @@ export class FakeStudentRepository implements StudentRepository {
         message: 'Only the Admin can admit students.',
       });
     }
-    const fail = (message: string) =>
-      AppResult.failure<Student>({ kind: 'ValidationFailed', message });
-    const name = input.name.trim();
-    const nameUr = input.nameUr.trim();
-    const fatherName = input.fatherName.trim();
-    const phone = input.guardianPhone.replace(/[\s-]/g, '');
-    if (name.length < 3) return fail('Student name (English) is required.');
-    if (nameUr.length < 2) return fail('Student name (Urdu) is required.');
-    if (fatherName.length < 3) return fail("Father's name is required.");
-    if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid guardian phone number.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) return fail('Date of birth is required.');
-    if (input.dateOfBirth >= today()) return fail('Date of birth must be in the past.');
-    const age = Number(today().slice(0, 4)) - Number(input.dateOfBirth.slice(0, 4));
-    if (age < 2 || age > 25) return fail('Date of birth looks wrong for a student.');
-    if (!input.admissionDate || input.admissionDate > today()) {
-      return fail('Admission date cannot be in the future.');
-    }
-
     const db = getOrSeedLocalDatabase();
-    const section = db.sections.find((x) => x.id === input.sectionId);
-    const cls = section ? db.classes.find((c) => c.id === section.classId) : undefined;
-    if (!section || !cls) return fail('Choose a class and section.');
-    const campus = db.campuses.find((c) => c.id === cls.campusId);
-    if (!campus) return fail('Campus not found for this section.');
-
-    const duplicate = db.students.some(
-      (s) =>
-        s.name.trim().toLowerCase() === name.toLowerCase() &&
-        s.fatherName.trim().toLowerCase() === fatherName.toLowerCase() &&
-        s.dateOfBirth === input.dateOfBirth &&
-        s.status === StudentStatus.ACTIVE
-    );
-    if (duplicate) return fail('A student with the same name, father and date of birth already exists.');
-
-    const seqOf = (id: string) => Number(/(\d+)$/.exec(id)?.[1] ?? 0);
-    const nextSeq =
-      db.students
-        .filter((s) => s.campusId === campus.id)
-        .reduce((m, s) => Math.max(m, seqOf(s.admissionNo)), 0) + 1;
-    const nextIdNum = db.students.reduce((m, s) => Math.max(m, seqOf(s.id)), 0) + 1;
-    const roll =
-      db.students
-        .filter((s) => s.sectionId === section.id)
-        .reduce((m, s) => Math.max(m, s.rollNo), 0) + 1;
-
-    const student: Student = {
-      id: `stu_${String(nextIdNum).padStart(3, '0')}`,
-      admissionNo: `AFS-${campus.code}-${input.admissionDate.slice(0, 4)}-${String(nextSeq).padStart(3, '0')}`,
-      name,
-      nameUr,
-      fatherName,
-      gender: input.gender,
-      dateOfBirth: input.dateOfBirth,
-      campusId: campus.id,
-      sectionId: section.id,
-      rollNo: roll,
-      admissionDate: input.admissionDate,
-      status: StudentStatus.ACTIVE,
-      guardianPhone: phone,
-    };
-    db.students.push(student);
-    db.auditLogs.unshift({
-      id: `aud_${Date.now()}`,
-      action: 'CREATE_STUDENT',
-      tableName: 'students',
-      recordId: student.id,
-      oldValue: null,
-      newValue: `${student.admissionNo} - ${student.name}`,
-      reason: 'New student admission',
-      changedBy: actor.id,
-      changedAt: new Date().toISOString(),
-    });
+    const r = admitStudentInDb(db, input, actor);
+    if (!r.ok) return AppResult.failure({ kind: 'ValidationFailed', message: r.message });
     saveLocalDatabase(db);
-    return AppResult.success(student);
+    return AppResult.success(r.data);
+  }
+
+  async importStudents(
+    sectionId: string,
+    rows: ImportStudentRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportStudentResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({
+        kind: 'UnauthorizedRole',
+        message: 'Only the Admin can import students.',
+      });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const section = db.sections.find((x) => x.id === sectionId);
+    const cls = section ? db.classes.find((c) => c.id === section.classId) : undefined;
+    const campus = cls ? db.campuses.find((c) => c.id === cls.campusId) : undefined;
+    if (!section || !cls || !campus) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Choose a class and section.' });
+    }
+    const classTuition =
+      db.classFeeStructures.find((c) => c.classId === cls.id && c.feeHeadId === 'fh_tuition')
+        ?.amount ?? 2000;
+    const results: ImportStudentResult[] = rows.map((row) => {
+      const actual = row.actualFee ?? classTuition;
+      const net = row.netFee ?? actual;
+      const r = admitStudentInDb(
+        db,
+        {
+          name: row.name,
+          nameUr: row.nameUr,
+          fatherName: row.fatherName,
+          gender: campus.code === 'G' ? Gender.FEMALE : Gender.MALE,
+          dateOfBirth: '',
+          sectionId,
+          admissionDate: today(),
+          guardianPhone: row.phone1,
+          guardianPhone2: row.phone2,
+          parent: {
+            mode: 'create',
+            fatherNameUr: row.fatherNameUr,
+            loginId: row.username.trim() || undefined,
+            password: row.password.trim() || undefined,
+          },
+          opening: {
+            actualFee: actual,
+            netFee: net,
+            annualCharges: row.annualCharges ?? 0,
+            annualPaid: row.annualPaid,
+            admissionFee: row.admissionFee ?? 0,
+            admissionPaid: row.admissionPaid,
+          },
+        },
+        actor
+      );
+      if (!r.ok) {
+        return {
+          line: row.line,
+          ok: false,
+          error: r.message,
+          warnings: [],
+          studentName: row.name,
+          admissionNo: null,
+          parentLoginId: null,
+          parentCreated: false,
+          profile: null,
+          password: null,
+        };
+      }
+      return {
+        line: row.line,
+        ok: true,
+        error: null,
+        warnings: r.warnings,
+        studentName: r.data.student.name,
+        admissionNo: r.data.student.admissionNo,
+        parentLoginId: r.data.parent?.loginId ?? null,
+        parentCreated: r.data.parentPassword !== null,
+        profile: r.data.parentPassword !== null ? r.data.parent : null,
+        password: r.data.parentPassword,
+      };
+    });
+    if (!dryRun) {
+      const okCount = results.filter((x) => x.ok).length;
+      if (okCount > 0) {
+        db.auditLogs.unshift({
+          id: auditId(),
+          action: 'BULK_IMPORT_STUDENTS',
+          tableName: 'students',
+          recordId: sectionId,
+          oldValue: null,
+          newValue: `${okCount} students imported`,
+          reason: 'Bulk student import',
+          changedBy: actor.id,
+          changedAt: new Date().toISOString(),
+        });
+        saveLocalDatabase(db);
+      }
+    }
+    return AppResult.success(results);
+  }
+
+  async parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const ids = new Set(
+      db.parentStudents.filter((ps) => ps.studentId === studentId).map((ps) => ps.parentId)
+    );
+    return AppResult.success(db.profiles.filter((p) => ids.has(p.id)));
   }
 
   async transferStudent(
@@ -2961,81 +3310,11 @@ export class FakeSettingsRepository implements SettingsRepository {
         message: 'Only the Admin can create users.',
       });
     }
-    const fullName = input.fullName.trim();
-    const fullNameUr = input.fullNameUr.trim();
-    const phone = input.phone.replace(/[\s-]/g, '');
-    if (fullName.length < 3) {
-      return AppResult.failure({
-        kind: 'ValidationFailed',
-        message: 'Full name (English) is required.',
-      });
-    }
-    if (fullNameUr.length < 2) {
-      return AppResult.failure({
-        kind: 'ValidationFailed',
-        message: 'Full name (Urdu) is required.',
-      });
-    }
-    if (!/^\+?\d{10,13}$/.test(phone)) {
-      return AppResult.failure({
-        kind: 'ValidationFailed',
-        message: 'Enter a valid phone number.',
-      });
-    }
-    const needsCampus =
-      input.role === Role.PARENT ||
-      input.role === Role.TEACHER ||
-      input.role === Role.ACCOUNTANT;
-    if (needsCampus && !input.campusId) {
-      return AppResult.failure({
-        kind: 'ValidationFailed',
-        message: 'Campus is required for this role.',
-      });
-    }
-
     const db = getOrSeedLocalDatabase();
-    const spec: Record<string, { prefix: string; digits: number }> = {
-      [Role.PARENT]: { prefix: 'P', digits: 5 },
-      [Role.TEACHER]: { prefix: 'T', digits: 4 },
-      [Role.PRINCIPAL]: { prefix: 'PR', digits: 2 },
-      [Role.ACCOUNTANT]: { prefix: 'AC', digits: 2 },
-      [Role.ADMIN]: { prefix: 'AD', digits: 2 },
-    };
-    const { prefix, digits } = spec[input.role];
-    let maxNum = 0;
-    db.profiles.forEach((p) => {
-      const m = new RegExp(`^${prefix}(\\d{${digits}})$`).exec(p.loginId);
-      if (m) maxNum = Math.max(maxNum, Number(m[1]));
-    });
-    const loginId = `${prefix}${String(maxNum + 1).padStart(digits, '0')}`;
-    const password = generateReadablePassword();
-    const id = `usr_${loginId.toLowerCase()}`;
-    const profile: Profile = {
-      id,
-      loginId,
-      role: input.role,
-      fullName,
-      fullNameUr,
-      phone,
-      campusId: needsCampus ? input.campusId : input.campusId ?? null,
-      language: 'ur',
-      isActive: true,
-    };
-    db.profiles.push(profile);
-    db.passwordsByUserId[id] = password;
-    db.auditLogs.unshift({
-      id: `aud_${Date.now()}`,
-      action: 'CREATE_PROFILE',
-      tableName: 'profiles',
-      recordId: id,
-      oldValue: null,
-      newValue: `${loginId} (${input.role})`,
-      reason: 'User created by admin',
-      changedBy: actor.id,
-      changedAt: new Date().toISOString(),
-    });
+    const r = createProfileInDb(db, input, actor.id);
+    if (!r.ok) return AppResult.failure({ kind: 'ValidationFailed', message: r.message });
     saveLocalDatabase(db);
-    return AppResult.success({ profile, password });
+    return AppResult.success({ profile: r.profile, password: r.password });
   }
 
   async resetPassword(
