@@ -283,11 +283,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       }
       setSectionsMap(sMap);
 
-      if (notifsRes.ok) {
-        setUnreadCount(notifsRes.data.filter((n) => !n.readAt).length);
-      } else {
-        setUnreadCount(0);
-      }
+      refreshUnread();
 
       if (session.role === UserRole.PARENT) {
         const [kidsRes, savedChildId] = await Promise.all([
