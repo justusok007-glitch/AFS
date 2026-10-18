@@ -363,7 +363,130 @@ export type StringKey =
   | 'demo_date_picker_title'
   | 'demo_date_picker_subtitle'
   | 'demo_date_use_real_btn'
-  | 'demo_date_using_real_badge';
+  | 'demo_date_using_real_badge'
+  | 'acc_close_btn'
+  | 'acc_cancel_btn'
+  | 'acc_pick_date'
+  | 'acc_father_label'
+  | 'acc_class_col'
+  | 'acc_student_col'
+  | 'acc_receipt_col'
+  | 'acc_method_col'
+  | 'acc_received_by_label'
+  | 'acc_amount_in_words_label'
+  | 'acc_signature_label'
+  | 'acc_reference_short'
+  | 'acc_remarks_short'
+  | 'acc_pending_word'
+  | 'acc_no_dues_tag'
+  | 'acc_void_badge'
+  | 'acc_void_note'
+  | 'acc_print_receipt_from'
+  | 'acc_applied_to_heading'
+  | 'acc_cat_ARREARS'
+  | 'acc_cat_MONTHLY'
+  | 'acc_cat_ANNUAL'
+  | 'acc_cat_ADMISSION'
+  | 'acc_cat_EXAM'
+  | 'acc_cat_LATE'
+  | 'acc_cat_OTHER'
+  | 'acc_search_placeholder'
+  | 'acc_all_classes'
+  | 'acc_search_hint_title'
+  | 'acc_search_hint_body'
+  | 'acc_no_results_title'
+  | 'acc_no_results_body'
+  | 'acc_more_results_note'
+  | 'acc_account_title'
+  | 'acc_receive_payment_btn'
+  | 'acc_pending_balance_label'
+  | 'acc_amount_label'
+  | 'acc_pay_full_btn'
+  | 'acc_method_label'
+  | 'acc_payment_date_label'
+  | 'acc_reference_label'
+  | 'acc_reference_hint'
+  | 'acc_remarks_label'
+  | 'acc_save_payment_btn'
+  | 'acc_err_amount_required'
+  | 'acc_err_amount_exceeds'
+  | 'acc_err_reference_required'
+  | 'acc_err_date_future'
+  | 'acc_err_no_pending'
+  | 'acc_err_save_failed'
+  | 'acc_success_title'
+  | 'acc_new_payment_btn'
+  | 'acc_back_to_search_btn'
+  | 'acc_gen_title'
+  | 'acc_gen_campus_label'
+  | 'acc_gen_class_label'
+  | 'acc_gen_month_label'
+  | 'acc_gen_due_label'
+  | 'acc_gen_preview_btn'
+  | 'acc_gen_preview_create'
+  | 'acc_gen_preview_skipped'
+  | 'acc_gen_preview_total'
+  | 'acc_gen_confirm_btn'
+  | 'acc_gen_safe_note'
+  | 'acc_gen_nothing'
+  | 'acc_gen_done'
+  | 'acc_err_due_invalid'
+  | 'acc_voucher_search_placeholder'
+  | 'acc_status_all'
+  | 'acc_month_all'
+  | 'acc_vouchers_found'
+  | 'acc_vouchers_none_title'
+  | 'acc_print_vouchers_title'
+  | 'acc_print_vouchers_btn'
+  | 'acc_print_class_required'
+  | 'acc_print_none_found'
+  | 'acc_print_ready_count'
+  | 'acc_daily_title'
+  | 'acc_total_collected'
+  | 'acc_receipts_count'
+  | 'acc_cash_in_hand'
+  | 'acc_by_method'
+  | 'acc_by_category'
+  | 'acc_receipts_of_day'
+  | 'acc_print_report_btn'
+  | 'acc_no_receipts_title'
+  | 'acc_period_title'
+  | 'acc_range_today'
+  | 'acc_range_week'
+  | 'acc_range_month'
+  | 'acc_range_custom'
+  | 'acc_from_date'
+  | 'acc_to_date'
+  | 'acc_filter_category'
+  | 'acc_filter_method'
+  | 'acc_filter_all_categories'
+  | 'acc_filter_all_methods'
+  | 'acc_group_by_day'
+  | 'acc_day_col'
+  | 'acc_chart_title'
+  | 'acc_export_csv_btn'
+  | 'acc_err_range_invalid'
+  | 'acc_def_title'
+  | 'acc_def_total_due'
+  | 'acc_def_students'
+  | 'acc_def_min_months'
+  | 'acc_def_months'
+  | 'acc_def_call'
+  | 'acc_def_whatsapp'
+  | 'acc_def_empty_title'
+  | 'acc_def_empty_body'
+  | 'acc_wa_message'
+  | 'acc_more_structure_title'
+  | 'acc_more_structure_note'
+  | 'acc_more_heads_heading'
+  | 'acc_more_class_fees_heading'
+  | 'acc_more_concessions_heading'
+  | 'acc_more_no_concessions'
+  | 'acc_concession_FIXED_OFF'
+  | 'acc_concession_PERCENT_OFF'
+  | 'acc_concession_OVERRIDE'
+  | 'acc_concession_reason'
+  | 'acc_charged_in_month';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -729,6 +852,129 @@ export const stringsEn: Record<StringKey, string> = {
   demo_date_picker_subtitle: 'Default is the real date (Asia/Karachi). Real time of day is kept.',
   demo_date_use_real_btn: 'Use real date',
   demo_date_using_real_badge: 'Real date',
+  acc_close_btn: 'Close',
+  acc_cancel_btn: 'Cancel',
+  acc_pick_date: 'Date',
+  acc_father_label: 'Father',
+  acc_class_col: 'Class',
+  acc_student_col: 'Student',
+  acc_receipt_col: 'Receipt',
+  acc_method_col: 'Method',
+  acc_received_by_label: 'Received by',
+  acc_amount_in_words_label: 'Amount in words',
+  acc_signature_label: 'Signature / Stamp',
+  acc_reference_short: 'Ref.',
+  acc_remarks_short: 'Remarks',
+  acc_pending_word: 'pending',
+  acc_no_dues_tag: 'No dues',
+  acc_void_badge: 'Void',
+  acc_void_note: 'Only the Admin can void payments or waive fees.',
+  acc_print_receipt_from: 'Received with thanks from',
+  acc_applied_to_heading: 'Money was applied to',
+  acc_cat_ARREARS: 'Previous Arrears',
+  acc_cat_MONTHLY: 'Monthly Tuition',
+  acc_cat_ANNUAL: 'Annual Charges',
+  acc_cat_ADMISSION: 'Admission Fee',
+  acc_cat_EXAM: 'Exam Fee',
+  acc_cat_LATE: 'Late Fee',
+  acc_cat_OTHER: 'Other',
+  acc_search_placeholder: 'Search by name, admission no., father name or phone',
+  acc_all_classes: 'All classes',
+  acc_search_hint_title: 'Search for a student to collect fees',
+  acc_search_hint_body: 'Type at least 2 letters of the name, or the admission number.',
+  acc_no_results_title: 'No students found',
+  acc_no_results_body: 'Try a different name, admission number or filter.',
+  acc_more_results_note: 'Showing the first 30 matches. Type more letters to narrow the list.',
+  acc_account_title: 'Student fee account',
+  acc_receive_payment_btn: 'Receive payment',
+  acc_pending_balance_label: 'Pending balance',
+  acc_amount_label: 'Amount (Rs)',
+  acc_pay_full_btn: 'Fill full pending amount',
+  acc_method_label: 'Payment method',
+  acc_payment_date_label: 'Payment date',
+  acc_reference_label: 'Reference number',
+  acc_reference_hint: 'Required for Bank, JazzCash and Easypaisa',
+  acc_remarks_label: 'Remarks (optional)',
+  acc_save_payment_btn: 'Save payment',
+  acc_err_amount_required: 'Enter an amount above Rs 0.',
+  acc_err_amount_exceeds: 'Amount cannot be more than the pending balance.',
+  acc_err_reference_required: 'Reference number is required for this method.',
+  acc_err_date_future: 'Payment date cannot be in the future.',
+  acc_err_no_pending: 'This student has no pending balance.',
+  acc_err_save_failed: 'Could not save the payment. Please try again.',
+  acc_success_title: 'Payment received',
+  acc_new_payment_btn: 'New payment',
+  acc_back_to_search_btn: 'Back to search',
+  acc_gen_title: 'Generate monthly vouchers',
+  acc_gen_campus_label: 'Campus',
+  acc_gen_class_label: 'Class (optional)',
+  acc_gen_month_label: 'Billing month',
+  acc_gen_due_label: 'Due date',
+  acc_gen_preview_btn: 'Preview',
+  acc_gen_preview_create: 'Vouchers to create',
+  acc_gen_preview_skipped: 'Skipped (already have this month’s voucher)',
+  acc_gen_preview_total: 'Total expected',
+  acc_gen_confirm_btn: 'Confirm and generate',
+  acc_gen_safe_note: 'Safe to run twice: students who already have this month’s voucher are skipped. Monthly vouchers never include the Admission Fee.',
+  acc_gen_nothing: 'Nothing to create: every student already has a voucher for this month.',
+  acc_gen_done: 'Vouchers created',
+  acc_err_due_invalid: 'Choose a due date on or after the 1st of the billing month.',
+  acc_voucher_search_placeholder: 'Search by student or voucher number',
+  acc_status_all: 'All statuses',
+  acc_month_all: 'All months',
+  acc_vouchers_found: 'vouchers',
+  acc_vouchers_none_title: 'No vouchers match',
+  acc_print_vouchers_title: 'Print vouchers (2 per A4)',
+  acc_print_vouchers_btn: 'Open print page',
+  acc_print_class_required: 'Select a class to print its vouchers.',
+  acc_print_none_found: 'No vouchers found for this class and month.',
+  acc_print_ready_count: 'vouchers ready to print',
+  acc_daily_title: 'Daily collection report',
+  acc_total_collected: 'Total collected',
+  acc_receipts_count: 'Receipts',
+  acc_cash_in_hand: 'Cash in hand',
+  acc_by_method: 'By payment method',
+  acc_by_category: 'By fee category',
+  acc_receipts_of_day: 'Receipts of the day',
+  acc_print_report_btn: 'Print report',
+  acc_no_receipts_title: 'No receipts in this period',
+  acc_period_title: 'Period report',
+  acc_range_today: 'Today',
+  acc_range_week: 'This week',
+  acc_range_month: 'This month',
+  acc_range_custom: 'Custom',
+  acc_from_date: 'From',
+  acc_to_date: 'To',
+  acc_filter_category: 'Fee category',
+  acc_filter_method: 'Payment method',
+  acc_filter_all_categories: 'All categories',
+  acc_filter_all_methods: 'All methods',
+  acc_group_by_day: 'Collection by day',
+  acc_day_col: 'Day',
+  acc_chart_title: 'Collection per day',
+  acc_export_csv_btn: 'Export CSV',
+  acc_err_range_invalid: '“From” date must not be after “To” date.',
+  acc_def_title: 'Defaulters',
+  acc_def_total_due: 'Total due',
+  acc_def_students: 'students',
+  acc_def_min_months: 'Minimum months unpaid',
+  acc_def_months: 'months unpaid',
+  acc_def_call: 'Call',
+  acc_def_whatsapp: 'WhatsApp',
+  acc_def_empty_title: 'No defaulters',
+  acc_def_empty_body: 'Every student is up to date with past months.',
+  acc_wa_message: 'Assalam-o-Alaikum! {school}: the fee of {child} is pending (Rs {amount}). Please pay at the school office. Thank you.',
+  acc_more_structure_title: 'Fee structure (read-only)',
+  acc_more_structure_note: 'Only the Admin can change fee heads, class fees and concessions.',
+  acc_more_heads_heading: 'Fee heads',
+  acc_more_class_fees_heading: 'Class fees',
+  acc_more_concessions_heading: 'Student concessions',
+  acc_more_no_concessions: 'No concessions recorded.',
+  acc_concession_FIXED_OFF: 'Fixed discount',
+  acc_concession_PERCENT_OFF: 'Percent discount',
+  acc_concession_OVERRIDE: 'Override amount',
+  acc_concession_reason: 'Reason',
+  acc_charged_in_month: 'charged in',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -1095,4 +1341,127 @@ export const stringsUr: Record<StringKey, string> = {
   demo_date_picker_subtitle: 'ڈیفالٹ حقیقی تاریخ (Asia/Karachi) ہے۔ دن کا حقیقی وقت برقرار رہتا ہے۔',
   demo_date_use_real_btn: 'حقیقی تاریخ استعمال کریں',
   demo_date_using_real_badge: 'حقیقی تاریخ',
+  acc_close_btn: 'بند کریں',
+  acc_cancel_btn: 'منسوخ کریں',
+  acc_pick_date: 'تاریخ',
+  acc_father_label: 'والد',
+  acc_class_col: 'کلاس',
+  acc_student_col: 'طالب علم',
+  acc_receipt_col: 'رسید',
+  acc_method_col: 'طریقہ',
+  acc_received_by_label: 'وصول کنندہ',
+  acc_amount_in_words_label: 'رقم الفاظ میں',
+  acc_signature_label: 'دستخط / مہر',
+  acc_reference_short: 'حوالہ',
+  acc_remarks_short: 'ریمارکس',
+  acc_pending_word: 'بقایا',
+  acc_no_dues_tag: 'کوئی بقایا نہیں',
+  acc_void_badge: 'منسوخ',
+  acc_void_note: 'ادائیگی منسوخ کرنے یا فیس معاف کرنے کا اختیار صرف ایڈمن کو ہے۔',
+  acc_print_receipt_from: 'شکریہ کے ساتھ وصول کیا از',
+  acc_applied_to_heading: 'رقم درج ذیل میں لگائی گئی',
+  acc_cat_ARREARS: 'سابقہ بقایا جات',
+  acc_cat_MONTHLY: 'ماہانہ ٹیوشن فیس',
+  acc_cat_ANNUAL: 'سالانہ چارجز',
+  acc_cat_ADMISSION: 'داخلہ فیس',
+  acc_cat_EXAM: 'امتحانی فیس',
+  acc_cat_LATE: 'لیٹ فیس',
+  acc_cat_OTHER: 'دیگر',
+  acc_search_placeholder: 'نام، داخلہ نمبر، والد کا نام یا فون سے تلاش کریں',
+  acc_all_classes: 'تمام کلاسیں',
+  acc_search_hint_title: 'فیس وصول کرنے کے لیے طالب علم تلاش کریں',
+  acc_search_hint_body: 'نام کے کم از کم 2 حروف یا داخلہ نمبر لکھیں۔',
+  acc_no_results_title: 'کوئی طالب علم نہیں ملا',
+  acc_no_results_body: 'کوئی اور نام، داخلہ نمبر یا فلٹر آزمائیں۔',
+  acc_more_results_note: 'پہلے 30 نتائج دکھائے جا رہے ہیں۔ فہرست کم کرنے کے لیے مزید حروف لکھیں۔',
+  acc_account_title: 'طالب علم کا فیس اکاؤنٹ',
+  acc_receive_payment_btn: 'ادائیگی وصول کریں',
+  acc_pending_balance_label: 'بقایا رقم',
+  acc_amount_label: 'رقم (روپے)',
+  acc_pay_full_btn: 'پوری بقایا رقم بھریں',
+  acc_method_label: 'ادائیگی کا طریقہ',
+  acc_payment_date_label: 'ادائیگی کی تاریخ',
+  acc_reference_label: 'حوالہ نمبر',
+  acc_reference_hint: 'بینک، جاز کیش اور ایزی پیسہ کے لیے لازمی',
+  acc_remarks_label: 'ریمارکس (اختیاری)',
+  acc_save_payment_btn: 'ادائیگی محفوظ کریں',
+  acc_err_amount_required: '0 روپے سے زیادہ رقم درج کریں۔',
+  acc_err_amount_exceeds: 'رقم بقایا بیلنس سے زیادہ نہیں ہو سکتی۔',
+  acc_err_reference_required: 'اس طریقے کے لیے حوالہ نمبر لازمی ہے۔',
+  acc_err_date_future: 'ادائیگی کی تاریخ آنے والے دنوں کی نہیں ہو سکتی۔',
+  acc_err_no_pending: 'اس طالب علم کا کوئی بقایا نہیں۔',
+  acc_err_save_failed: 'ادائیگی محفوظ نہیں ہو سکی۔ دوبارہ کوشش کریں۔',
+  acc_success_title: 'ادائیگی وصول ہو گئی',
+  acc_new_payment_btn: 'نئی ادائیگی',
+  acc_back_to_search_btn: 'تلاش پر واپس',
+  acc_gen_title: 'ماہانہ فیس واؤچرز بنائیں',
+  acc_gen_campus_label: 'کیمپس',
+  acc_gen_class_label: 'کلاس (اختیاری)',
+  acc_gen_month_label: 'بلنگ کا مہینہ',
+  acc_gen_due_label: 'آخری تاریخ',
+  acc_gen_preview_btn: 'پیش نظارہ',
+  acc_gen_preview_create: 'بننے والے واؤچرز',
+  acc_gen_preview_skipped: 'چھوڑے گئے (اس ماہ کا واؤچر پہلے سے موجود)',
+  acc_gen_preview_total: 'متوقع کل رقم',
+  acc_gen_confirm_btn: 'تصدیق کریں اور بنائیں',
+  acc_gen_safe_note: 'دو بار چلانا محفوظ ہے: جن طلبہ کا اس ماہ کا واؤچر موجود ہو انہیں چھوڑ دیا جاتا ہے۔ ماہانہ واؤچر میں داخلہ فیس کبھی شامل نہیں ہوتی۔',
+  acc_gen_nothing: 'کچھ بنانے کو نہیں: ہر طالب علم کا اس ماہ کا واؤچر پہلے سے موجود ہے۔',
+  acc_gen_done: 'واؤچرز بن گئے',
+  acc_err_due_invalid: 'بلنگ مہینے کی 1 تاریخ یا اس کے بعد کی آخری تاریخ چنیں۔',
+  acc_voucher_search_placeholder: 'طالب علم یا واؤچر نمبر سے تلاش کریں',
+  acc_status_all: 'تمام حالتیں',
+  acc_month_all: 'تمام مہینے',
+  acc_vouchers_found: 'واؤچرز',
+  acc_vouchers_none_title: 'کوئی واؤچر نہیں ملا',
+  acc_print_vouchers_title: 'واؤچرز پرنٹ کریں (ہر A4 پر 2)',
+  acc_print_vouchers_btn: 'پرنٹ صفحہ کھولیں',
+  acc_print_class_required: 'واؤچر پرنٹ کرنے کے لیے کلاس منتخب کریں۔',
+  acc_print_none_found: 'اس کلاس اور مہینے کے لیے کوئی واؤچر نہیں ملا۔',
+  acc_print_ready_count: 'واؤچرز پرنٹ کے لیے تیار',
+  acc_daily_title: 'یومیہ وصولی رپورٹ',
+  acc_total_collected: 'کل وصولی',
+  acc_receipts_count: 'رسیدیں',
+  acc_cash_in_hand: 'نقد رقم (کیش)',
+  acc_by_method: 'ادائیگی کے طریقے کے لحاظ سے',
+  acc_by_category: 'فیس کی قسم کے لحاظ سے',
+  acc_receipts_of_day: 'دن کی رسیدیں',
+  acc_print_report_btn: 'رپورٹ پرنٹ کریں',
+  acc_no_receipts_title: 'اس مدت میں کوئی رسید نہیں',
+  acc_period_title: 'مدتی رپورٹ',
+  acc_range_today: 'آج',
+  acc_range_week: 'اس ہفتے',
+  acc_range_month: 'اس مہینے',
+  acc_range_custom: 'مرضی کی مدت',
+  acc_from_date: 'از',
+  acc_to_date: 'تا',
+  acc_filter_category: 'فیس کی قسم',
+  acc_filter_method: 'ادائیگی کا طریقہ',
+  acc_filter_all_categories: 'تمام اقسام',
+  acc_filter_all_methods: 'تمام طریقے',
+  acc_group_by_day: 'روزانہ وصولی',
+  acc_day_col: 'دن',
+  acc_chart_title: 'روزانہ وصولی کا چارٹ',
+  acc_export_csv_btn: 'CSV ایکسپورٹ کریں',
+  acc_err_range_invalid: '«از» تاریخ «تا» تاریخ کے بعد کی نہیں ہو سکتی۔',
+  acc_def_title: 'نادہندگان',
+  acc_def_total_due: 'کل بقایا',
+  acc_def_students: 'طلبہ',
+  acc_def_min_months: 'کم از کم بقایا مہینے',
+  acc_def_months: 'مہینے بقایا',
+  acc_def_call: 'کال',
+  acc_def_whatsapp: 'واٹس ایپ',
+  acc_def_empty_title: 'کوئی نادہندہ نہیں',
+  acc_def_empty_body: 'ہر طالب علم گزشتہ مہینوں کی فیس ادا کر چکا ہے۔',
+  acc_wa_message: 'السلام علیکم! {school}: آپ کے بچے {child} کی فیس کی مد میں {amount} روپے بقایا ہیں۔ براہِ کرم اسکول آفس میں ادا کر دیں۔ شکریہ۔',
+  acc_more_structure_title: 'فیس کا ڈھانچہ (صرف دیکھنے کے لیے)',
+  acc_more_structure_note: 'فیس ہیڈز، کلاس فیس اور رعایتیں صرف ایڈمن تبدیل کر سکتا ہے۔',
+  acc_more_heads_heading: 'فیس ہیڈز',
+  acc_more_class_fees_heading: 'کلاس وار فیس',
+  acc_more_concessions_heading: 'طلبہ کی رعایتیں',
+  acc_more_no_concessions: 'کوئی رعایت درج نہیں۔',
+  acc_concession_FIXED_OFF: 'مقررہ رعایت',
+  acc_concession_PERCENT_OFF: 'فیصد رعایت',
+  acc_concession_OVERRIDE: 'مقررہ نئی رقم',
+  acc_concession_reason: 'وجہ',
+  acc_charged_in_month: 'وصولی کا مہینہ',
 };

@@ -45,6 +45,7 @@ import {
 } from '../components/SchoolComposables';
 import { SchoolLogo } from '../components/SchoolLogo';
 import { useStringResource } from '../theme/LocaleContext';
+import { AccountantRoot } from './accountant/AccountantRoot';
 import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
@@ -703,6 +704,8 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (
           renderTeacherTabBody()
+        ) : session.role === UserRole.ACCOUNTANT && currentTab.id === 'collect' ? (
+          <AccountantRoot accountant={session.profile} tabId="collect" />
         ) : (
           <>
             {/* Campus Filter Chips on Admin & Principal Home/Dashboard (Defaults to Both Campuses) */}

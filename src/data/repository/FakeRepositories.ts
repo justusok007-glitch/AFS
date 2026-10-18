@@ -53,6 +53,7 @@ import {
   TeacherAssignment,
   UserRole,
   UserSession,
+  VoucherGenerationPreview,
   VoucherStatus,
 } from '../../domain/models/models';
 import {
@@ -175,6 +176,59 @@ function isSundayOrHoliday(
   holidays: SchoolHoliday[]
 ): boolean {
   return checkWeeklyOffOrHoliday(dateStr, holidays).isOff;
+}
+
+/**
+ * Builds the line items of one student's monthly voucher (shared by generate + preview).
+ * RULE: monthly vouchers NEVER include the Admission Fee; it belongs only to the admission voucher.
+ */
+function buildMonthlyVoucherItems(
+  db: LocalDatabaseSnapshot,
+  studentId: string,
+  classId: string,
+  billingMonth: string
+): FeeVoucherItem[] {
+  const monthNumber = Number(billingMonth.split('-')[1] ?? '0');
+  const admissionHeadIds = new Set(
+    db.feeHeads
+      .filter(
+        (fh) => fh.category === FeeCategory.ADMISSION || fh.id === 'fh_admission'
+      )
+      .map((fh) => fh.id)
+  );
+  const classStructures = db.classFeeStructures.filter(
+    (cfs) => cfs.classId === classId && !admissionHeadIds.has(cfs.feeHeadId)
+  );
+  const tuitionStructure = classStructures.find(
+    (cfs) => cfs.feeHeadId === 'fh_tuition'
+  );
+  const annualStructure = classStructures.find(
+    (cfs) => cfs.feeHeadId === 'fh_annual' && cfs.chargeMonth === monthNumber
+  );
+
+  const items: FeeVoucherItem[] = [];
+  if (annualStructure) {
+    items.push({
+      feeHeadId: 'fh_annual',
+      description: `Annual Charges (${billingMonth})`,
+      amount: annualStructure.amount,
+      waivedAmount: 0,
+      paidAmount: 0,
+    });
+  }
+
+  const baseTuition = tuitionStructure?.amount ?? 2000;
+  const concession = db.studentConcessions.find(
+    (c) => c.studentId === studentId && c.feeHeadId === 'fh_tuition'
+  );
+  items.push({
+    feeHeadId: 'fh_tuition',
+    description: `Monthly Tuition Fee (${billingMonth})`,
+    amount: computeNetTuition(baseTuition, concession),
+    waivedAmount: 0,
+    paidAmount: 0,
+  });
+  return items;
 }
 
 // ============================================================================
@@ -1104,7 +1158,6 @@ export class FakeFeeRepository implements FeeRepository {
   ): Promise<AppResult<FeeVoucher[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
-    const monthNumber = Number(billingMonth.split('-')[1] ?? '0');
 
     const sectionMap: Record<string, Section> = {};
     db.sections.forEach((s) => {
@@ -1145,48 +1198,12 @@ export class FakeFeeRepository implements FeeRepository {
         continue;
       }
 
-      // RULE: Monthly voucher generation must NEVER add the Admission Fee (fh_admission / FeeCategory.ADMISSION);
-      // the admission fee belongs ONLY to the voucher created when a student is admitted.
-      const admissionHeadIds = new Set(
-        db.feeHeads
-          .filter((fh) => fh.category === FeeCategory.ADMISSION || fh.id === 'fh_admission')
-          .map((fh) => fh.id)
+      const items: FeeVoucherItem[] = buildMonthlyVoucherItems(
+        db,
+        stu.id,
+        sec.classId,
+        billingMonth
       );
-      const classStructures = db.classFeeStructures.filter(
-        (cfs) => cfs.classId === sec.classId && !admissionHeadIds.has(cfs.feeHeadId)
-      );
-      const tuitionStructure = classStructures.find(
-        (cfs) => cfs.feeHeadId === 'fh_tuition'
-      );
-      const annualStructure = classStructures.find(
-        (cfs) =>
-          cfs.feeHeadId === 'fh_annual' && cfs.chargeMonth === monthNumber
-      );
-
-      const items: FeeVoucherItem[] = [];
-      if (annualStructure) {
-        items.push({
-          feeHeadId: 'fh_annual',
-          description: `Annual Charges (${billingMonth})`,
-          amount: annualStructure.amount,
-          waivedAmount: 0,
-          paidAmount: 0,
-        });
-      }
-
-      const baseTuition = tuitionStructure?.amount ?? 2000;
-      const concession = db.studentConcessions.find(
-        (c) => c.studentId === stu.id && c.feeHeadId === 'fh_tuition'
-      );
-      const netTuition = computeNetTuition(baseTuition, concession);
-
-      items.push({
-        feeHeadId: 'fh_tuition',
-        description: `Monthly Tuition Fee (${billingMonth})`,
-        amount: netTuition,
-        waivedAmount: 0,
-        paidAmount: 0,
-      });
 
       const isBoys = stu.campusId === 'campus_b';
       const voucherNo = isBoys
@@ -1217,6 +1234,59 @@ export class FakeFeeRepository implements FeeRepository {
   }
 
   /**
+   * Dry run of generateMonthlyVouchers: same eligibility rules, saves nothing.
+   */
+  async previewMonthlyVouchers(
+    campusId: string | null,
+    classId: string | null,
+    billingMonth: string
+  ): Promise<AppResult<VoucherGenerationPreview>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+
+    const sectionMap: Record<string, Section> = {};
+    db.sections.forEach((s) => {
+      sectionMap[s.id] = s;
+    });
+    const alreadyHave = new Set(
+      db.feeVouchers
+        .filter((v) => v.billingMonth === billingMonth)
+        .map((v) => v.studentId)
+    );
+
+    let willCreate = 0;
+    let skipped = 0;
+    let totalExpectedRupees = 0;
+
+    for (const stu of db.students) {
+      if (stu.status !== StudentStatus.ACTIVE) continue;
+      if (campusId && stu.campusId !== campusId) continue;
+      const sec = sectionMap[stu.sectionId];
+      if (!sec) continue;
+      if (classId && sec.classId !== classId) continue;
+
+      if (alreadyHave.has(stu.id)) {
+        skipped++;
+        continue;
+      }
+      willCreate++;
+      totalExpectedRupees += buildMonthlyVoucherItems(
+        db,
+        stu.id,
+        sec.classId,
+        billingMonth
+      ).reduce((s, it) => s + it.amount, 0);
+    }
+
+    return AppResult.success({
+      billingMonth,
+      willCreate,
+      skippedAlreadyHaveVoucher: skipped,
+      totalExpectedRupees,
+    });
+  }
+
+  /**
    * FEE RULE:
    * recordPayment allocates oldest voucher first (by billingMonth ascending),
    * and inside a voucher by fee-head priority (arrears first), and updates voucher status UNPAID / PARTIAL / PAID.
@@ -1226,16 +1296,25 @@ export class FakeFeeRepository implements FeeRepository {
     amountRupees: number,
     paidOn: string,
     method: PaymentMethod,
-    receivedBy: string
+    receivedBy: string,
+    reference: string | null = null,
+    remarks: string | null = null
   ): Promise<
     AppResult<{ payment: FeePayment; allocations: PaymentAllocation[] }>
   > {
     await simulateLocalDelay();
     const roundedAmount = Math.round(amountRupees);
-    if (roundedAmount <= 0) {
+    if (!Number.isFinite(roundedAmount) || roundedAmount <= 0) {
       return AppResult.failure({
         kind: 'ValidationFailed',
         message: 'Payment amount must be greater than Rs 0.',
+      });
+    }
+    const cleanReference = (reference ?? '').trim();
+    if (method !== PaymentMethod.CASH && cleanReference.length === 0) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'A reference number is required for Bank, JazzCash and Easypaisa payments.',
       });
     }
 
@@ -1247,6 +1326,25 @@ export class FakeFeeRepository implements FeeRepository {
         entity: 'Student',
         id: studentId,
         message: `Student (${studentId}) not found.`,
+      });
+    }
+
+    // A payment may not exceed what the student currently owes (no unallocated money).
+    const totalOutstanding = db.feeVouchers
+      .filter((v) => v.studentId === studentId)
+      .reduce(
+        (sum, v) =>
+          sum +
+          v.items.reduce((s, it) => {
+            const net = Math.max(0, it.amount - it.waivedAmount);
+            return s + Math.max(0, net - (it.paidAmount ?? 0));
+          }, 0),
+        0
+      );
+    if (roundedAmount > totalOutstanding) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: `Payment (Rs ${roundedAmount}) is more than the pending balance (Rs ${totalOutstanding}).`,
       });
     }
 
@@ -1276,6 +1374,8 @@ export class FakeFeeRepository implements FeeRepository {
       method,
       receivedBy,
       isVoid: false,
+      reference: cleanReference || null,
+      remarks: (remarks ?? '').trim() || null,
     };
 
     // Sort student's unpaid/partial vouchers oldest billingMonth first

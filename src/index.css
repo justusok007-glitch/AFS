@@ -214,3 +214,73 @@
     max-width: 100% !important;
   }
 }
+
+/* ---- Accountant print documents (rendered in a portal on <body>) ---- */
+.print-overlay-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: auto;
+  background: #f6f8fc;
+  padding: 12px;
+}
+.print-toolbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 210mm;
+  margin: 0 auto 12px;
+}
+.print-pages {
+  max-width: 210mm;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e4e8f0;
+  padding: 10mm;
+}
+.print-sheet-doc,
+.voucher-slip {
+  color: #1b2233;
+  border: 1px solid #14284b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.voucher-slip {
+  min-height: 120mm;
+  margin-bottom: 8mm;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  body.printing-overlay #root {
+    display: none !important;
+  }
+  .print-overlay-screen {
+    position: static !important;
+    overflow: visible !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+  .print-pages {
+    border: none !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .voucher-slip {
+    height: 128mm;
+    min-height: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+  .voucher-slip:nth-child(2n) {
+    margin-top: 6mm;
+  }
+  .voucher-slip:nth-child(2n + 1):not(:first-child) {
+    break-before: page;
+    page-break-before: always;
+  }
+}

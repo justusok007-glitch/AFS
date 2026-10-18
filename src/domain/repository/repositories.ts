@@ -49,6 +49,7 @@ import {
   TeacherAssignment,
   UserRole,
   UserSession,
+  VoucherGenerationPreview,
 } from '../models/models';
 
 export interface StudentSearchFilter {
@@ -197,6 +198,13 @@ export interface FeeRepository {
     actorId?: string
   ): Promise<AppResult<FeeVoucher[]>>;
 
+  /** Dry run of generateMonthlyVouchers: counts what would be created, saves nothing. */
+  previewMonthlyVouchers(
+    campusId: string | null,
+    classId: string | null,
+    billingMonth: string
+  ): Promise<AppResult<VoucherGenerationPreview>>;
+
   /**
    * Allocates oldest unpaid voucher first, and inside a voucher by FeeHead.priority (arrears first),
    * and updates voucher status UNPAID / PARTIAL / PAID.
@@ -206,7 +214,9 @@ export interface FeeRepository {
     amountRupees: number,
     paidOn: string,
     method: PaymentMethod,
-    receivedBy: string
+    receivedBy: string,
+    reference?: string | null,
+    remarks?: string | null
   ): Promise<
     AppResult<{ payment: FeePayment; allocations: PaymentAllocation[] }>
   >;

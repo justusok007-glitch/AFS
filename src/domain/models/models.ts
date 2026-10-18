@@ -354,7 +354,18 @@ export interface FeePayment {
   receivedBy: string;
   isVoid: boolean;
   voidReason?: string | null;
+  /** Bank / JazzCash / Easypaisa transaction reference (required for non-cash methods). */
+  reference?: string | null;
+  remarks?: string | null;
   allocations?: PaymentAllocation[];
+}
+
+/** Dry-run result for generateMonthlyVouchers (nothing is saved). */
+export interface VoucherGenerationPreview {
+  billingMonth: string;
+  willCreate: number;
+  skippedAlreadyHaveVoucher: number;
+  totalExpectedRupees: number;
 }
 
 export interface PaymentAllocation {
