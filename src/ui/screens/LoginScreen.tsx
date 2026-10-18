@@ -32,6 +32,7 @@ import { StringKey } from '../../res/strings';
 import {
   LanguageToggleSegment,
   PrimaryButton,
+  SkinHeaderDecor,
   SchoolCard,
   SchoolTextField,
   ShimmerPlaceholder,
@@ -483,9 +484,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   );
 
   return (
-    <div className="flex flex-col min-h-full bg-[#F6F8FC] pb-8">
+    <div className="flex flex-col min-h-full bg-[#F6F8FC] pb-8 parent-skin ps-doodle">
       {/* Curved Navy Top Bar with School Logo (5-tap hidden developer trigger) */}
-      <header className="bg-[#14284B] text-white rounded-b-[28px] px-5 pt-4 pb-5 shadow-md space-y-3">
+      <header className="bg-[#14284B] text-white rounded-b-[28px] px-5 pt-4 pb-5 shadow-md space-y-3 ps-header ps-principal ps-compact">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -528,6 +529,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             2026-27
           </span>
         </div>
+        <SkinHeaderDecor />
       </header>
 
       <div className="px-4 pt-5 space-y-4">

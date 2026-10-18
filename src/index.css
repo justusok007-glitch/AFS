@@ -471,3 +471,7 @@
   background-repeat: repeat;
   background-attachment: local;
 }
+
+/* Settings and login headers: compact skinned header */
+.parent-skin .ps-header.ps-compact { padding-bottom: 64px !important; }
+.parent-skin .ps-header.ps-compact .ps-building { inset-inline-end: 20px; top: 8px; width: 150px; }

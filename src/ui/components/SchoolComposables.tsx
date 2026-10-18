@@ -526,17 +526,36 @@ export interface CurvedNavyTopBarProps {
   subtitle?: string;
   rightSlot?: React.ReactNode;
   bottomSlot?: React.ReactNode;
+  /** Sky-blue skin: gradient, building outline and wave edge (needs a `.parent-skin` ancestor). */
+  skinned?: boolean;
 }
+
+/** Decorative building outline and wave used by the skinned headers. */
+export const SkinHeaderDecor: React.FC = () => (
+  <>
+    <svg className="ps-deco ps-building" viewBox="0 0 220 170" fill="none" stroke="#fff" strokeWidth="2" aria-hidden="true">
+      <rect x="30" y="70" width="160" height="100" />
+      <rect x="85" y="40" width="50" height="130" />
+      <path d="M85 40l25-22 25 22M110 18V2h16v9h-16" />
+      <circle cx="110" cy="62" r="9" />
+      <path d="M45 88h22v18H45zM45 120h22v18H45zM153 88h22v18h-22zM153 120h22v18h-22zM96 92h28M96 110h28M96 128h28M100 170v-26h20v26" />
+    </svg>
+    <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#EAF5FD" />
+    </svg>
+  </>
+);
 
 export const CurvedNavyTopBar: React.FC<CurvedNavyTopBarProps> = ({
   title,
   subtitle,
   rightSlot,
   bottomSlot,
+  skinned,
 }) => {
   const { isRtl } = useStringResource();
   return (
-    <header className="bg-[#14284B] text-white rounded-b-[28px] px-5 pt-4 pb-5 shadow-md space-y-3">
+    <header className={`bg-[#14284B] text-white rounded-b-[28px] px-5 pt-4 pb-5 shadow-md space-y-3 ${skinned ? 'ps-header ps-principal ps-compact' : ''}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 py-0.5">
           <h1
@@ -561,6 +580,7 @@ export const CurvedNavyTopBar: React.FC<CurvedNavyTopBarProps> = ({
         </div>
       </div>
       {bottomSlot && <div>{bottomSlot}</div>}
+      {skinned && <SkinHeaderDecor />}
     </header>
   );
 };

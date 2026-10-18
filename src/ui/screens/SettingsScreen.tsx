@@ -91,8 +91,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col min-h-full pb-8 bg-[#F6F8FC]">
+    <div className="flex flex-col min-h-full pb-8 bg-[#F6F8FC] parent-skin ps-doodle">
       <CurvedNavyTopBar
+        skinned
         title={stringResource('settings_title')}
         subtitle={stringResource('settings_subtitle')}
         rightSlot={
