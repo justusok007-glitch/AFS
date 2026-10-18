@@ -554,6 +554,7 @@ export interface ResultSubjectLine {
   entered: boolean;
   passed: boolean;
   percent: number;
+  grade?: string;
 }
 
 export interface StudentResultCard {
@@ -573,6 +574,7 @@ export interface StudentResultCard {
   incomplete: boolean;
   rankInSection: number | null;
   sectionSize: number;
+  sessionName?: string;
 }
 
 export interface MarkSubmission {

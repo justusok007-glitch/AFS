@@ -34,6 +34,7 @@ import {
 } from '../accountant/AccountantShared';
 import { examName, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { CHART, percentColor } from '../principal/PrincipalShared';
+import { ReportCardPrint } from './ReportCardPrint';
 
 export const ParentResultsTab: React.FC<{ parent: Profile; child: Student }> = ({ parent, child }) => {
   const { stringResource: t, language } = useStringResource();
@@ -94,7 +95,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student }> = (
       <>
         {printing && (
           <PrintFrame onClose={() => setPrinting(false)}>
-            <ReportCardDoc card={open} mid={mid} lookups={lookups} subjects={subjects} showPosition={showPosition} />
+            <ReportCardPrint card={open} previous={cards.slice(cards.findIndex((c) => c.exam.id === open.exam.id) + 1)} lookups={lookups} subjects={subjects} />
           </PrintFrame>
         )}
         <ReportCard

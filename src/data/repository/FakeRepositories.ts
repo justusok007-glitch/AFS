@@ -2658,6 +2658,7 @@ function buildCardInDb(
       entered,
       passed,
       percent: es.totalMarks > 0 ? roundOne((obtained / es.totalMarks) * 100) : 0,
+      grade: gradeEntryFor(db, es.totalMarks > 0 ? roundOne((obtained / es.totalMarks) * 100) : 0)?.grade ?? '-',
     };
   });
   const percentage = totalMax > 0 ? roundOne((totalObt / totalMax) * 100) : 0;
@@ -2677,6 +2678,7 @@ function buildCardInDb(
     incomplete,
     rankInSection: null,
     sectionSize: 0,
+    sessionName: (db.academicYears.find((ay) => ay.isCurrent) ?? db.academicYears[0])?.name,
   };
 }
 

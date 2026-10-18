@@ -310,3 +310,9 @@
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+/* Result card print sheet: keep the green fills when printing */
+.rc-sheet, .rc-sheet * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
