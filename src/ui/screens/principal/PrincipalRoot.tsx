@@ -1,14 +1,14 @@
 import React from 'react';
-import { Award } from 'lucide-react';
-import { EmptyState } from '../../components/SchoolComposables';
-import { useStringResource } from '../../theme/LocaleContext';
+import { Profile } from '../../../domain/models/models';
 import { useAccountantLookups } from '../accountant/AccountantShared';
 import { PrincipalAttendanceTab } from './PrincipalAttendanceTab';
 import { PrincipalDashboardTab } from './PrincipalDashboardTab';
 import { PrincipalFeesTab } from './PrincipalFeesTab';
 import { PrincipalMoreTab } from './PrincipalMoreTab';
+import { PrincipalResultsTab } from './PrincipalResultsTab';
 
 export interface PrincipalRootProps {
+  principal: Profile;
   tabId: string;
   onSwitchTab: (index: number) => void;
   onOpenSettings: () => void;
@@ -16,12 +16,12 @@ export interface PrincipalRootProps {
 }
 
 export const PrincipalRoot: React.FC<PrincipalRootProps> = ({
+  principal,
   tabId,
   onSwitchTab,
   onOpenSettings,
   onLogout,
 }) => {
-  const { stringResource: t } = useStringResource();
   const lookups = useAccountantLookups();
   switch (tabId) {
     case 'dashboard':
@@ -31,13 +31,7 @@ export const PrincipalRoot: React.FC<PrincipalRootProps> = ({
     case 'fees':
       return <PrincipalFeesTab lookups={lookups} />;
     case 'results':
-      return (
-        <EmptyState
-          title={t('pr_results_soon_title')}
-          description={t('pr_results_soon_body')}
-          icon={<Award className="w-6 h-6 text-[#F28C28]" />}
-        />
-      );
+      return <PrincipalResultsTab principal={principal} lookups={lookups} />;
     case 'more':
       return <PrincipalMoreTab lookups={lookups} onOpenSettings={onOpenSettings} onLogout={onLogout} />;
     default:

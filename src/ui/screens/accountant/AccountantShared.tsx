@@ -375,7 +375,7 @@ export const PrintFrame: React.FC<{
   );
 };
 
-const SchoolHeader: React.FC<{
+export const SchoolHeader: React.FC<{
   lookups: Pick<AccountantLookups, 'schoolNameEn' | 'schoolNameUr'>;
   subtitle: string;
 }> = ({ lookups, subtitle }) => (
@@ -395,7 +395,7 @@ const SchoolHeader: React.FC<{
   </div>
 );
 
-const Row: React.FC<{ label: string; value: React.ReactNode }> = ({
+export const Row: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
   value,
 }) => (

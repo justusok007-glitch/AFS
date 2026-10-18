@@ -166,6 +166,10 @@ const SchoolSection: React.FC<{ admin: Profile; onSaved: () => void }> = ({ admi
           })}
         </div>
       </div>
+      <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+        <input type="checkbox" checked={form.showClassPosition !== false} onChange={(e) => setForm({ ...form, showClassPosition: e.target.checked })} />
+        {t('rs_show_position')}
+      </label>
       <Status error={error} ok={ok} />
       <PrimaryButton text={t('su_save')} variant="orange" loading={busy} onClick={() => void save()} />
     </SchoolCard>

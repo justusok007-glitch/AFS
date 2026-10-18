@@ -50,6 +50,7 @@ import { AdminRoot } from './admin/AdminRoot';
 import { PrincipalRoot } from './principal/PrincipalRoot';
 import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
+import { ParentResultsTab } from './parent/ParentResultsTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
@@ -473,7 +474,17 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       );
     }
 
-    // Results & Messages tabs stay "Coming soon"
+    if (currentTab.id === 'results') {
+      return (
+        <ParentResultsTab
+          key={`res_${selectedChild.id}`}
+          parent={session.profile}
+          child={selectedChild}
+        />
+      );
+    }
+
+    // Messages tab stays "Coming soon"
     return (
       <>
         <SchoolCard className="flex items-center justify-between gap-3 py-3.5 px-4">
@@ -721,6 +732,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           />
         ) : session.role === UserRole.PRINCIPAL ? (
           <PrincipalRoot
+            principal={session.profile}
             tabId={currentTab.id}
             onSwitchTab={onTabChange}
             onOpenSettings={handleGuardedOpenSettings}

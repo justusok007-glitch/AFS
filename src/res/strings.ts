@@ -830,7 +830,35 @@ export type StringKey =
   | 'ex_sections_hint'
   | 'ex_no_class_subjects'
   | 'ex_saved'
-  | 'ex_all_campus';
+  | 'ex_all_campus'
+  | 'rs_none'
+  | 'rs_trend'
+  | 'rs_percentage'
+  | 'rs_grade'
+  | 'rs_result'
+  | 'rs_pass'
+  | 'rs_fail'
+  | 'rs_position'
+  | 'rs_obtained'
+  | 'rs_total_marks'
+  | 'rs_grand_total'
+  | 'rs_midterm'
+  | 'rs_subject_chart'
+  | 'rs_print'
+  | 'rs_report_title'
+  | 'rs_back'
+  | 'rs_not_entered'
+  | 'rs_show_position'
+  | 'rs_students'
+  | 'rs_avg'
+  | 'rs_pass_rate'
+  | 'rs_incomplete'
+  | 'rs_grade_dist'
+  | 'rs_subject_avgs'
+  | 'rs_top10'
+  | 'rs_all_classes'
+  | 'rs_no_exams'
+  | 'rs_publish_hint';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1663,6 +1691,34 @@ export const stringsEn: Record<StringKey, string> = {
   ex_no_class_subjects: 'This class has no subjects configured.',
   ex_saved: 'Saved.',
   ex_all_campus: 'Both campuses',
+  rs_none: 'No results have been published yet.',
+  rs_trend: 'Progress across exams',
+  rs_percentage: 'Percentage',
+  rs_grade: 'Grade',
+  rs_result: 'Result',
+  rs_pass: 'Pass',
+  rs_fail: 'Fail',
+  rs_position: 'Class position',
+  rs_obtained: 'Obtained',
+  rs_total_marks: 'Total marks',
+  rs_grand_total: 'Grand total',
+  rs_midterm: 'Mid-term',
+  rs_subject_chart: 'Subject-wise percentage',
+  rs_print: 'Print report card',
+  rs_report_title: 'Report Card',
+  rs_back: 'Back to results',
+  rs_not_entered: 'Not entered',
+  rs_show_position: 'Show class position on report cards',
+  rs_students: 'Students',
+  rs_avg: 'Average',
+  rs_pass_rate: 'Pass rate',
+  rs_incomplete: 'Incomplete',
+  rs_grade_dist: 'Grade distribution',
+  rs_subject_avgs: 'Subject averages',
+  rs_top10: 'Top 10 students',
+  rs_all_classes: 'All classes',
+  rs_no_exams: 'No exam has reached marks entry yet.',
+  rs_publish_hint: 'Parents see results only after you publish.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2496,4 +2552,32 @@ export const stringsUr: Record<StringKey, string> = {
   ex_no_class_subjects: 'اس کلاس کے مضامین طے نہیں۔',
   ex_saved: 'محفوظ ہو گیا۔',
   ex_all_campus: 'دونوں کیمپس',
+  rs_none: 'ابھی کوئی نتیجہ شائع نہیں ہوا۔',
+  rs_trend: 'امتحانات میں کارکردگی',
+  rs_percentage: 'فیصد',
+  rs_grade: 'گریڈ',
+  rs_result: 'نتیجہ',
+  rs_pass: 'پاس',
+  rs_fail: 'فیل',
+  rs_position: 'کلاس میں پوزیشن',
+  rs_obtained: 'حاصل کردہ',
+  rs_total_marks: 'کل نمبر',
+  rs_grand_total: 'مجموعہ',
+  rs_midterm: 'مڈ ٹرم',
+  rs_subject_chart: 'مضمون وار فیصد',
+  rs_print: 'رپورٹ کارڈ پرنٹ کریں',
+  rs_report_title: 'رپورٹ کارڈ',
+  rs_back: 'نتائج پر واپس',
+  rs_not_entered: 'درج نہیں',
+  rs_show_position: 'رپورٹ کارڈ پر کلاس پوزیشن دکھائیں',
+  rs_students: 'طلبہ',
+  rs_avg: 'اوسط',
+  rs_pass_rate: 'پاس شرح',
+  rs_incomplete: 'نامکمل',
+  rs_grade_dist: 'گریڈ کی تقسیم',
+  rs_subject_avgs: 'مضمون وار اوسط',
+  rs_top10: 'نمایاں 10 طلبہ',
+  rs_all_classes: 'تمام کلاسیں',
+  rs_no_exams: 'ابھی کوئی امتحان نمبر اندراج تک نہیں پہنچا۔',
+  rs_publish_hint: 'والدین نتیجہ شائع کرنے کے بعد ہی دیکھ سکتے ہیں۔',
 };
