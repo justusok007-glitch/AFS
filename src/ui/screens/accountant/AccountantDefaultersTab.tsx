@@ -25,7 +25,8 @@ const selectCls =
 
 export const AccountantDefaultersTab: React.FC<{
   lookups: AccountantLookups;
-  onReceivePayment: (studentId: string) => void;
+  /** Omit for read-only use (principal): hides the Receive payment button. */
+  onReceivePayment?: (studentId: string) => void;
 }> = ({ lookups, onReceivePayment }) => {
   const { stringResource: t, language } = useStringResource();
   const [rows, setRows] = useState<FeeDefaulterSummary[]>([]);
@@ -129,16 +130,18 @@ export const AccountantDefaultersTab: React.FC<{
                   <div className="text-[11px] text-[#6B7385]"><span dir="ltr">{r.monthsUnpaid.length}</span> {t('acc_def_months')}</div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className={`grid gap-2 ${onReceivePayment ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 <a href={`tel:${r.student.guardianPhone}`} className="min-h-[44px] rounded-xl border border-[#E4E8F0] flex items-center justify-center gap-1.5 text-xs font-semibold text-[#14284B]">
                   <Phone className="w-3.5 h-3.5 text-[#F28C28]" />{t('acc_def_call')}
                 </a>
                 <a href={whatsappUrl(r)} target="_blank" rel="noopener noreferrer" className="min-h-[44px] rounded-xl border border-[#E4E8F0] flex items-center justify-center gap-1.5 text-xs font-semibold text-[#14284B]">
                   <MessageCircle className="w-3.5 h-3.5 text-[#2E9E5B]" />{t('acc_def_whatsapp')}
                 </a>
+                {onReceivePayment && (
                 <button type="button" onClick={() => onReceivePayment(r.student.id)} className="min-h-[44px] rounded-xl bg-[#F28C28] text-white flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer">
                   <Wallet className="w-3.5 h-3.5" />{t('acc_receive_payment_btn')}
                 </button>
+                )}
               </div>
             </SchoolCard>
           ))}

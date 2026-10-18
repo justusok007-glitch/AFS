@@ -17,7 +17,11 @@ import {
   Exam,
   ExamStatus,
   ExamSubject,
+  AttendanceReport,
+  AttendanceReportFilter,
   FeeCollectionReport,
+  PrincipalDashboard,
+  StaffComplianceRow,
   FeeCollectionReportFilter,
   FeeDefaulterSummary,
   FeeHead,
@@ -361,6 +365,20 @@ export interface DashboardRepository {
   getClassStrengthDistribution(
     campusId: string | null
   ): Promise<AppResult<ChartSeriesPoint[]>>;
+
+  /** All principal/admin dashboard numbers, aggregated here (never in the UI). */
+  getPrincipalDashboard(
+    campusId: string | null,
+    date: string
+  ): Promise<AppResult<PrincipalDashboard>>;
+  getAttendanceReport(
+    filter: AttendanceReportFilter
+  ): Promise<AppResult<AttendanceReport>>;
+  getStaffCompliance(
+    campusId: string | null,
+    fromDate: string,
+    toDate: string
+  ): Promise<AppResult<StaffComplianceRow[]>>;
 
   // Skeleton summary helper
   getRoleDashboardSummary(

@@ -567,6 +567,114 @@ export interface PrincipalDashboardKpis {
   feeCollectionTrendLast6Months: ChartSeriesPoint[];
 }
 
+export interface UnmarkedSectionInfo {
+  sectionId: string;
+  classId: string;
+  campusId: string;
+  sectionName: string;
+  teacherNamesEn: string[];
+  teacherNamesUr: string[];
+}
+
+export interface CampusComparisonRow {
+  campusId: string;
+  students: number;
+  attendancePercent: number;
+  collectedThisMonthRupees: number;
+  outstandingRupees: number;
+}
+
+export interface ClassAttendanceRow {
+  classId: string;
+  present: number;
+  absent: number;
+  leave: number;
+  late: number;
+  percent: number;
+}
+
+export interface RecentActivityItem {
+  id: string;
+  kind: 'PAYMENT' | 'CORRECTION' | 'VOID';
+  date: string;
+  studentId: string | null;
+  amountRupees: number | null;
+  text: string;
+}
+
+export interface PrincipalDashboard {
+  campusId: string | null;
+  date: string;
+  totalStudents: number;
+  boysCount: number;
+  girlsCount: number;
+  present: number;
+  absent: number;
+  leave: number;
+  late: number;
+  attendancePercent: number;
+  unmarkedSections: UnmarkedSectionInfo[];
+  feeCollectedTodayRupees: number;
+  feeCollectedMonthRupees: number;
+  totalOutstandingRupees: number;
+  defaultersCount: number;
+  attendanceTrend30: ChartSeriesPoint[];
+  monthlyCollection12: ChartSeriesPoint[];
+  expectedVsCollected6: { month: string; expected: number; collected: number }[];
+  collectionByCategory: Partial<Record<FeeCategory, number>>;
+  campusComparison: CampusComparisonRow[];
+  classAttendance: ClassAttendanceRow[];
+  recentActivity: RecentActivityItem[];
+}
+
+export interface AttendanceReportFilter {
+  campusId?: string | null;
+  classId?: string | null;
+  sectionId?: string | null;
+  fromDate: string;
+  toDate: string;
+}
+
+export interface AttendanceReportStudentRow {
+  student: Student;
+  present: number;
+  absent: number;
+  leave: number;
+  late: number;
+  percent: number;
+}
+
+export interface AttendanceReportSectionRow {
+  sectionId: string;
+  classId: string;
+  students: number;
+  present: number;
+  absent: number;
+  leave: number;
+  late: number;
+  percent: number;
+}
+
+export interface AttendanceReport {
+  filter: AttendanceReportFilter;
+  overallPercent: number;
+  daysCovered: number;
+  sectionRows: AttendanceReportSectionRow[];
+  studentRows: AttendanceReportStudentRow[];
+}
+
+export interface StaffComplianceRow {
+  sectionId: string;
+  classId: string;
+  campusId: string;
+  sectionName: string;
+  teacherNamesEn: string[];
+  teacherNamesUr: string[];
+  daysMarked: number;
+  daysExpected: number;
+  percent: number;
+}
+
 // ============================================================================
 // UI SKELETON SESSION & PRESETS
 // ============================================================================

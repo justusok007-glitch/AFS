@@ -1,6 +1,16 @@
 import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
+  AttendanceReport,
+  AttendanceReportFilter,
+  AttendanceReportSectionRow,
+  AttendanceReportStudentRow,
+  CampusComparisonRow,
+  ClassAttendanceRow,
+  PrincipalDashboard,
+  RecentActivityItem,
+  StaffComplianceRow,
+  UnmarkedSectionInfo,
   AppNotification,
   AppResult,
   AppSettings,
@@ -77,7 +87,9 @@ import {
   checkWeeklyOffOrHoliday,
   currentMonth,
   currentTimeHHMM,
+  addDaysIso,
   nowIso,
+  shiftYearMonth,
   today,
 } from '../../domain/clock';
 
@@ -2214,6 +2226,396 @@ export class FakeDashboardRepository implements DashboardRepository {
   ): Promise<AppResult<ChartSeriesPoint[]>> {
     await simulateLocalDelay();
     return AppResult.success([]);
+  }
+
+
+  async getPrincipalDashboard(
+    campusId: string | null,
+    date: string
+  ): Promise<AppResult<PrincipalDashboard>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const month = date.slice(0, 7);
+
+    const inCampus = (cid: string) => !campusId || cid === campusId;
+    const studentById: Record<string, Student> = {};
+    db.students.forEach((st) => (studentById[st.id] = st));
+    const sectionById: Record<string, Section> = {};
+    db.sections.forEach((sec) => (sectionById[sec.id] = sec));
+    const classById: Record<string, SchoolClass> = {};
+    db.classes.forEach((c) => (classById[c.id] = c));
+    const headCategory: Record<string, FeeCategory> = {};
+    db.feeHeads.forEach((h) => (headCategory[h.id] = h.category));
+    const allocsByPayment: Record<string, PaymentAllocation[]> = {};
+    db.paymentAllocations.forEach((a) => {
+      (allocsByPayment[a.paymentId] ??= []).push(a);
+    });
+
+    const activeStudents = db.students.filter(
+      (st) => st.status === StudentStatus.ACTIVE && inCampus(st.campusId)
+    );
+
+    const attPercent = (recs: AttendanceRecord[]) => {
+      const pr = recs.filter(
+        (r) =>
+          r.status === AttendanceStatus.PRESENT ||
+          r.status === AttendanceStatus.LATE
+      ).length;
+      const ab = recs.filter((r) => r.status === AttendanceStatus.ABSENT).length;
+      return pr + ab > 0 ? Number(((pr / (pr + ab)) * 100).toFixed(1)) : 0;
+    };
+    const recordInScope = (r: AttendanceRecord) => {
+      const st = studentById[r.studentId];
+      return !!st && inCampus(st.campusId);
+    };
+
+    // ----- attendance for the chosen date -----
+    const todayRecs = db.attendanceRecords.filter(
+      (r) => r.date === date && recordInScope(r)
+    );
+    const count = (status: AttendanceStatus) =>
+      todayRecs.filter((r) => r.status === status).length;
+
+    // ----- sections that have not marked -----
+    const markedSet = new Set(
+      db.attendanceSubmissions.filter((x) => x.date === date).map((x) => x.sectionId)
+    );
+    const unmarkedSections: UnmarkedSectionInfo[] = db.sections
+      .filter((sec) => {
+        const cls = classById[sec.classId];
+        return cls && inCampus(cls.campusId) && !markedSet.has(sec.id);
+      })
+      .map((sec) => {
+        const cls = classById[sec.classId];
+        const teachers = db.teacherAssignments
+          .filter((ta) => ta.sectionId === sec.id && ta.canMarkAttendance)
+          .map((ta) => db.profiles.find((p) => p.id === ta.teacherId))
+          .filter((p): p is Profile => !!p);
+        const uniq = Array.from(new Map(teachers.map((p) => [p.id, p])).values());
+        return {
+          sectionId: sec.id,
+          classId: sec.classId,
+          campusId: cls.campusId,
+          sectionName: sec.name,
+          teacherNamesEn: uniq.map((p) => p.fullName),
+          teacherNamesUr: uniq.map((p) => p.fullNameUr || p.fullName),
+        };
+      });
+
+    // ----- fee numbers -----
+    const livePayments = db.feePayments.filter((p) => {
+      const st = studentById[p.studentId];
+      return !p.isVoid && !!st && inCampus(st.campusId);
+    });
+    const sumPayments = (from: string, to: string) =>
+      livePayments
+        .filter((p) => p.paidOn >= from && p.paidOn <= to)
+        .reduce((sum, p) => sum + p.amount, 0);
+    const voucherBalance = (v: FeeVoucher) =>
+      v.items.reduce(
+        (sum, it) =>
+          sum + Math.max(0, it.amount - it.waivedAmount - (it.paidAmount ?? 0)),
+        0
+      );
+    const voucherNet = (v: FeeVoucher) =>
+      v.items.reduce((sum, it) => sum + Math.max(0, it.amount - it.waivedAmount), 0);
+    const scopedVouchers = db.feeVouchers.filter((v) => inCampus(v.campusId));
+
+    const defaulterIds = new Set<string>();
+    scopedVouchers.forEach((v) => {
+      const st = studentById[v.studentId];
+      if (
+        st &&
+        st.status === StudentStatus.ACTIVE &&
+        v.status !== VoucherStatus.PAID &&
+        v.billingMonth < month
+      ) {
+        defaulterIds.add(v.studentId);
+      }
+    });
+
+    const trend30: ChartSeriesPoint[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = addDaysIso(date, -i);
+      const recs = db.attendanceRecords.filter(
+        (r) => r.date === d && recordInScope(r)
+      );
+      if (recs.length > 0) trend30.push({ label: d, value: attPercent(recs) });
+    }
+
+    const monthlyCollection12: ChartSeriesPoint[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const m = shiftYearMonth(month, -i);
+      monthlyCollection12.push({
+        label: m,
+        value: sumPayments(`${m}-01`, `${m}-31`),
+      });
+    }
+
+    const expectedVsCollected6 = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = shiftYearMonth(month, -i);
+      expectedVsCollected6.push({
+        month: m,
+        expected: scopedVouchers
+          .filter((v) => v.billingMonth === m)
+          .reduce((sum, v) => sum + voucherNet(v), 0),
+        collected: sumPayments(`${m}-01`, `${m}-31`),
+      });
+    }
+
+    const collectionByCategory: Partial<Record<FeeCategory, number>> = {};
+    livePayments
+      .filter((p) => p.paidOn >= `${month}-01` && p.paidOn <= `${month}-31`)
+      .forEach((p) => {
+        (allocsByPayment[p.id] ?? []).forEach((a) => {
+          const cat = a.feeHeadId
+            ? headCategory[a.feeHeadId] ?? FeeCategory.OTHER
+            : FeeCategory.OTHER;
+          collectionByCategory[cat] =
+            (collectionByCategory[cat] ?? 0) + a.allocatedAmount;
+        });
+      });
+
+    // ----- campus comparison (always both campuses) -----
+    const campusComparison: CampusComparisonRow[] = db.campuses.map((c) => {
+      const recs = db.attendanceRecords.filter((r) => {
+        const st = studentById[r.studentId];
+        return r.date === date && st && st.campusId === c.id;
+      });
+      return {
+        campusId: c.id,
+        students: db.students.filter(
+          (st) => st.status === StudentStatus.ACTIVE && st.campusId === c.id
+        ).length,
+        attendancePercent: attPercent(recs),
+        collectedThisMonthRupees: db.feePayments
+          .filter((p) => {
+            const st = studentById[p.studentId];
+            return (
+              !p.isVoid &&
+              st &&
+              st.campusId === c.id &&
+              p.paidOn >= `${month}-01` &&
+              p.paidOn <= `${month}-31`
+            );
+          })
+          .reduce((sum, p) => sum + p.amount, 0),
+        outstandingRupees: db.feeVouchers
+          .filter((v) => v.campusId === c.id)
+          .reduce((sum, v) => sum + voucherBalance(v), 0),
+      };
+    });
+
+    // ----- class-wise attendance -----
+    const byClass: Record<string, AttendanceRecord[]> = {};
+    todayRecs.forEach((r) => {
+      const cid = sectionById[r.sectionId]?.classId;
+      if (cid) (byClass[cid] ??= []).push(r);
+    });
+    const classAttendance: ClassAttendanceRow[] = Object.keys(byClass)
+      .map((cid) => {
+        const recs = byClass[cid];
+        const n = (st: AttendanceStatus) =>
+          recs.filter((r) => r.status === st).length;
+        return {
+          classId: cid,
+          present: n(AttendanceStatus.PRESENT),
+          absent: n(AttendanceStatus.ABSENT),
+          leave: n(AttendanceStatus.LEAVE),
+          late: n(AttendanceStatus.LATE),
+          percent: attPercent(recs),
+        };
+      })
+      .sort(
+        (a, b) =>
+          (classById[a.classId]?.sortOrder ?? 0) -
+          (classById[b.classId]?.sortOrder ?? 0)
+      );
+
+    // ----- recent activity -----
+    const recentActivity: RecentActivityItem[] = [];
+    [...db.feePayments]
+      .filter((p) => {
+        const st = studentById[p.studentId];
+        return st && inCampus(st.campusId);
+      })
+      .sort((a, b) => b.paidOn.localeCompare(a.paidOn) || b.receiptNo.localeCompare(a.receiptNo))
+      .slice(0, 8)
+      .forEach((p) =>
+        recentActivity.push({
+          id: p.id,
+          kind: p.isVoid ? 'VOID' : 'PAYMENT',
+          date: p.paidOn,
+          studentId: p.studentId,
+          amountRupees: p.amount,
+          text: p.receiptNo,
+        })
+      );
+    db.auditLogs
+      .filter((a) => a.tableName === 'attendance' || a.action.includes('ATTENDANCE'))
+      .slice(0, 4)
+      .forEach((a) =>
+        recentActivity.push({
+          id: a.id,
+          kind: 'CORRECTION',
+          date: a.changedAt.slice(0, 10),
+          studentId: null,
+          amountRupees: null,
+          text: a.reason,
+        })
+      );
+
+    return AppResult.success({
+      campusId,
+      date,
+      totalStudents: activeStudents.length,
+      boysCount: activeStudents.filter((st) => st.campusId === 'campus_b').length,
+      girlsCount: activeStudents.filter((st) => st.campusId === 'campus_g').length,
+      present: count(AttendanceStatus.PRESENT),
+      absent: count(AttendanceStatus.ABSENT),
+      leave: count(AttendanceStatus.LEAVE),
+      late: count(AttendanceStatus.LATE),
+      attendancePercent: attPercent(todayRecs),
+      unmarkedSections,
+      feeCollectedTodayRupees: sumPayments(date, date),
+      feeCollectedMonthRupees: sumPayments(`${month}-01`, `${month}-31`),
+      totalOutstandingRupees: scopedVouchers.reduce(
+        (sum, v) => sum + voucherBalance(v),
+        0
+      ),
+      defaultersCount: defaulterIds.size,
+      attendanceTrend30: trend30,
+      monthlyCollection12,
+      expectedVsCollected6,
+      collectionByCategory,
+      campusComparison,
+      classAttendance,
+      recentActivity,
+    });
+  }
+
+  async getAttendanceReport(
+    filter: AttendanceReportFilter
+  ): Promise<AppResult<AttendanceReport>> {
+    await simulateLocalDelay();
+    if (filter.fromDate > filter.toDate) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'From date must not be after To date',
+      });
+    }
+    const db = getOrSeedLocalDatabase();
+    const sectionById: Record<string, Section> = {};
+    db.sections.forEach((sec) => (sectionById[sec.id] = sec));
+
+    const students = db.students.filter((st) => {
+      if (st.status !== StudentStatus.ACTIVE) return false;
+      if (filter.campusId && st.campusId !== filter.campusId) return false;
+      if (filter.sectionId && st.sectionId !== filter.sectionId) return false;
+      if (
+        filter.classId &&
+        sectionById[st.sectionId]?.classId !== filter.classId
+      ) {
+        return false;
+      }
+      return true;
+    });
+    const ids = new Set(students.map((st) => st.id));
+    const recs = db.attendanceRecords.filter(
+      (r) => r.date >= filter.fromDate && r.date <= filter.toDate && ids.has(r.studentId)
+    );
+    const dates = new Set(recs.map((r) => r.date));
+
+    const pct = (pr: number, ab: number) =>
+      pr + ab > 0 ? Number(((pr / (pr + ab)) * 100).toFixed(1)) : 0;
+    const tally = (list: AttendanceRecord[]) => {
+      const n = (st: AttendanceStatus) =>
+        list.filter((r) => r.status === st).length;
+      const present = n(AttendanceStatus.PRESENT);
+      const late = n(AttendanceStatus.LATE);
+      const absent = n(AttendanceStatus.ABSENT);
+      return {
+        present,
+        late,
+        absent,
+        leave: n(AttendanceStatus.LEAVE),
+        percent: pct(present + late, absent),
+      };
+    };
+
+    const byStudent: Record<string, AttendanceRecord[]> = {};
+    recs.forEach((r) => (byStudent[r.studentId] ??= []).push(r));
+    const studentRows: AttendanceReportStudentRow[] = students.map((st) => ({
+      student: st,
+      ...tally(byStudent[st.id] ?? []),
+    }));
+
+    const bySection: Record<string, AttendanceReportStudentRow[]> = {};
+    studentRows.forEach((row) => (bySection[row.student.sectionId] ??= []).push(row));
+    const sectionRows: AttendanceReportSectionRow[] = Object.keys(bySection).map(
+      (secId) => {
+        const t = tally(recs.filter((r) => sectionById[r.sectionId]?.id === secId));
+        return {
+          sectionId: secId,
+          classId: sectionById[secId]?.classId ?? '',
+          students: bySection[secId].length,
+          ...t,
+        };
+      }
+    );
+
+    return AppResult.success({
+      filter,
+      overallPercent: tally(recs).percent,
+      daysCovered: dates.size,
+      sectionRows,
+      studentRows,
+    });
+  }
+
+  async getStaffCompliance(
+    campusId: string | null,
+    fromDate: string,
+    toDate: string
+  ): Promise<AppResult<StaffComplianceRow[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const classById: Record<string, SchoolClass> = {};
+    db.classes.forEach((c) => (classById[c.id] = c));
+    const subs = db.attendanceSubmissions.filter(
+      (x) => x.date >= fromDate && x.date <= toDate
+    );
+    // days the school actually took attendance in this range
+    const schoolDays = new Set(subs.map((x) => x.date));
+    const rows: StaffComplianceRow[] = [];
+    for (const sec of db.sections) {
+      const cls = classById[sec.classId];
+      if (!cls || (campusId && cls.campusId !== campusId)) continue;
+      const teachers = db.teacherAssignments
+        .filter((ta) => ta.sectionId === sec.id && ta.canMarkAttendance)
+        .map((ta) => db.profiles.find((p) => p.id === ta.teacherId))
+        .filter((p): p is Profile => !!p);
+      const uniq = Array.from(new Map(teachers.map((p) => [p.id, p])).values());
+      const marked = new Set(
+        subs.filter((x) => x.sectionId === sec.id).map((x) => x.date)
+      ).size;
+      rows.push({
+        sectionId: sec.id,
+        classId: sec.classId,
+        campusId: cls.campusId,
+        sectionName: sec.name,
+        teacherNamesEn: uniq.map((p) => p.fullName),
+        teacherNamesUr: uniq.map((p) => p.fullNameUr || p.fullName),
+        daysMarked: marked,
+        daysExpected: schoolDays.size,
+        percent:
+          schoolDays.size > 0
+            ? Number(((marked / schoolDays.size) * 100).toFixed(1))
+            : 0,
+      });
+    }
+    return AppResult.success(rows);
   }
 
   async getRoleDashboardSummary(

@@ -492,7 +492,71 @@ export type StringKey =
   | 'acc_vtab_print'
   | 'acc_err_campus_required'
   | 'acc_gen_failed'
-  | 'acc_showing_first';
+  | 'acc_showing_first'
+  | 'pr_date_label'
+  | 'pr_kpi_students'
+  | 'pr_kpi_boys_girls'
+  | 'pr_kpi_attendance'
+  | 'pr_kpi_unmarked'
+  | 'pr_kpi_collected_today'
+  | 'pr_kpi_collected_month'
+  | 'pr_kpi_outstanding'
+  | 'pr_kpi_defaulters'
+  | 'pr_kpi_tap_hint'
+  | 'pr_all_marked'
+  | 'pr_unmarked_teachers'
+  | 'pr_no_teacher'
+  | 'pr_chart_trend30'
+  | 'pr_chart_monthly12'
+  | 'pr_chart_expected'
+  | 'pr_chart_category'
+  | 'pr_chart_campus_att'
+  | 'pr_chart_campus_fee'
+  | 'pr_chart_class_att'
+  | 'pr_chart_expected_label'
+  | 'pr_chart_collected_label'
+  | 'pr_chart_no_data'
+  | 'pr_recent_activity'
+  | 'pr_activity_payment'
+  | 'pr_activity_void'
+  | 'pr_activity_correction'
+  | 'pr_present'
+  | 'pr_absent'
+  | 'pr_leave'
+  | 'pr_late'
+  | 'pr_att_filters'
+  | 'pr_section_filter'
+  | 'pr_all_sections'
+  | 'pr_overall_percent'
+  | 'pr_days_covered'
+  | 'pr_class_table'
+  | 'pr_student_list'
+  | 'pr_chronic_title'
+  | 'pr_chronic_below'
+  | 'pr_chronic_none'
+  | 'pr_show_all_students'
+  | 'pr_percent_col'
+  | 'pr_students_col'
+  | 'pr_print_view_btn'
+  | 'pr_att_none_title'
+  | 'pr_fees_reports'
+  | 'pr_fees_defaulters'
+  | 'pr_results_soon_title'
+  | 'pr_results_soon_body'
+  | 'pr_more_compliance'
+  | 'pr_more_compliance_hint'
+  | 'pr_range_week'
+  | 'pr_range_month'
+  | 'pr_days_marked'
+  | 'pr_more_students'
+  | 'pr_profile_title'
+  | 'pr_profile_dob'
+  | 'pr_profile_admission'
+  | 'pr_profile_phone'
+  | 'pr_profile_attendance'
+  | 'pr_profile_fees'
+  | 'pr_notices_soon'
+  | 'pr_tab_attendance_hint';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -987,6 +1051,70 @@ export const stringsEn: Record<StringKey, string> = {
   acc_err_campus_required: 'Choose a campus.',
   acc_gen_failed: 'Could not generate vouchers. Please try again.',
   acc_showing_first: 'Showing the first 50. Use filters or search to narrow down.',
+  pr_date_label: 'Date',
+  pr_kpi_students: 'Total students',
+  pr_kpi_boys_girls: 'Boys / Girls',
+  pr_kpi_attendance: 'Attendance today',
+  pr_kpi_unmarked: 'Sections not marked',
+  pr_kpi_collected_today: 'Collected today',
+  pr_kpi_collected_month: 'Collected this month',
+  pr_kpi_outstanding: 'Total outstanding',
+  pr_kpi_defaulters: 'Defaulters',
+  pr_kpi_tap_hint: 'Tap a card for details',
+  pr_all_marked: 'All sections have marked attendance.',
+  pr_unmarked_teachers: 'Teachers',
+  pr_no_teacher: 'No teacher assigned',
+  pr_chart_trend30: 'Attendance trend (30 days)',
+  pr_chart_monthly12: 'Monthly collection (12 months)',
+  pr_chart_expected: 'Expected vs collected (6 months)',
+  pr_chart_category: 'Collection by fee category (this month)',
+  pr_chart_campus_att: 'Campus comparison: attendance %',
+  pr_chart_campus_fee: 'Campus comparison: collected this month',
+  pr_chart_class_att: 'Class-wise attendance today',
+  pr_chart_expected_label: 'Expected',
+  pr_chart_collected_label: 'Collected',
+  pr_chart_no_data: 'No data for this selection yet.',
+  pr_recent_activity: 'Recent activity',
+  pr_activity_payment: 'Payment received',
+  pr_activity_void: 'Payment voided',
+  pr_activity_correction: 'Attendance correction',
+  pr_present: 'Present',
+  pr_absent: 'Absent',
+  pr_leave: 'Leave',
+  pr_late: 'Late',
+  pr_att_filters: 'Attendance report',
+  pr_section_filter: 'Section',
+  pr_all_sections: 'All sections',
+  pr_overall_percent: 'Overall attendance',
+  pr_days_covered: 'Days covered',
+  pr_class_table: 'Class / section table',
+  pr_student_list: 'Students',
+  pr_chronic_title: 'Chronic absentees',
+  pr_chronic_below: 'Below',
+  pr_chronic_none: 'No student is below this attendance.',
+  pr_show_all_students: 'All students',
+  pr_percent_col: '%',
+  pr_students_col: 'Students',
+  pr_print_view_btn: 'Print view',
+  pr_att_none_title: 'No attendance recorded in this period',
+  pr_fees_reports: 'Fee reports',
+  pr_fees_defaulters: 'Defaulters',
+  pr_results_soon_title: 'Results are coming soon',
+  pr_results_soon_body: 'Exam results and publishing will appear here once exams are added.',
+  pr_more_compliance: 'Attendance submission by section',
+  pr_more_compliance_hint: 'Share of school days each section marked attendance.',
+  pr_range_week: 'Last 7 days',
+  pr_range_month: 'This month',
+  pr_days_marked: 'days marked',
+  pr_more_students: 'Student search',
+  pr_profile_title: 'Student profile',
+  pr_profile_dob: 'Date of birth',
+  pr_profile_admission: 'Admission date',
+  pr_profile_phone: 'Guardian phone',
+  pr_profile_attendance: 'Attendance (all time)',
+  pr_profile_fees: 'Fees',
+  pr_notices_soon: 'Notices and message oversight will appear here in a later update.',
+  pr_tab_attendance_hint: 'Marked attendance only; leave days are not counted.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -1482,4 +1610,68 @@ export const stringsUr: Record<StringKey, string> = {
   acc_err_campus_required: 'کیمپس منتخب کریں۔',
   acc_gen_failed: 'واؤچرز نہیں بن سکے۔ دوبارہ کوشش کریں۔',
   acc_showing_first: 'پہلے 50 دکھائے جا رہے ہیں۔ فلٹر یا تلاش سے فہرست کم کریں۔',
+  pr_date_label: 'تاریخ',
+  pr_kpi_students: 'کل طلبہ',
+  pr_kpi_boys_girls: 'لڑکے / لڑکیاں',
+  pr_kpi_attendance: 'آج کی حاضری',
+  pr_kpi_unmarked: 'حاضری نہ لگانے والے سیکشن',
+  pr_kpi_collected_today: 'آج کی وصولی',
+  pr_kpi_collected_month: 'اس ماہ کی وصولی',
+  pr_kpi_outstanding: 'کل بقایا',
+  pr_kpi_defaulters: 'نادہندگان',
+  pr_kpi_tap_hint: 'تفصیل کے لیے کارڈ پر ٹیپ کریں',
+  pr_all_marked: 'تمام سیکشنز نے حاضری لگا دی ہے۔',
+  pr_unmarked_teachers: 'اساتذہ',
+  pr_no_teacher: 'کوئی استاد مقرر نہیں',
+  pr_chart_trend30: 'حاضری کا رجحان (30 دن)',
+  pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
+  pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
+  pr_chart_category: 'فیس کی قسم کے لحاظ سے وصولی (اس ماہ)',
+  pr_chart_campus_att: 'کیمپس کا موازنہ: حاضری فیصد',
+  pr_chart_campus_fee: 'کیمپس کا موازنہ: اس ماہ کی وصولی',
+  pr_chart_class_att: 'کلاس وار حاضری (آج)',
+  pr_chart_expected_label: 'متوقع',
+  pr_chart_collected_label: 'وصول شدہ',
+  pr_chart_no_data: 'اس انتخاب کے لیے ابھی کوئی ڈیٹا نہیں۔',
+  pr_recent_activity: 'حالیہ سرگرمی',
+  pr_activity_payment: 'ادائیگی وصول ہوئی',
+  pr_activity_void: 'ادائیگی منسوخ',
+  pr_activity_correction: 'حاضری کی درستی',
+  pr_present: 'حاضر',
+  pr_absent: 'غیر حاضر',
+  pr_leave: 'رخصت',
+  pr_late: 'تاخیر',
+  pr_att_filters: 'حاضری رپورٹ',
+  pr_section_filter: 'سیکشن',
+  pr_all_sections: 'تمام سیکشنز',
+  pr_overall_percent: 'مجموعی حاضری',
+  pr_days_covered: 'شامل دن',
+  pr_class_table: 'کلاس / سیکشن جدول',
+  pr_student_list: 'طلبہ',
+  pr_chronic_title: 'مسلسل غیر حاضر طلبہ',
+  pr_chronic_below: 'سے کم',
+  pr_chronic_none: 'کوئی طالب علم اس حاضری سے کم نہیں۔',
+  pr_show_all_students: 'تمام طلبہ',
+  pr_percent_col: 'فیصد',
+  pr_students_col: 'طلبہ',
+  pr_print_view_btn: 'پرنٹ ویو',
+  pr_att_none_title: 'اس مدت میں حاضری درج نہیں',
+  pr_fees_reports: 'فیس رپورٹس',
+  pr_fees_defaulters: 'نادہندگان',
+  pr_results_soon_title: 'نتائج جلد دستیاب ہوں گے',
+  pr_results_soon_body: 'امتحانات شامل ہونے کے بعد نتائج اور اشاعت یہاں نظر آئیں گے۔',
+  pr_more_compliance: 'سیکشن وار حاضری جمع کرانے کی کارکردگی',
+  pr_more_compliance_hint: 'اسکول کے دنوں میں سے جتنے دن سیکشن نے حاضری لگائی۔',
+  pr_range_week: 'آخری 7 دن',
+  pr_range_month: 'اس مہینے',
+  pr_days_marked: 'دن حاضری لگی',
+  pr_more_students: 'طالب علم تلاش',
+  pr_profile_title: 'طالب علم پروفائل',
+  pr_profile_dob: 'تاریخ پیدائش',
+  pr_profile_admission: 'تاریخ داخلہ',
+  pr_profile_phone: 'سرپرست کا فون',
+  pr_profile_attendance: 'حاضری (کل)',
+  pr_profile_fees: 'فیس',
+  pr_notices_soon: 'نوٹسز اور پیغامات کی نگرانی بعد کی اپڈیٹ میں یہاں شامل ہوگی۔',
+  pr_tab_attendance_hint: 'صرف لگی ہوئی حاضری شمار ہوتی ہے؛ رخصت کے دن شمار نہیں ہوتے۔',
 };
