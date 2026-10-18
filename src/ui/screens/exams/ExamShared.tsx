@@ -148,7 +148,7 @@ export const MarksEntryGrid: React.FC<{
   };
 
   const update = (id: string, patch: Partial<Cell>) => {
-    const next = { ...cells, [id]: { text: '', absent: false, ...cells[id], ...patch } };
+    const next = { ...cells, [id]: { ...(cells[id] ?? { text: '', absent: false }), ...patch } };
     setCells(next);
     setError(null);
     scheduleAutosave(next);
