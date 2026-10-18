@@ -42,7 +42,7 @@ export const ReportCardPrint: React.FC<{
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'stretch', borderBottom: `1px solid ${GREEN}` }}>
         <div style={{ width: 120, padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src="/school-logo.png" alt="" style={{ width: 100, height: 'auto' }} />
+          <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" style={{ width: 108, height: "auto" }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ textAlign: 'center', color: GREEN, fontWeight: 800, fontSize: 30, letterSpacing: 1, fontFamily: 'Georgia, serif', paddingTop: 6 }}>
