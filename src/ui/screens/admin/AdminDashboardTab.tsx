@@ -5,7 +5,7 @@ import { StringKey } from '../../../res/strings';
 import { SchoolCard, ShimmerPlaceholder } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
-import { PrincipalDashboardTab } from '../principal/PrincipalDashboardTab';
+import { PrincipalSummaryDashboard } from '../principal/PrincipalSummaryDashboard';
 
 const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
 
@@ -71,7 +71,7 @@ export const AdminDashboardTab: React.FC<{
           </>
         )}
       </SchoolCard>
-      <PrincipalDashboardTab lookups={lookups} onSwitchTab={onSwitchTab} />
+      <PrincipalSummaryDashboard lookups={lookups} onSwitchTab={onSwitchTab} />
     </div>
   );
 };

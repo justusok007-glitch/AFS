@@ -154,42 +154,6 @@ export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }
   }
 
 
-  const header = (
-    <SchoolCard className="space-y-2.5">
-      <TabRow tabs={campusTabs} selected={campus} onSelect={setCampus} />
-      <div className="flex items-center gap-3">
-        <label className="text-xs font-semibold shrink-0">{t('pr_date_label')}</label>
-        <input type="date" dir="ltr" className={selectCls} value={date} max={today()} onChange={(e) => e.target.value && setDate(e.target.value)} />
-      </div>
-    </SchoolCard>
-  );
-
-  if (loading || lookups.loading) {
-    return (
-      <div className="space-y-3">
-        {header}
-        <ShimmerPlaceholder lines={3} showHeader />
-      </div>
-    );
-  }
-  if (failed || lookups.failed || !data) {
-    return (
-      <div className="space-y-3">
-        {header}
-        <EmptyState
-          title={t('error_loading_title')}
-          description={t('error_loading_subtitle')}
-          actionLabel={t('retry_button')}
-          onAction={() => {
-            lookups.reload();
-            void load();
-          }}
-          icon={<AlertCircle className="w-6 h-6 text-[#D64545]" />}
-        />
-      </div>
-    );
-  }
-
   const kpi = (
     icon: React.ReactNode,
     label: string,
@@ -394,38 +358,6 @@ export const PrincipalFeesSummary: React.FC<{ lookups: AccountantLookups }> = ({
     );
   }
 
-
-  const header = (
-    <SchoolCard className="space-y-2.5">
-      <TabRow tabs={campusTabs} selected={campus} onSelect={setCampus} />
-    </SchoolCard>
-  );
-
-  if (loading || lookups.loading) {
-    return (
-      <div className="space-y-3">
-        {header}
-        <ShimmerPlaceholder lines={3} showHeader />
-      </div>
-    );
-  }
-  if (failed || lookups.failed || !data) {
-    return (
-      <div className="space-y-3">
-        {header}
-        <EmptyState
-          title={t('error_loading_title')}
-          description={t('error_loading_subtitle')}
-          actionLabel={t('retry_button')}
-          onAction={() => {
-            lookups.reload();
-            void load();
-          }}
-          icon={<AlertCircle className="w-6 h-6 text-[#D64545]" />}
-        />
-      </div>
-    );
-  }
 
   const kpi = (
     icon: React.ReactNode,
