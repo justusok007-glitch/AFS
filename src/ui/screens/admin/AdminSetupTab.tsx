@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Layers, Medal, Plus, School, Trash2, Wallet } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
 import {
@@ -29,22 +29,40 @@ import { AdminExamsSection } from './AdminExamsSection';
 type SetupTab = 'school' | 'classes' | 'fees' | 'exams' | 'holidays' | 'grading';
 
 export const AdminSetupTab: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
-  const { stringResource: t } = useStringResource();
-  const [tab, setTab] = useState<SetupTab>('school');
+  const { stringResource: t, isRtl } = useStringResource();
+  const [tab, setTab] = useState<SetupTab | null>(null);
+  const Chevron = isRtl ? ChevronLeft : ChevronRight;
+  const Back = isRtl ? ArrowRight : ArrowLeft;
+  const items: { id: SetupTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'school', label: t('su_tab_school'), icon: <School className="w-5 h-5" /> },
+    { id: 'classes', label: t('su_tab_classes'), icon: <Layers className="w-5 h-5" /> },
+    { id: 'fees', label: t('su_tab_fees'), icon: <Wallet className="w-5 h-5" /> },
+    { id: 'exams', label: t('ex_tab'), icon: <ClipboardList className="w-5 h-5" /> },
+    { id: 'holidays', label: t('su_tab_holidays'), icon: <CalendarDays className="w-5 h-5" /> },
+    { id: 'grading', label: t('su_tab_grading'), icon: <Medal className="w-5 h-5" /> },
+  ];
+
+  if (tab === null) {
+    return (
+      <div className="space-y-2.5">
+        {items.map((it) => (
+          <SchoolCard key={it.id} className="p-4 flex items-center gap-3" onClick={() => setTab(it.id)}>
+            <span className="w-10 h-10 rounded-xl bg-[#F28C28]/12 text-[#F28C28] flex items-center justify-center shrink-0">{it.icon}</span>
+            <span className="flex-1 font-heading text-sm font-bold text-[#14284B]">{it.label}</span>
+            <Chevron className="w-4 h-4 text-[#6B7385]" />
+          </SchoolCard>
+        ))}
+      </div>
+    );
+  }
+
+  const current = items.find((i) => i.id === tab);
   return (
     <div className="space-y-3">
-      <TabRow
-        tabs={[
-          { id: 'school' as const, label: t('su_tab_school') },
-          { id: 'classes' as const, label: t('su_tab_classes') },
-          { id: 'fees' as const, label: t('su_tab_fees') },
-          { id: 'exams' as const, label: t('ex_tab') },
-          { id: 'holidays' as const, label: t('su_tab_holidays') },
-          { id: 'grading' as const, label: t('su_tab_grading') },
-        ]}
-        selected={tab}
-        onSelect={setTab}
-      />
+      <button type="button" onClick={() => setTab(null)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+        <Back className="w-4 h-4" />
+        <span>{current?.label}</span>
+      </button>
       {tab === 'school' && <SchoolSection admin={admin} onSaved={lookups.reload} />}
       {tab === 'classes' && <ClassesSection admin={admin} lookups={lookups} />}
       {tab === 'fees' && <FeesSection admin={admin} lookups={lookups} />}
