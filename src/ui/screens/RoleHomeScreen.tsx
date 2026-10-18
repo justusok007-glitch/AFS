@@ -55,7 +55,7 @@ import { ParentHomeTab } from './parent/ParentHomeTab';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
-import { NotificationsSheet, useUnreadNotifications } from './comms/CommsShared';
+import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
@@ -241,6 +241,13 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   const [childSheetOpen, setChildSheetOpen] = useState<boolean>(false);
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
   const { count: unreadCount, refresh: refreshUnread } = useUnreadNotifications(session.profile.id);
+  const { count: unreadMessages, refresh: refreshMessages } = useUnreadMessages(
+    session.profile.id,
+    session.role === UserRole.PARENT || session.role === UserRole.TEACHER
+  );
+  useEffect(() => {
+    refreshMessages();
+  }, [activeTabIndex, refreshMessages]);
 
   const [classesMap, setClassesMap] = useState<Record<string, SchoolClass>>({});
   const [sectionsMap, setSectionsMap] = useState<Record<string, Section>>({});
@@ -451,6 +458,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           onOpenNotifications={() => setNotificationsOpen(true)}
           onOpenSettings={handleGuardedOpenSettings}
           unreadNotifications={unreadCount}
+          unreadMessages={unreadMessages}
         />
       );
     }
@@ -705,12 +713,14 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               className="relative w-10 h-10 rounded-xl bg-white/12 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               <Bell className="w-4 h-4" />
-              <span
-                dir="ltr"
-                className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F28C28] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-xs"
-              >
-                {unreadCount}
-              </span>
+              {unreadCount > 0 && (
+                <span
+                  dir="ltr"
+                  className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F28C28] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-xs"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -858,9 +868,17 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                 }`}
               >
                 <span
-                  className={isSelected ? 'text-[#F28C28]' : 'text-[#6B7385]'}
+                  className={`relative ${isSelected ? 'text-[#F28C28]' : 'text-[#6B7385]'}`}
                 >
                   {tab.icon}
+                  {tab.id === 'messages' && unreadMessages > 0 && (
+                    <span
+                      dir="ltr"
+                      className="absolute -top-1.5 -end-2.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F28C28] text-white font-mono text-[9px] font-bold flex items-center justify-center"
+                    >
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  )}
                 </span>
                 <span className="text-[10px] leading-tight whitespace-nowrap truncate max-w-full">
                   {stringResource(tab.labelKey)}

@@ -51,6 +51,22 @@ export function useUnreadNotifications(userId: string): { count: number; refresh
   return { count, refresh };
 }
 
+export function useUnreadMessages(userId: string, enabled: boolean): { count: number; refresh: () => void } {
+  const [count, setCount] = useState(0);
+  const refresh = useCallback(() => {
+    if (!enabled) return;
+    void AppModule.messageRepository.getUnreadMessageCount(userId).then((r) => {
+      if (r.ok) setCount(r.data);
+    });
+  }, [userId, enabled]);
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 10000);
+    return () => clearInterval(id);
+  }, [refresh]);
+  return { count, refresh };
+}
+
 const TYPE_ICON: Record<NotificationType, React.ReactNode> = {
   [NotificationType.ATTENDANCE]: <CalendarCheck className="w-4 h-4" />,
   [NotificationType.FEE]: <Wallet className="w-4 h-4" />,
@@ -74,12 +90,20 @@ export const NotificationsSheet: React.FC<{
     const r = await AppModule.noticeRepository.getNotificationsForUser(user.id);
     if (r.ok) setItems(r.data);
     setLoading(false);
+    return r.ok ? r.data : [];
   }, [user.id]);
   useEffect(() => {
-    if (open) {
-      setLoading(true);
-      void load();
-    }
+    if (!open) return;
+    setLoading(true);
+    void (async () => {
+      const loaded = await load();
+      // Opening the list counts as reading: clear the badge now, keep the new items highlighted until closed.
+      if (loaded.some((n) => !n.readAt)) {
+        await AppModule.noticeRepository.markAllNotificationsRead(user.id);
+        onChanged();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, load]);
 
   if (!open) return null;

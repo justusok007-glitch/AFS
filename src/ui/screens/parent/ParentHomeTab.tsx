@@ -26,6 +26,7 @@ export interface ParentHomeTabProps {
   onOpenNotifications: () => void;
   onOpenSettings: () => void;
   unreadNotifications: number;
+  unreadMessages: number;
 }
 
 export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
@@ -37,11 +38,11 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
   onOpenNotifications,
   onOpenSettings,
   unreadNotifications,
+  unreadMessages,
 }) => {
   const { stringResource: t, language } = useStringResource();
   const [todayDate, setTodayDate] = useState(() => today());
   const [statusByChild, setStatusByChild] = useState<Record<string, AttendanceStatus | null> | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0);
   const [pendingFee, setPendingFee] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -60,15 +61,11 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
         })
       );
       setStatusByChild(Object.fromEntries(entries));
-      const [m, f] = await Promise.all([
-        AppModule.messageRepository.getUnreadMessageCount(parentProfile.id),
-        AppModule.feeRepository.feeSummaryForStudent(selectedChild.id),
-      ]);
-      setUnreadMessages(m.ok ? m.data : 0);
+      const f = await AppModule.feeRepository.feeSummaryForStudent(selectedChild.id);
       setPendingFee(f.ok ? f.data.pending : 0);
       setRefreshing(false);
     },
-    [childrenList, parentProfile.id, selectedChild.id]
+    [childrenList, selectedChild.id]
   );
   useEffect(() => {
     void load(false);
