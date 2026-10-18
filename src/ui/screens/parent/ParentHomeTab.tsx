@@ -77,19 +77,22 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
     </span>
   );
 
-  const tiles: { key: string; label: string; icon: React.ReactNode; onClick: () => void; badge?: React.ReactNode }[] = [
-    { key: 'att', label: t('tab_attendance'), icon: <CalendarCheck className="w-6 h-6" />, onClick: () => onOpenTab(1) },
-    { key: 'fees', label: t('tab_fees'), icon: <Wallet className="w-6 h-6" />, onClick: () => onOpenTab(2), badge: pendingFee > 0 ? badge(formatRupees(pendingFee)) : undefined },
-    { key: 'res', label: t('tab_results'), icon: <Award className="w-6 h-6" />, onClick: () => onOpenTab(3) },
-    { key: 'msg', label: t('tab_messages'), icon: <MessageSquare className="w-6 h-6" />, onClick: () => onOpenTab(4), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
-    { key: 'notif', label: t('notifications_label'), icon: <Bell className="w-6 h-6" />, onClick: onOpenNotifications, badge: unreadNotifications > 0 ? badge(unreadNotifications) : undefined },
-    { key: 'set', label: t('settings_title'), icon: <SettingsIcon className="w-6 h-6" />, onClick: onOpenSettings },
+  const tiles: { key: string; label: string; icon: React.ReactNode; grad: [string, string]; onClick: () => void; badge?: React.ReactNode }[] = [
+    { key: 'att', grad: ['#FF7A7A', '#E8456B'], label: t('tab_attendance'), icon: <CalendarCheck className="w-7 h-7" />, onClick: () => onOpenTab(1) },
+    { key: 'fees', grad: ['#FFC15A', '#F28C28'], label: t('tab_fees'), icon: <Wallet className="w-7 h-7" />, onClick: () => onOpenTab(2), badge: pendingFee > 0 ? badge(formatRupees(pendingFee)) : undefined },
+    { key: 'res', grad: ['#B993FF', '#7B5BE6'], label: t('tab_results'), icon: <Award className="w-7 h-7" />, onClick: () => onOpenTab(3) },
+    { key: 'msg', grad: ['#55E0A5', '#1FB77C'], label: t('tab_messages'), icon: <MessageSquare className="w-7 h-7" />, onClick: () => onOpenTab(4), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
+    { key: 'notif', grad: ['#FF9DB3', '#F2587E'], label: t('notifications_label'), icon: <Bell className="w-7 h-7" />, onClick: onOpenNotifications, badge: unreadNotifications > 0 ? badge(unreadNotifications) : undefined },
+    { key: 'set', grad: ['#7CC4FF', '#2F80ED'], label: t('settings_title'), icon: <SettingsIcon className="w-7 h-7" />, onClick: onOpenSettings },
   ];
 
   return (
     <PullToRefreshContainer refreshing={refreshing} onRefresh={() => void load(true)}>
       <SchoolCard className="space-y-2.5">
-        <div className="font-heading text-sm font-bold text-[#14284B]">{t('home_today_attendance_title')}</div>
+        <div className="flex items-center gap-2 font-heading text-sm font-bold text-[#14284B]">
+          <span className="w-8 h-8 rounded-xl bg-[#F28C28]/12 flex items-center justify-center"><CalendarCheck className="w-4 h-4 text-[#F28C28]" /></span>
+          <span>{t('home_today_attendance_title')}</span>
+        </div>
         {statusByChild === null ? (
           <ShimmerPlaceholder lines={childrenList.length} />
         ) : (
@@ -115,10 +118,18 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
             key={x.key}
             type="button"
             onClick={x.onClick}
-            className="relative min-h-[88px] rounded-2xl bg-white border border-[#E4E8F0] shadow-sm flex flex-col items-center justify-center gap-1.5 text-[#14284B] active:scale-95 transition-transform cursor-pointer"
+            className="school-card relative min-h-[104px] rounded-3xl bg-white border border-[#E4E8F0] flex flex-col items-center justify-center gap-2 text-[#14284B] active:scale-95 transition-transform cursor-pointer"
           >
-            <span className="text-[#F28C28]">{x.icon}</span>
-            <span className="text-xs font-semibold">{x.label}</span>
+            <span
+              className="ps-keep w-14 h-14 rounded-full flex items-center justify-center text-white"
+              style={{
+                background: `radial-gradient(circle at 30% 22%, rgba(255,255,255,0.55), rgba(255,255,255,0) 46%), linear-gradient(145deg, ${x.grad[0]}, ${x.grad[1]})`,
+                boxShadow: `0 6px 14px ${x.grad[1]}55`,
+              }}
+            >
+              {x.icon}
+            </span>
+            <span className="text-xs font-bold">{x.label}</span>
             {x.badge}
           </button>
         ))}

@@ -614,9 +614,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col min-h-full h-full bg-[#F6F8FC]">
+    <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] ${session.role === UserRole.PARENT ? 'parent-skin' : ''}`}>
       {/* Curved Navy Top Bar */}
-      <header className="bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print">
+      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ${session.role === UserRole.PARENT ? 'ps-header' : ''}`}>
         <div className="flex items-center justify-between gap-2.5">
           {/* Left / Start Slot: Parent Child Switcher OR Role Header */}
           {session.role === UserRole.PARENT && selectedChild ? (
@@ -636,7 +636,8 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               {/* Child Initial / Photo Avatar */}
               <div
                 dir="ltr"
-                className="w-9 h-9 rounded-xl bg-[#F28C28] text-white font-heading text-xs font-bold flex items-center justify-center shrink-0 shadow-sm"
+                className="ps-keep w-10 h-10 rounded-2xl bg-[#F28C28] text-white font-heading text-xs font-bold flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(145deg,#FFB547,#F28C28)' }}
               >
                 {getChildInitials(selectedChild)}
               </div>
@@ -667,7 +668,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               </div>
 
               {childrenList.length > 1 && (
-                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#F28C28]/25 text-[#F28C28] text-[10px] font-bold shrink-0">
+                <div className="ps-gold flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#F28C28]/25 text-[#F28C28] text-[10px] font-bold shrink-0">
                   <span dir="ltr">{childrenList.length}</span>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </div>
@@ -716,7 +717,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               {unreadCount > 0 && (
                 <span
                   dir="ltr"
-                  className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F28C28] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-xs"
+                  className="ps-keep absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#F28C28] text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-xs"
                 >
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
@@ -851,7 +852,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       {/* Role Bottom Navigation Bar (5 Tabs, Orange #F28C28 Selected State) */}
       <nav
         aria-label="Role Bottom Navigation"
-        className="sticky bottom-0 z-30 bg-white border-t border-[#E4E8F0] px-1.5 py-1 shrink-0 no-print"
+        className={`sticky bottom-0 z-30 bg-white border-t border-[#E4E8F0] px-1.5 py-1 shrink-0 no-print ${session.role === UserRole.PARENT ? 'ps-nav' : ''}`}
       >
         <div className="grid grid-cols-5 items-center">
           {roleTabs.map((tab, idx) => {
@@ -861,7 +862,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => handleGuardedTabChange(idx)}
-                className={`min-h-[54px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
+                className={`${isSelected ? 'ps-tab-active' : ''} min-h-[54px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
                   isSelected
                     ? 'text-[#F28C28] font-bold'
                     : 'text-[#6B7385] hover:text-[#14284B] font-medium'
@@ -874,7 +875,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   {tab.id === 'messages' && unreadMessages > 0 && (
                     <span
                       dir="ltr"
-                      className="absolute -top-1.5 -end-2.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F28C28] text-white font-mono text-[9px] font-bold flex items-center justify-center"
+                      className="ps-keep absolute -top-1.5 -end-2.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F28C28] text-white font-mono text-[9px] font-bold flex items-center justify-center"
                     >
                       {unreadMessages > 99 ? '99+' : unreadMessages}
                     </span>

@@ -336,3 +336,63 @@
 .recharts-tooltip-cursor {
   display: none !important;
 }
+
+/* =====================================================================
+   Parent skin: sky-blue look (applies only inside .parent-skin)
+   ===================================================================== */
+.parent-skin {
+  background: linear-gradient(180deg, #E4F4FD 0%, #F2F9FE 38%, #F6FAFD 100%) !important;
+}
+.parent-skin .ps-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, #63CCF7 0%, #31AEE9 55%, #1D93DB 100%) !important;
+  box-shadow: 0 10px 26px rgba(29, 147, 219, 0.28);
+}
+.parent-skin .ps-header::before,
+.parent-skin .ps-header::after {
+  content: '';
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+.parent-skin .ps-header::before { width: 190px; height: 190px; top: -110px; inset-inline-start: -50px; }
+.parent-skin .ps-header::after { width: 150px; height: 150px; top: -80px; inset-inline-end: -30px; }
+.parent-skin .ps-header > * { position: relative; z-index: 1; }
+.parent-skin .ps-gold { background: rgba(214, 170, 60, 0.92) !important; color: #fff !important; }
+
+/* cards */
+.parent-skin .school-card {
+  border-radius: 24px;
+  border-color: rgba(49, 174, 233, 0.14);
+  box-shadow: 0 8px 22px rgba(49, 150, 210, 0.10);
+}
+
+/* orange accents become blue (badges and avatars marked .ps-keep stay orange) */
+.parent-skin [class*="text-[#F28C28]"]:not(.ps-keep):not(.ps-gold) { color: #1E88E5 !important; }
+.parent-skin [class*="border-[#F28C28]"]:not(.ps-keep) { border-color: rgba(30, 136, 229, 0.35) !important; }
+.parent-skin [class*="bg-[#F28C28]/"]:not(.ps-keep):not(.ps-gold) { background-color: rgba(30, 136, 229, 0.10) !important; }
+.parent-skin [class*="bg-[#F28C28]"]:not([class*="bg-[#F28C28]/"]):not(.ps-keep):not(.ps-gold) {
+  background: linear-gradient(145deg, #3FA9F0, #1E7FDB) !important;
+}
+.parent-skin [class*="from-[#F28C28]"] { --tw-gradient-from: #3FA9F0 !important; }
+
+/* bottom tab bar */
+.parent-skin .ps-nav {
+  border-top: none;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 24px rgba(49, 150, 210, 0.12);
+}
+.parent-skin .ps-tab-active { position: relative; }
+.parent-skin .ps-tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 34px;
+  height: 3px;
+  margin-left: -17px;
+  border-radius: 9999px;
+  background: #1E88E5;
+}

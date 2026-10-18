@@ -99,7 +99,7 @@ export const SchoolCard: React.FC<SchoolCardProps> = ({
             }
           : undefined
       }
-      className={`bg-white rounded-2xl p-4 border border-[#E4E8F0] shadow-[0_2px_10px_rgba(20,40,75,0.04)] ${interactiveStyles} ${className}`}
+      className={`school-card bg-white rounded-2xl p-4 border border-[#E4E8F0] shadow-[0_2px_10px_rgba(20,40,75,0.04)] ${interactiveStyles} ${className}`}
     >
       {children}
     </div>

@@ -193,7 +193,7 @@ export const NoticesCard: React.FC<{ user: Profile }> = ({ user }) => {
     <SchoolCard className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-heading text-xs font-bold text-[#14284B]">
-          <BellRing className="w-4 h-4 text-[#F28C28]" />
+          <span className="w-8 h-8 rounded-xl bg-[#F28C28]/12 flex items-center justify-center"><BellRing className="w-4 h-4 text-[#F28C28]" /></span>
           <span>{t('nt_title')}</span>
         </div>
         {items && items.length > 3 && (
