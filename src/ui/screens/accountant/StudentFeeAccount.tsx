@@ -314,7 +314,7 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
                   <span className="min-w-0">
                     <span dir="ltr" className="font-mono">{v?.voucherNo ?? ''}</span>{' '}
                     {v ? `· ${formatYearMonthLabel(v.billingMonth, t)} · ` : ''}
-                    {feeHeadName(a.feeHeadId, '', lookups, language)}
+                    {feeHeadName(a.feeHeadId ?? '', '', lookups, language)}
                   </span>
                   <span dir="ltr" className="font-mono font-bold text-[#14284B] shrink-0">
                     {formatRupees(a.allocatedAmount)}
