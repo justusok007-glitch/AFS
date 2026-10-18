@@ -331,3 +331,8 @@
 .recharts-rectangle:focus {
   outline: none !important;
 }
+
+/* Charts: hide the grey hover/tap highlight rectangle behind bars */
+.recharts-tooltip-cursor {
+  display: none !important;
+}
