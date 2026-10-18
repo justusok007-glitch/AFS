@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  src: url('/fonts/NotoNastaliqUrdu.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/fonts/Poppins-Bold.ttf') format('truetype');
+  font-weight: 700 800;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@layer base {
+  :root {
+    color-scheme: light only !important;
+    --color-navy: #14284B;
+    --color-orange: #F28C28;
+    --color-bg: #F6F8FC;
+    --color-surface: #FFFFFF;
+    --color-text: #1B2233;
+    --color-muted: #6B7385;
+    --color-divider: #E4E8F0;
+    --color-success: #2E9E5B;
+    --color-warning: #F2B705;
+    --color-error: #D64545;
+    --color-info: #2F80ED;
+  }
+
+  html, body {
+    background-color: #F6F8FC !important;
+    color: #1B2233 !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+
+  [dir="rtl"],
+  .font-urdu {
+    font-family: 'Noto Nastaliq Urdu', serif !important;
+    line-height: 2.4 !important;
+    letter-spacing: 0 !important;
+    font-feature-settings: "liga" 1, "clig" 1, "calt" 1;
+  }
+
+  [dir="rtl"] h1,
+  [dir="rtl"] h2,
+  [dir="rtl"] h3,
+  [dir="rtl"] h4,
+  [dir="rtl"] .font-heading {
+    font-family: 'Noto Nastaliq Urdu', serif !important;
+    line-height: 2.5 !important;
+    padding-top: 0.12em;
+    padding-bottom: 0.16em;
+  }
+
+  /* Prevent single-line truncate from clipping tall Nastaliq ascenders and descenders in RTL */
+  [dir="rtl"] .truncate,
+  .font-urdu.truncate {
+    line-height: 2.45 !important;
+    padding-top: 0.14em;
+    padding-bottom: 0.18em;
+  }
+
+  [dir="ltr"] h1,
+  [dir="ltr"] h2,
+  [dir="ltr"] h3,
+  [dir="ltr"] h4,
+  [dir="ltr"] .font-heading {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.35;
+  }
+}
+
+@keyframes shimmerSlide {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-surface {
+  background: linear-gradient(
+    90deg,
+    #EDF1F7 0%,
+    #F8FAFD 50%,
+    #EDF1F7 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSlide 1.5s infinite linear;
+}
+
+@keyframes splashLogoOvershoot {
+  0% {
+    opacity: 0;
+    transform: scale(0.68);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splashArcSweep {
+  0% {
+    stroke-dashoffset: 502;
+    opacity: 0.25;
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+}
+
+@keyframes splashTextFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-splash-logo {
+  animation: splashLogoOvershoot 680ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-splash-arc {
+  stroke-dasharray: 502;
+  stroke-dashoffset: 502;
+  animation: splashArcSweep 1150ms cubic-bezier(0.4, 0, 0.2, 1) 180ms forwards;
+}
+
+.animate-splash-text {
+  opacity: 0;
+  animation: splashTextFadeUp 580ms cubic-bezier(0.22, 1, 0.36, 1) 780ms forwards;
+}
+
+@media print {
+  html, body {
+    background-color: #FFFFFF !important;
+    color: #1B2233 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-shell-frame {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .print-sheet {
+    position: static !important;
+    inset: auto !important;
+    background: #FFFFFF !important;
+    padding: 16px !important;
+    box-shadow: none !important;
+    border: 1px solid #14284B !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

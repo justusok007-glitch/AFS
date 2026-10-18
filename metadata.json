@@ -1,0 +1,6 @@
+{
+  "name": "Al Furqan School Okara",
+  "description": "Phone-first school management web application for Al Furqan School Okara (Boys & Girls Campuses) with English and Urdu RTL support, role-based navigation, and a clean TypeScript repository layer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
