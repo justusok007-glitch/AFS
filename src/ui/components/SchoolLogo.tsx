@@ -31,7 +31,7 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
 
   return (
     <img
-      src="/school-logo.png"
+      src={`${import.meta.env.BASE_URL}school-logo.png`}
       alt="Al Furqan School Okara Logo"
       width={size}
       height={Math.round(size * 0.84)}
