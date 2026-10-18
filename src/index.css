@@ -316,3 +316,18 @@
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+
+/* Charts: remove the black focus box that appears when a chart is tapped */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-surface,
+.recharts-surface * {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.recharts-wrapper svg:focus,
+.recharts-wrapper:focus,
+.recharts-sector:focus,
+.recharts-rectangle:focus {
+  outline: none !important;
+}
