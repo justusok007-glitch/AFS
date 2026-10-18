@@ -446,3 +446,10 @@
 .parent-skin .ps-header .ps-books { inset-inline-end: 18px; bottom: 12px; z-index: 3 !important; }
 .parent-skin .ps-logo-badge { width: 100px; height: 100px; }
 .parent-skin .ps-logo-badge img { width: 78px; height: auto; }
+
+/* Parent header: restore compact header, solid page colour so the wave blends in */
+.parent-skin { background: #EAF5FD !important; }
+.parent-skin .ps-header { padding-bottom: 88px !important; }
+.parent-skin .ps-header .ps-books { bottom: 4px; }
+.parent-skin .ps-logo-badge { width: 92px; height: 92px; }
+.parent-skin .ps-logo-badge img { width: 72px; }

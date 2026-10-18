@@ -737,7 +737,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
             </div>
             <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#E4F4FD" />
+              <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#EAF5FD" />
             </svg>
           </>
         )}
