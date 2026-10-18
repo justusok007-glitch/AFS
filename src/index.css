@@ -440,3 +440,9 @@
   box-shadow: 0 8px 20px rgba(20, 40, 120, 0.25);
 }
 .parent-skin .ps-logo-badge img { width: 54px; height: auto; }
+
+/* Parent header: bigger logo, lower, floating over the wave */
+.parent-skin .ps-header { padding-bottom: 108px !important; }
+.parent-skin .ps-header .ps-books { inset-inline-end: 18px; bottom: 12px; z-index: 3 !important; }
+.parent-skin .ps-logo-badge { width: 100px; height: 100px; }
+.parent-skin .ps-logo-badge img { width: 78px; height: auto; }

@@ -637,11 +637,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               }`}
             >
               {/* Child Initial / Photo Avatar */}
-              <StudentAvatar gender={selectedChild.gender} size={46} />
+              <StudentAvatar gender={selectedChild.gender} size={62} />
 
               <div className="min-w-0 flex-1 py-0.5">
                 <div
-                  className={`font-heading text-xs font-bold text-white flex items-center gap-1.5 ${
+                  className={`font-heading text-[18px] font-bold text-white flex items-center gap-1.5 ${
                     language === 'ur'
                       ? 'font-urdu leading-[2.4] py-0.5'
                       : 'leading-snug'
@@ -654,7 +654,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   </span>
                 </div>
                 <div
-                  className={`text-[11px] text-white/80 ${
+                  className={`text-[13px] text-white/85 ${
                     language === 'ur'
                       ? 'font-urdu leading-[2.3] py-0.5'
                       : 'leading-normal'
@@ -665,7 +665,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               </div>
 
               {childrenList.length > 1 && (
-                <div className="ps-gold flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#F28C28]/25 text-[#F28C28] text-[10px] font-bold shrink-0">
+                <div className="ps-gold flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-[#F28C28]/25 text-[#F28C28] text-xs font-bold shrink-0">
                   <span dir="ltr">{childrenList.length}</span>
                   <ChevronDown className="w-3.5 h-3.5" />
                 </div>

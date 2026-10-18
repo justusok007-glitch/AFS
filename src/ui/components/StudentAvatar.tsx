@@ -20,7 +20,8 @@ export const StudentAvatar: React.FC<{ gender: Gender; size?: number; className?
       <circle cx="50" cy="50" r="50" fill={c.main} />
       <g clipPath={`url(#${id})`} fill={c.shadow}>
         <polygon points="39.4,47.2 60.6,26 130.6,96 109.4,117.2" />
-        <polygon points="22.5,57.5 77.5,57.5 147.5,127.5 147.5,148.5 92.5,148.5 22.5,78.5" />
+        <rect x="22.5" y="57.5" width="55" height="21" rx="10.5" />
+        <polygon points="25.6,75.4 74.4,60.6 144.4,130.6 95.6,145.4" />
       </g>
       <circle cx="50" cy="36.6" r="15" fill="#fff" />
       <rect x="22.5" y="57.5" width="55" height="21" rx="10.5" fill="#fff" />
