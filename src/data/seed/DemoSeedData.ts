@@ -9,6 +9,8 @@ import {
   ClassSubject,
   ConcessionType,
   DayOfWeek,
+  Exam,
+  ExamSubject,
   FeeCategory,
   FeeHead,
   FeePayment,
@@ -16,6 +18,8 @@ import {
   FeeVoucherItem,
   Gender,
   GradingScaleEntry,
+  Mark,
+  MarkSubmission,
   ParentRelation,
   ParentStudent,
   PaymentAllocation,
@@ -65,6 +69,10 @@ export interface LocalDatabaseSnapshot {
   feePayments: FeePayment[];
   paymentAllocations: PaymentAllocation[];
   auditLogs: AuditLogEntry[];
+  exams: Exam[];
+  examSubjects: ExamSubject[];
+  marks: Mark[];
+  markSubmissions: MarkSubmission[];
 }
 
 interface ClassTemplate {
@@ -1256,5 +1264,9 @@ export function buildInitialDemoDatabase(
     feePayments,
     paymentAllocations,
     auditLogs,
+    exams: [],
+    examSubjects: [],
+    marks: [],
+    markSubmissions: [],
   };
 }

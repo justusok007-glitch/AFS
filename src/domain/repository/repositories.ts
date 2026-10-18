@@ -21,6 +21,9 @@ import {
   NewProfileInput,
   NewStudentInput,
   AdmitResult,
+  ExamAnalytics,
+  MarkSubmission,
+  MarksProgressRow,
   ImportStudentRow,
   ImportStudentResult,
   AttendanceReportFilter,
@@ -294,8 +297,10 @@ export interface ExamRepository {
     status: ExamStatus,
     actorId: string
   ): Promise<AppResult<Exam>>;
+  /** Replaces the subject list of ONE class for the exam (empty list clears it). Admin only, not after publishing. */
   configureExamSubjects(
     examId: string,
+    classId: string,
     subjects: ExamSubject[],
     actorId: string
   ): Promise<AppResult<ExamSubject[]>>;
@@ -303,31 +308,48 @@ export interface ExamRepository {
     examId: string,
     classId: string
   ): Promise<AppResult<ExamSubject[]>>;
+  /**
+   * Replaces the marks of one section+subject with the given list (students not in the list
+   * have no mark yet). finalize=false is an autosave draft, finalize=true records a submission.
+   * Teachers: assigned sections only, exam must be in MARKS_ENTRY. Admin may edit a PUBLISHED
+   * exam but must give a reason (audited).
+   */
   enterMarks(
     actor: Profile,
     examId: string,
     sectionId: string,
     subjectId: string,
-    marks: Mark[]
+    marks: Mark[],
+    finalize: boolean,
+    reason?: string
   ): Promise<AppResult<Mark[]>>;
   getMarksForSectionSubject(
     examId: string,
     sectionId: string,
     subjectId: string
   ): Promise<AppResult<Mark[]>>;
+  getMarkSubmission(
+    examId: string,
+    sectionId: string,
+    subjectId: string
+  ): Promise<AppResult<MarkSubmission | null>>;
+  getMarksProgress(examId: string): Promise<AppResult<MarksProgressRow[]>>;
+  /** Parents only get PUBLISHED exams of their own children. */
   getStudentResultCard(
     examId: string,
-    studentId: string
+    studentId: string,
+    actor?: Profile
   ): Promise<AppResult<StudentResultCard>>;
   getSectionResultCards(
     examId: string,
     sectionId: string
   ): Promise<AppResult<StudentResultCard[]>>;
+  getExamAnalytics(
+    examId: string,
+    campusId: string | null,
+    classId: string | null
+  ): Promise<AppResult<ExamAnalytics>>;
 }
-
-// ============================================================================
-// 6. MESSAGE REPOSITORY
-// ============================================================================
 
 export interface MessageRepository {
   getConversationsForUser(
@@ -428,6 +450,7 @@ export interface SettingsRepository {
   getClasses(campusId: string | null): Promise<AppResult<SchoolClass[]>>;
   getSections(classId: string | null): Promise<AppResult<Section[]>>;
   getSubjects(): Promise<AppResult<Subject[]>>;
+  getClassSubjects(classId: string): Promise<AppResult<Subject[]>>;
   /** Create or rename a class (sortOrder is assigned automatically on create). Admin only. */
   saveClass(
     cls: Pick<SchoolClass, 'campusId' | 'nameEn' | 'nameUr'> & { id?: string },

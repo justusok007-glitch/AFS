@@ -3,6 +3,10 @@ import {
   AcademicYear,
   AdmitResult,
   ConcessionType,
+  ExamAnalytics,
+  MarkSubmission,
+  MarksProgressRow,
+  ResultSubjectLine,
   Gender,
   ImportStudentResult,
   ImportStudentRow,
@@ -155,6 +159,11 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
         Array.isArray(parsed.attendanceRecords) &&
         Array.isArray(parsed.feeVouchers)
       ) {
+        // Older saved data predates exams: add the new tables instead of re-seeding.
+        parsed.exams ??= [];
+        parsed.examSubjects ??= [];
+        parsed.marks ??= [];
+        parsed.markSubmissions ??= [];
         return parsed;
       }
     }
@@ -2482,57 +2491,278 @@ export class FakeFeeRepository implements FeeRepository {
 // 5. FAKE EXAM REPOSITORY (Empty Fake for now)
 // ============================================================================
 
+function roundOne(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+function gradeEntryFor(db: LocalDatabaseSnapshot, pct: number): GradingScaleEntry | undefined {
+  return [...db.gradingScale]
+    .sort((x, y) => y.minPercent - x.minPercent)
+    .find((g) => pct >= g.minPercent);
+}
+
+/** Builds a result card from stored marks (no rank). */
+function buildCardInDb(
+  db: LocalDatabaseSnapshot,
+  exam: Exam,
+  student: Student
+): StudentResultCard | null {
+  const sec = db.sections.find((x) => x.id === student.sectionId);
+  if (!sec) return null;
+  const configured = db.examSubjects.filter((es) => es.examId === exam.id && es.classId === sec.classId);
+  if (configured.length === 0) return null;
+  const marks = db.marks.filter((m) => m.examId === exam.id && m.studentId === student.id);
+  let totalMax = 0;
+  let totalObt = 0;
+  let incomplete = false;
+  let passedAll = true;
+  const lines: ResultSubjectLine[] = configured.map((es) => {
+    const m = marks.find((x) => x.subjectId === es.subjectId);
+    const entered = !!m;
+    const obtained = m && !m.isAbsent ? m.obtained : 0;
+    const isAbsent = !!m?.isAbsent;
+    const passed = entered && !isAbsent && obtained >= es.passMarks;
+    if (!entered) incomplete = true;
+    if (!passed) passedAll = false;
+    totalMax += es.totalMarks;
+    totalObt += obtained;
+    return {
+      subjectId: es.subjectId,
+      totalMarks: es.totalMarks,
+      passMarks: es.passMarks,
+      obtained,
+      isAbsent,
+      entered,
+      passed,
+      percent: es.totalMarks > 0 ? roundOne((obtained / es.totalMarks) * 100) : 0,
+    };
+  });
+  const percentage = totalMax > 0 ? roundOne((totalObt / totalMax) * 100) : 0;
+  const g = gradeEntryFor(db, percentage);
+  return {
+    exam,
+    student,
+    subjectMarks: marks,
+    subjectLines: lines,
+    totalMaxMarks: totalMax,
+    totalObtainedMarks: roundOne(totalObt),
+    percentage,
+    grade: g?.grade ?? '-',
+    gradeRemarksEn: g?.remarksEn ?? '',
+    gradeRemarksUr: g?.remarksUr ?? '',
+    passed: passedAll && !incomplete,
+    incomplete,
+    rankInSection: null,
+    sectionSize: 0,
+  };
+}
+
+/** Cards for all active students of a section, with class position (equal percentages share a rank). */
+function buildSectionCardsInDb(
+  db: LocalDatabaseSnapshot,
+  exam: Exam,
+  sectionId: string
+): StudentResultCard[] {
+  const cards: StudentResultCard[] = [];
+  db.students
+    .filter((s) => s.sectionId === sectionId && s.status === StudentStatus.ACTIVE)
+    .sort((a, b) => a.rollNo - b.rollNo)
+    .forEach((s) => {
+      const c = buildCardInDb(db, exam, s);
+      if (c) cards.push(c);
+    });
+  const complete = cards.filter((c) => !c.incomplete);
+  cards.forEach((c) => {
+    c.sectionSize = cards.length;
+    c.rankInSection = c.incomplete ? null : 1 + complete.filter((o) => o.percentage > c.percentage).length;
+  });
+  return cards;
+}
+
+function examAudit(
+  db: LocalDatabaseSnapshot,
+  actorId: string,
+  action: string,
+  recordId: string,
+  oldValue: string | null,
+  newValue: string | null,
+  reason: string
+): void {
+  db.auditLogs.unshift({
+    id: auditId(),
+    action,
+    tableName: 'exams',
+    recordId,
+    oldValue,
+    newValue,
+    reason,
+    changedBy: actorId,
+    changedAt: new Date().toISOString(),
+  });
+}
+
 export class FakeExamRepository implements ExamRepository {
-  async getExams(_campusId: string | null): Promise<AppResult<Exam[]>> {
+  async getExams(campusId: string | null): Promise<AppResult<Exam[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const list = db.exams.filter((e) => !campusId || e.campusId === null || e.campusId === campusId);
+    return AppResult.success([...list].reverse());
   }
 
-  async createExam(exam: Exam, _actorId: string): Promise<AppResult<Exam>> {
+  async createExam(exam: Exam, actorId: string): Promise<AppResult<Exam>> {
     await simulateLocalDelay();
-    return AppResult.success(exam);
+    const db = getOrSeedLocalDatabase();
+    const actor = db.profiles.find((p) => p.id === actorId);
+    if (!actor || actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can create exams.' });
+    }
+    const fail = (message: string) => AppResult.failure<Exam>({ kind: 'ValidationFailed', message });
+    if (exam.nameEn.trim().length < 3) return fail('Exam name (English) is required.');
+    if (exam.nameUr.trim().length < 2) return fail('Exam name (Urdu) is required.');
+    if (exam.campusId && !db.campuses.some((c) => c.id === exam.campusId)) return fail('Campus not found.');
+    const start = exam.startDate || null;
+    const end = exam.endDate || null;
+    if (start && end && end < start) return fail('End date cannot be before the start date.');
+    const created: Exam = {
+      id: `exam_${Date.now().toString(36)}`,
+      nameEn: exam.nameEn.trim(),
+      nameUr: exam.nameUr.trim(),
+      type: exam.type,
+      status: ExamStatus.DRAFT,
+      campusId: exam.campusId,
+      startDate: start,
+      endDate: end,
+    };
+    db.exams.push(created);
+    examAudit(db, actorId, 'CREATE_EXAM', created.id, null, created.nameEn, 'Exam created');
+    saveLocalDatabase(db);
+    return AppResult.success(created);
   }
 
   async updateExamStatus(
     examId: string,
-    _status: ExamStatus,
-    _actorId: string
+    status: ExamStatus,
+    actorId: string
   ): Promise<AppResult<Exam>> {
     await simulateLocalDelay();
-    return AppResult.failure({
-      kind: 'NotFound',
-      entity: 'Exam',
-      id: examId,
-      message: `Exam (${examId}) not found.`,
-    });
+    const db = getOrSeedLocalDatabase();
+    const actor = db.profiles.find((p) => p.id === actorId);
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) {
+      return AppResult.failure({ kind: 'NotFound', entity: 'Exam', id: examId, message: `Exam (${examId}) not found.` });
+    }
+    const fail = (message: string) => AppResult.failure<Exam>({ kind: 'ValidationFailed', message });
+    if (!actor || (actor.role !== Role.ADMIN && actor.role !== Role.PRINCIPAL)) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only Admin or Principal can change exam status.' });
+    }
+    const from = exam.status;
+    if (from === status) return AppResult.success(exam);
+    if (from === ExamStatus.DRAFT && status === ExamStatus.MARKS_ENTRY) {
+      if (actor.role !== Role.ADMIN) {
+        return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can open marks entry.' });
+      }
+      if (!db.examSubjects.some((es) => es.examId === examId)) {
+        return fail('Set the subjects and marks for at least one class first.');
+      }
+    } else if (from === ExamStatus.MARKS_ENTRY && status === ExamStatus.PUBLISHED) {
+      let missing = 0;
+      const classIds = new Set(db.examSubjects.filter((es) => es.examId === examId).map((es) => es.classId));
+      for (const sec of db.sections.filter((x) => classIds.has(x.classId))) {
+        const subs = db.examSubjects.filter((es) => es.examId === examId && es.classId === sec.classId);
+        for (const stu of db.students.filter((x) => x.sectionId === sec.id && x.status === StudentStatus.ACTIVE)) {
+          for (const es of subs) {
+            if (!db.marks.some((m) => m.examId === examId && m.studentId === stu.id && m.subjectId === es.subjectId)) missing++;
+          }
+        }
+      }
+      if (missing > 0) return fail(`${missing} marks are still missing. Every student needs a mark (or Absent) in every subject before publishing.`);
+    } else if (from === ExamStatus.PUBLISHED && status === ExamStatus.MARKS_ENTRY) {
+      // unpublish: allowed
+    } else {
+      return fail('This status change is not allowed.');
+    }
+    exam.status = status;
+    examAudit(db, actorId, 'EXAM_STATUS', examId, from, status, `Exam ${exam.nameEn}: ${from} -> ${status}`);
+    saveLocalDatabase(db);
+    return AppResult.success(exam);
   }
 
   async configureExamSubjects(
-    _examId: string,
+    examId: string,
+    classId: string,
     subjects: ExamSubject[],
-    _actorId: string
+    actorId: string
   ): Promise<AppResult<ExamSubject[]>> {
     await simulateLocalDelay();
-    return AppResult.success(subjects);
+    const db = getOrSeedLocalDatabase();
+    const actor = db.profiles.find((p) => p.id === actorId);
+    if (!actor || actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can set exam subjects.' });
+    }
+    const fail = (message: string) => AppResult.failure<ExamSubject[]>({ kind: 'ValidationFailed', message });
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) {
+      return AppResult.failure({ kind: 'NotFound', entity: 'Exam', id: examId, message: `Exam (${examId}) not found.` });
+    }
+    if (exam.status === ExamStatus.PUBLISHED) return fail('Unpublish the exam before changing its subjects.');
+    const cls = db.classes.find((c) => c.id === classId);
+    if (!cls) return fail('Class not found.');
+    if (exam.campusId && cls.campusId !== exam.campusId) return fail('This class belongs to another campus than the exam.');
+    const allowed = new Set(db.classSubjects.filter((cs) => cs.classId === classId).map((cs) => cs.subjectId));
+    const seen = new Set<string>();
+    for (const sub of subjects) {
+      if (!allowed.has(sub.subjectId)) return fail('A subject is not taught in this class.');
+      if (seen.has(sub.subjectId)) return fail('A subject is listed twice.');
+      seen.add(sub.subjectId);
+      if (!Number.isInteger(sub.totalMarks) || sub.totalMarks <= 0) return fail('Total marks must be a whole number above 0.');
+      if (!Number.isInteger(sub.passMarks) || sub.passMarks < 0 || sub.passMarks > sub.totalMarks) {
+        return fail('Pass marks must be between 0 and the total marks.');
+      }
+    }
+    // Do not drop or shrink a subject that already has marks.
+    const sectionIds = new Set(db.sections.filter((x) => x.classId === classId).map((x) => x.id));
+    const classStudentIds = new Set(db.students.filter((x) => sectionIds.has(x.sectionId)).map((x) => x.id));
+    const existingMarks = db.marks.filter((m) => m.examId === examId && classStudentIds.has(m.studentId));
+    for (const m of existingMarks) {
+      const next = subjects.find((x) => x.subjectId === m.subjectId);
+      if (!next) return fail('A subject that already has marks cannot be removed.');
+      if (!m.isAbsent && m.obtained > next.totalMarks) return fail('Total marks cannot be lower than a mark already entered.');
+    }
+    db.examSubjects = db.examSubjects.filter((es) => !(es.examId === examId && es.classId === classId));
+    const saved = subjects.map((x) => ({ examId, classId, subjectId: x.subjectId, totalMarks: x.totalMarks, passMarks: x.passMarks }));
+    db.examSubjects.push(...saved);
+    examAudit(db, actorId, 'EXAM_SUBJECTS', `${examId}/${classId}`, null, `${saved.length} subjects`, 'Exam subjects configured');
+    saveLocalDatabase(db);
+    return AppResult.success(saved);
   }
 
   async getExamSubjectsForClass(
-    _examId: string,
-    _classId: string
+    examId: string,
+    classId: string
   ): Promise<AppResult<ExamSubject[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success(db.examSubjects.filter((es) => es.examId === examId && es.classId === classId));
   }
 
   async enterMarks(
     actor: Profile,
-    _examId: string,
+    examId: string,
     sectionId: string,
     subjectId: string,
-    marks: Mark[]
+    marks: Mark[],
+    finalize: boolean,
+    reason?: string
   ): Promise<AppResult<Mark[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
+    const fail = (message: string) => AppResult.failure<Mark[]>({ kind: 'ValidationFailed', message });
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) {
+      return AppResult.failure({ kind: 'NotFound', entity: 'Exam', id: examId, message: `Exam (${examId}) not found.` });
+    }
+    const section = db.sections.find((x) => x.id === sectionId);
+    if (!section) return fail('Section not found.');
     if (actor.role === Role.TEACHER) {
       const canEnter = db.teacherAssignments.some(
         (ta) =>
@@ -2550,38 +2780,195 @@ export class FakeExamRepository implements ExamRepository {
           message: `Teacher ${actor.loginId} is not assigned to enter marks for subject ${subjectId}.`,
         });
       }
+      if (exam.status !== ExamStatus.MARKS_ENTRY) return fail('Marks entry is not open for this exam.');
+    } else if (actor.role === Role.ADMIN) {
+      if (exam.status === ExamStatus.DRAFT) return fail('Marks entry is not open for this exam.');
+      if (exam.status === ExamStatus.PUBLISHED && !reason?.trim()) {
+        return fail('A reason is required to change marks of a published exam.');
+      }
+    } else {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only teachers and the Admin can enter marks.' });
     }
-    return AppResult.success(marks);
+    const es = db.examSubjects.find((x) => x.examId === examId && x.classId === section.classId && x.subjectId === subjectId);
+    if (!es) return fail('This subject is not part of the exam for this class.');
+
+    const students = db.students.filter((x) => x.sectionId === sectionId && x.status === StudentStatus.ACTIVE);
+    const ids = new Set(students.map((x) => x.id));
+    const seen = new Set<string>();
+    const clean: Mark[] = [];
+    for (const m of marks) {
+      if (!ids.has(m.studentId)) return fail('A student does not belong to this section.');
+      if (seen.has(m.studentId)) return fail('A student appears twice.');
+      seen.add(m.studentId);
+      if (m.isAbsent) {
+        clean.push({ examId, studentId: m.studentId, subjectId, obtained: 0, isAbsent: true });
+        continue;
+      }
+      if (!Number.isFinite(m.obtained) || m.obtained < 0 || m.obtained > es.totalMarks) {
+        return fail(`Marks must be between 0 and ${es.totalMarks}.`);
+      }
+      if (Math.round(m.obtained * 2) !== m.obtained * 2) return fail('Marks can use whole or half numbers only.');
+      clean.push({ examId, studentId: m.studentId, subjectId, obtained: m.obtained, isAbsent: false });
+    }
+    if (finalize && clean.length !== students.length) {
+      return fail(`Enter a mark (or Absent) for every student. ${students.length - clean.length} still missing.`);
+    }
+
+    const before = db.marks.filter((m) => m.examId === examId && m.subjectId === subjectId && ids.has(m.studentId));
+    db.marks = db.marks.filter((m) => !(m.examId === examId && m.subjectId === subjectId && ids.has(m.studentId)));
+    db.marks.push(...clean);
+
+    if (finalize) {
+      db.markSubmissions = db.markSubmissions.filter(
+        (x) => !(x.examId === examId && x.sectionId === sectionId && x.subjectId === subjectId)
+      );
+      db.markSubmissions.push({ examId, sectionId, subjectId, submittedBy: actor.id, submittedAt: new Date().toISOString() });
+    }
+    if (exam.status === ExamStatus.PUBLISHED) {
+      examAudit(
+        db,
+        actor.id,
+        'EDIT_PUBLISHED_MARKS',
+        `${examId}/${sectionId}/${subjectId}`,
+        `${before.length} marks`,
+        `${clean.length} marks`,
+        reason!.trim()
+      );
+    }
+    saveLocalDatabase(db);
+    return AppResult.success(clean);
   }
 
   async getMarksForSectionSubject(
-    _examId: string,
-    _sectionId: string,
-    _subjectId: string
+    examId: string,
+    sectionId: string,
+    subjectId: string
   ): Promise<AppResult<Mark[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const ids = new Set(db.students.filter((x) => x.sectionId === sectionId).map((x) => x.id));
+    return AppResult.success(db.marks.filter((m) => m.examId === examId && m.subjectId === subjectId && ids.has(m.studentId)));
+  }
+
+  async getMarkSubmission(
+    examId: string,
+    sectionId: string,
+    subjectId: string
+  ): Promise<AppResult<MarkSubmission | null>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success(
+      db.markSubmissions.find((x) => x.examId === examId && x.sectionId === sectionId && x.subjectId === subjectId) ?? null
+    );
+  }
+
+  async getMarksProgress(examId: string): Promise<AppResult<MarksProgressRow[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const rows: MarksProgressRow[] = [];
+    for (const es of db.examSubjects.filter((x) => x.examId === examId)) {
+      for (const sec of db.sections.filter((x) => x.classId === es.classId)) {
+        const ids = new Set(db.students.filter((x) => x.sectionId === sec.id && x.status === StudentStatus.ACTIVE).map((x) => x.id));
+        rows.push({
+          sectionId: sec.id,
+          classId: es.classId,
+          subjectId: es.subjectId,
+          expected: ids.size,
+          entered: db.marks.filter((m) => m.examId === examId && m.subjectId === es.subjectId && ids.has(m.studentId)).length,
+          submitted: db.markSubmissions.some((x) => x.examId === examId && x.sectionId === sec.id && x.subjectId === es.subjectId),
+        });
+      }
+    }
+    return AppResult.success(rows);
   }
 
   async getStudentResultCard(
     examId: string,
-    studentId: string
+    studentId: string,
+    actor?: Profile
   ): Promise<AppResult<StudentResultCard>> {
     await simulateLocalDelay();
-    return AppResult.failure({
+    const db = getOrSeedLocalDatabase();
+    const notFound = AppResult.failure<StudentResultCard>({
       kind: 'NotFound',
       entity: 'StudentResultCard',
       id: `${examId}/${studentId}`,
       message: 'Result card not found.',
     });
+    const exam = db.exams.find((e) => e.id === examId);
+    const student = db.students.find((s) => s.id === studentId);
+    if (!exam || !student) return notFound;
+    if (actor?.role === Role.PARENT) {
+      const linked = db.parentStudents.some((ps) => ps.parentId === actor.id && ps.studentId === studentId);
+      if (!linked || exam.status !== ExamStatus.PUBLISHED) return notFound;
+    }
+    const card = buildSectionCardsInDb(db, exam, student.sectionId).find((c) => c.student.id === studentId);
+    return card ? AppResult.success(card) : notFound;
   }
 
   async getSectionResultCards(
-    _examId: string,
-    _sectionId: string
+    examId: string,
+    sectionId: string
   ): Promise<AppResult<StudentResultCard[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) return AppResult.success([]);
+    return AppResult.success(buildSectionCardsInDb(db, exam, sectionId));
+  }
+
+  async getExamAnalytics(
+    examId: string,
+    campusId: string | null,
+    classId: string | null
+  ): Promise<AppResult<ExamAnalytics>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const exam = db.exams.find((e) => e.id === examId);
+    const empty: ExamAnalytics = {
+      studentsCount: 0,
+      averagePercent: 0,
+      passPercent: 0,
+      incompleteCount: 0,
+      gradeDistribution: [],
+      topStudents: [],
+      subjectAverages: [],
+    };
+    if (!exam) return AppResult.success(empty);
+    const classIds = new Set(
+      db.examSubjects
+        .filter((es) => es.examId === examId)
+        .map((es) => es.classId)
+        .filter((cid) => {
+          const c = db.classes.find((x) => x.id === cid);
+          return c && (!classId || cid === classId) && (!campusId || c.campusId === campusId);
+        })
+    );
+    const cards: StudentResultCard[] = [];
+    db.sections.filter((x) => classIds.has(x.classId)).forEach((sec) => cards.push(...buildSectionCardsInDb(db, exam, sec.id)));
+    const complete = cards.filter((c) => !c.incomplete);
+    const dist = new Map<string, number>();
+    complete.forEach((c) => dist.set(c.grade, (dist.get(c.grade) ?? 0) + 1));
+    const order = [...db.gradingScale].sort((a, b) => b.minPercent - a.minPercent).map((g) => g.grade);
+    const subj = new Map<string, { sum: number; n: number }>();
+    complete.forEach((c) =>
+      c.subjectLines.forEach((l) => {
+        const cur = subj.get(l.subjectId) ?? { sum: 0, n: 0 };
+        subj.set(l.subjectId, { sum: cur.sum + l.percent, n: cur.n + 1 });
+      })
+    );
+    return AppResult.success({
+      studentsCount: complete.length,
+      averagePercent: complete.length ? roundOne(complete.reduce((s, c) => s + c.percentage, 0) / complete.length) : 0,
+      passPercent: complete.length ? roundOne((complete.filter((c) => c.passed).length / complete.length) * 100) : 0,
+      incompleteCount: cards.length - complete.length,
+      gradeDistribution: order.filter((g) => dist.has(g)).map((g) => ({ grade: g, count: dist.get(g)! })),
+      topStudents: [...complete]
+        .sort((a, b) => b.percentage - a.percentage)
+        .slice(0, 10)
+        .map((c) => ({ student: c.student, percentage: c.percentage, grade: c.grade })),
+      subjectAverages: [...subj.entries()].map(([subjectId, v]) => ({ subjectId, averagePercent: roundOne(v.sum / v.n) })),
+    });
   }
 }
 
@@ -3295,6 +3682,13 @@ export class FakeSettingsRepository implements SettingsRepository {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
     return AppResult.success(db.subjects);
+  }
+
+  async getClassSubjects(classId: string): Promise<AppResult<Subject[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const ids = new Set(db.classSubjects.filter((cs) => cs.classId === classId).map((cs) => cs.subjectId));
+    return AppResult.success(db.subjects.filter((x) => ids.has(x.id)));
   }
 
   async saveClass(

@@ -788,7 +788,49 @@ export type StringKey =
   | 'ad_att_unmarked'
   | 'ad_att_save'
   | 'ad_att_done'
-  | 'ad_att_close';
+  | 'ad_att_close'
+  | 'ex_tab'
+  | 'ex_new'
+  | 'ex_name_en'
+  | 'ex_name_ur'
+  | 'ex_type'
+  | 'ex_type_MONTHLY_TEST'
+  | 'ex_type_MID_TERM'
+  | 'ex_type_FINAL_TERM'
+  | 'ex_start'
+  | 'ex_end'
+  | 'ex_status_DRAFT'
+  | 'ex_status_MARKS_ENTRY'
+  | 'ex_status_PUBLISHED'
+  | 'ex_btn_open_entry'
+  | 'ex_btn_publish'
+  | 'ex_btn_unpublish'
+  | 'ex_none'
+  | 'ex_subjects_heading'
+  | 'ex_subject'
+  | 'ex_total'
+  | 'ex_pass'
+  | 'ex_copy_all'
+  | 'ex_progress'
+  | 'ex_edit_marks'
+  | 'ex_saved_draft'
+  | 'ex_entered'
+  | 'ex_of'
+  | 'ex_submit'
+  | 'ex_submitted'
+  | 'ex_absent'
+  | 'ex_pick_exam'
+  | 'ex_no_open'
+  | 'ex_no_assign'
+  | 'ex_roll'
+  | 'ex_all_needed'
+  | 'ex_invalid'
+  | 'ex_save_changes'
+  | 'ex_reason_edit'
+  | 'ex_sections_hint'
+  | 'ex_no_class_subjects'
+  | 'ex_saved'
+  | 'ex_all_campus';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1579,6 +1621,48 @@ export const stringsEn: Record<StringKey, string> = {
   ad_att_save: 'Save correction',
   ad_att_done: 'Attendance updated.',
   ad_att_close: 'Back',
+  ex_tab: 'Exams',
+  ex_new: 'New exam',
+  ex_name_en: 'Exam name (English)',
+  ex_name_ur: 'Exam name (Urdu)',
+  ex_type: 'Type',
+  ex_type_MONTHLY_TEST: 'Monthly test',
+  ex_type_MID_TERM: 'Mid-term',
+  ex_type_FINAL_TERM: 'Final term',
+  ex_start: 'Start date',
+  ex_end: 'End date',
+  ex_status_DRAFT: 'Draft',
+  ex_status_MARKS_ENTRY: 'Marks entry',
+  ex_status_PUBLISHED: 'Published',
+  ex_btn_open_entry: 'Open marks entry',
+  ex_btn_publish: 'Publish results',
+  ex_btn_unpublish: 'Unpublish',
+  ex_none: 'No exams yet.',
+  ex_subjects_heading: 'Subjects and marks',
+  ex_subject: 'Subject',
+  ex_total: 'Total',
+  ex_pass: 'Pass',
+  ex_copy_all: 'Copy to all classes of this campus',
+  ex_progress: 'Marks progress',
+  ex_edit_marks: 'Marks',
+  ex_saved_draft: 'Draft saved',
+  ex_entered: 'entered',
+  ex_of: 'of',
+  ex_submit: 'Submit marks',
+  ex_submitted: 'Submitted',
+  ex_absent: 'Absent',
+  ex_pick_exam: 'Choose an exam',
+  ex_no_open: 'No exam is open for marks entry right now.',
+  ex_no_assign: 'You have no sections assigned for marks entry.',
+  ex_roll: 'Roll',
+  ex_all_needed: 'Enter a mark or Absent for every student before submitting.',
+  ex_invalid: 'Marks must be between 0 and the total (half marks allowed).',
+  ex_save_changes: 'Save changes',
+  ex_reason_edit: 'Reason for changing published marks (required)',
+  ex_sections_hint: 'Pick a class to set its subjects, then open marks entry.',
+  ex_no_class_subjects: 'This class has no subjects configured.',
+  ex_saved: 'Saved.',
+  ex_all_campus: 'Both campuses',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2370,4 +2454,46 @@ export const stringsUr: Record<StringKey, string> = {
   ad_att_save: 'درستی محفوظ کریں',
   ad_att_done: 'حاضری اپڈیٹ ہو گئی۔',
   ad_att_close: 'واپس',
+  ex_tab: 'امتحانات',
+  ex_new: 'نیا امتحان',
+  ex_name_en: 'امتحان کا نام (انگریزی)',
+  ex_name_ur: 'امتحان کا نام (اردو)',
+  ex_type: 'قسم',
+  ex_type_MONTHLY_TEST: 'ماہانہ ٹیسٹ',
+  ex_type_MID_TERM: 'مڈ ٹرم',
+  ex_type_FINAL_TERM: 'فائنل ٹرم',
+  ex_start: 'آغاز کی تاریخ',
+  ex_end: 'اختتام کی تاریخ',
+  ex_status_DRAFT: 'مسودہ',
+  ex_status_MARKS_ENTRY: 'نمبر اندراج',
+  ex_status_PUBLISHED: 'شائع شدہ',
+  ex_btn_open_entry: 'نمبر اندراج شروع کریں',
+  ex_btn_publish: 'نتائج شائع کریں',
+  ex_btn_unpublish: 'شائع شدہ واپس لیں',
+  ex_none: 'ابھی کوئی امتحان نہیں۔',
+  ex_subjects_heading: 'مضامین اور نمبر',
+  ex_subject: 'مضمون',
+  ex_total: 'کل',
+  ex_pass: 'پاس',
+  ex_copy_all: 'اس کیمپس کی تمام کلاسوں میں نقل کریں',
+  ex_progress: 'نمبروں کی پیش رفت',
+  ex_edit_marks: 'نمبر',
+  ex_saved_draft: 'مسودہ محفوظ',
+  ex_entered: 'درج',
+  ex_of: 'میں سے',
+  ex_submit: 'نمبر جمع کروائیں',
+  ex_submitted: 'جمع شدہ',
+  ex_absent: 'غیر حاضر',
+  ex_pick_exam: 'امتحان چنیں',
+  ex_no_open: 'اس وقت کوئی امتحان نمبر اندراج کے لیے کھلا نہیں۔',
+  ex_no_assign: 'آپ کو نمبر اندراج کے لیے کوئی سیکشن تفویض نہیں۔',
+  ex_roll: 'رول',
+  ex_all_needed: 'جمع کروانے سے پہلے ہر طالب علم کے نمبر یا غیر حاضر درج کریں۔',
+  ex_invalid: 'نمبر 0 اور کل نمبروں کے درمیان ہوں (آدھے نمبر جائز)۔',
+  ex_save_changes: 'تبدیلیاں محفوظ کریں',
+  ex_reason_edit: 'شائع شدہ نمبر بدلنے کی وجہ (لازمی)',
+  ex_sections_hint: 'کلاس چن کر اس کے مضامین طے کریں، پھر نمبر اندراج کھولیں۔',
+  ex_no_class_subjects: 'اس کلاس کے مضامین طے نہیں۔',
+  ex_saved: 'محفوظ ہو گیا۔',
+  ex_all_campus: 'دونوں کیمپس',
 };

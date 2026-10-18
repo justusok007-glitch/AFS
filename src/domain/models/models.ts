@@ -517,6 +517,8 @@ export interface Exam {
   type: ExamType;
   status: ExamStatus;
   campusId: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface ExamSubject {
@@ -542,15 +544,62 @@ export interface GradingScaleEntry {
   remarksUr?: string;
 }
 
+export interface ResultSubjectLine {
+  subjectId: string;
+  totalMarks: number;
+  passMarks: number;
+  obtained: number;
+  isAbsent: boolean;
+  /** false when the teacher has not entered this mark yet. */
+  entered: boolean;
+  passed: boolean;
+  percent: number;
+}
+
 export interface StudentResultCard {
   exam: Exam;
   student: Student;
   subjectMarks: Mark[];
+  subjectLines: ResultSubjectLine[];
   totalMaxMarks: number;
   totalObtainedMarks: number;
   percentage: number;
   grade: string;
+  gradeRemarksEn: string;
+  gradeRemarksUr: string;
+  /** Passed every subject (absent or below pass marks fails). */
+  passed: boolean;
+  /** At least one subject mark is missing. */
+  incomplete: boolean;
   rankInSection: number | null;
+  sectionSize: number;
+}
+
+export interface MarkSubmission {
+  examId: string;
+  sectionId: string;
+  subjectId: string;
+  submittedBy: string;
+  submittedAt: string;
+}
+
+export interface MarksProgressRow {
+  sectionId: string;
+  classId: string;
+  subjectId: string;
+  entered: number;
+  expected: number;
+  submitted: boolean;
+}
+
+export interface ExamAnalytics {
+  studentsCount: number;
+  averagePercent: number;
+  passPercent: number;
+  incompleteCount: number;
+  gradeDistribution: { grade: string; count: number }[];
+  topStudents: { student: Student; percentage: number; grade: string }[];
+  subjectAverages: { subjectId: string; averagePercent: number }[];
 }
 
 // ============================================================================
@@ -618,6 +667,8 @@ export interface SchoolSettings {
   address: string;
   attendanceLockTime: string; // LocalTime "23:59"
   weeklyOffDays: DayOfWeek[];
+  /** Show class position on parent report cards (default true). */
+  showClassPosition?: boolean;
 }
 
 export interface SchoolHoliday {

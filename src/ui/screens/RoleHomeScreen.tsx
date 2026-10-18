@@ -52,6 +52,7 @@ import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
+import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
@@ -548,7 +549,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       );
     }
 
-    // Marks & Messages tabs stay "Coming soon"
+    if (currentTab.id === 'marks') {
+      return <TeacherMarksTab teacher={session.profile} />;
+    }
+
+    // Messages tab stays "Coming soon"
     return (
       <>
         <SchoolCard className="flex items-center justify-between gap-3 py-3.5 px-4">

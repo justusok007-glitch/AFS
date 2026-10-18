@@ -24,8 +24,9 @@ import {
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { selectCls } from '../principal/PrincipalShared';
+import { AdminExamsSection } from './AdminExamsSection';
 
-type SetupTab = 'school' | 'classes' | 'fees' | 'holidays' | 'grading';
+type SetupTab = 'school' | 'classes' | 'fees' | 'exams' | 'holidays' | 'grading';
 
 export const AdminSetupTab: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
   const { stringResource: t } = useStringResource();
@@ -37,6 +38,7 @@ export const AdminSetupTab: React.FC<{ admin: Profile; lookups: AccountantLookup
           { id: 'school' as const, label: t('su_tab_school') },
           { id: 'classes' as const, label: t('su_tab_classes') },
           { id: 'fees' as const, label: t('su_tab_fees') },
+          { id: 'exams' as const, label: t('ex_tab') },
           { id: 'holidays' as const, label: t('su_tab_holidays') },
           { id: 'grading' as const, label: t('su_tab_grading') },
         ]}
@@ -46,6 +48,7 @@ export const AdminSetupTab: React.FC<{ admin: Profile; lookups: AccountantLookup
       {tab === 'school' && <SchoolSection admin={admin} onSaved={lookups.reload} />}
       {tab === 'classes' && <ClassesSection admin={admin} lookups={lookups} />}
       {tab === 'fees' && <FeesSection admin={admin} lookups={lookups} />}
+      {tab === 'exams' && <AdminExamsSection admin={admin} lookups={lookups} />}
       {tab === 'holidays' && <HolidaysSection admin={admin} lookups={lookups} />}
       {tab === 'grading' && <GradingSection admin={admin} />}
     </div>
