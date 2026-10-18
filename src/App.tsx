@@ -197,7 +197,7 @@ const MainShell: React.FC<{
 
   return (
     <div className="min-h-screen bg-[#F6F8FC] text-[#1B2233] flex justify-center">
-      <div className="w-full max-w-[430px] min-h-screen bg-[#F6F8FC] sm:my-4 sm:min-h-[844px] sm:max-h-[900px] sm:rounded-[32px] sm:border sm:border-[#E4E8F0] sm:shadow-lg flex flex-col overflow-hidden relative print-shell-frame">
+      <div className="w-full max-w-[430px] h-[100dvh] max-h-[100dvh] bg-[#F6F8FC] sm:h-auto sm:my-4 sm:min-h-[844px] sm:max-h-[900px] sm:rounded-[32px] sm:border sm:border-[#E4E8F0] sm:shadow-lg flex flex-col overflow-hidden relative print-shell-frame">
         {/* Visible orange "Demo date active" strip when a demo date override is on */}
         {demoDateOverride && (
           <div className="bg-[#F28C28] text-white px-3.5 py-2 flex items-center justify-between gap-2 text-xs font-semibold shrink-0 no-print shadow-xs z-40">
@@ -224,7 +224,7 @@ const MainShell: React.FC<{
             </button>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1 min-h-0 overflow-y-auto flex flex-col">
           {renderScreenContent()}
         </main>
       </div>
