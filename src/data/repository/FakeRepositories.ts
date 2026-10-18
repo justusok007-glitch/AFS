@@ -4030,7 +4030,7 @@ export class FakeSettingsRepository implements SettingsRepository {
   }
 
   async saveClass(
-    cls: { id?: string; campusId: string; nameEn: string; nameUr: string },
+    cls: { id?: string; campusId: string; nameEn: string; nameUr: string; subjects?: { nameEn: string; nameUr: string }[] },
     actor: Profile
   ): Promise<AppResult<SchoolClass>> {
     await simulateLocalDelay();
@@ -4064,6 +4064,41 @@ export class FakeSettingsRepository implements SettingsRepository {
       const sort = db.classes.filter((c) => c.campusId === cls.campusId).reduce((m, c) => Math.max(m, c.sortOrder), 0) + 1;
       saved = { id: `cls_${Date.now().toString(36)}`, campusId: cls.campusId, nameEn, nameUr, sortOrder: sort };
       db.classes.push(saved);
+    }
+    // Subjects typed by the admin (when provided): reuse a subject with the same English name, otherwise create it.
+    if (cls.subjects) {
+      const wanted: { nameEn: string; nameUr: string }[] = [];
+      const seenNames = new Set<string>();
+      for (const sub of cls.subjects) {
+        const en = sub.nameEn.trim();
+        if (!en) continue;
+        const key = en.toLowerCase();
+        if (seenNames.has(key)) return fail(`Subject "${en}" is listed twice.`);
+        seenNames.add(key);
+        wanted.push({ nameEn: en, nameUr: sub.nameUr.trim() || en });
+      }
+      const nextIds: string[] = [];
+      wanted.forEach((w, i) => {
+        let existing = db.subjects.find((x) => x.nameEn.toLowerCase() === w.nameEn.toLowerCase());
+        if (!existing) {
+          existing = { id: `sub_${Date.now().toString(36)}${i}`, nameEn: w.nameEn, nameUr: w.nameUr };
+          db.subjects.push(existing);
+        }
+        nextIds.push(existing.id);
+      });
+      const current = db.classSubjects.filter((cs) => cs.classId === saved.id).map((cs) => cs.subjectId);
+      const removed = current.filter((id) => !nextIds.includes(id));
+      for (const id of removed) {
+        const inUse =
+          db.examSubjects.some((es) => es.classId === saved.id && es.subjectId === id) ||
+          db.teacherAssignments.some((ta) => ta.subjectId === id);
+        if (inUse) {
+          const nm = db.subjects.find((x) => x.id === id)?.nameEn ?? id;
+          return fail(`Subject "${nm}" is already used in an exam or teacher assignment and cannot be removed.`);
+        }
+      }
+      db.classSubjects = db.classSubjects.filter((cs) => cs.classId !== saved.id);
+      nextIds.forEach((subjectId) => db.classSubjects.push({ classId: saved.id, subjectId }));
     }
     db.auditLogs.unshift({
       id: auditId(),

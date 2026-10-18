@@ -468,7 +468,7 @@ export interface SettingsRepository {
   getClassSubjects(classId: string): Promise<AppResult<Subject[]>>;
   /** Create or rename a class (sortOrder is assigned automatically on create). Admin only. */
   saveClass(
-    cls: Pick<SchoolClass, 'campusId' | 'nameEn' | 'nameUr'> & { id?: string },
+    cls: Pick<SchoolClass, 'campusId' | 'nameEn' | 'nameUr'> & { id?: string; subjects?: { nameEn: string; nameUr: string }[] },
     actor: Profile
   ): Promise<AppResult<SchoolClass>>;
   /** Create or edit a section, including its class teacher. Admin only. */
