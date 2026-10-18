@@ -35,6 +35,7 @@ import {
 import { examName, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { CHART, percentColor } from '../principal/PrincipalShared';
 import { ReportCardPrint } from './ReportCardPrint';
+import { LatestResultSummaryCard } from './ParentSummaryCards';
 
 export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allowPrint?: boolean }> = ({ parent, child, allowPrint = false }) => {
   const { stringResource: t, language } = useStringResource();
@@ -115,6 +116,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allow
 
   return (
     <div className="space-y-3">
+      <LatestResultSummaryCard parent={parent} child={child} />
       {trend.length >= 2 && (
         <SchoolCard className="space-y-2">
           <div className="font-heading text-xs font-bold text-[#14284B]">{t('rs_trend')}</div>

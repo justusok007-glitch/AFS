@@ -444,10 +444,13 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
         <ParentHomeTab
           key={`home_${selectedChild.id}`}
           parentProfile={session.profile}
+          childrenList={childrenList}
           selectedChild={selectedChild}
-          schoolClass={childCls}
-          section={childSec}
-          onOpenFeesTab={() => onTabChange(2)}
+          onSelectChild={(id) => void handleSelectChild(id)}
+          onOpenTab={handleGuardedTabChange}
+          onOpenNotifications={() => setNotificationsOpen(true)}
+          onOpenSettings={handleGuardedOpenSettings}
+          unreadNotifications={unreadCount}
         />
       );
     }

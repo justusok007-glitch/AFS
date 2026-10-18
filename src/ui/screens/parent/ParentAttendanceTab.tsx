@@ -48,6 +48,7 @@ import {
   formatYearMonthLabel,
   PullToRefreshContainer,
 } from './ParentHelpers';
+import { MonthAttendanceSummaryCard } from './ParentSummaryCards';
 
 export interface ParentAttendanceTabProps {
   selectedChild: Student;
@@ -237,6 +238,7 @@ export const ParentAttendanceTab: React.FC<ParentAttendanceTabProps> = ({
       refreshing={refreshing}
       onRefresh={() => loadAttendanceData(true)}
     >
+      <MonthAttendanceSummaryCard child={selectedChild} />
       {/* Segmented Switch: Daily | Monthly | All time */}
       <SchoolCard className="p-2.5">
         <TabRow

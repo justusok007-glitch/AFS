@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { FeeStatusSummaryCard } from './ParentSummaryCards';
 import {
   AlertCircle,
   ArrowLeft,
@@ -462,6 +463,7 @@ export const ParentFeesTab: React.FC<ParentFeesTabProps> = ({
             refreshing={refreshing}
             onRefresh={() => loadChildFeesData(true)}
           >
+            <FeeStatusSummaryCard child={selectedChild} />
             {/* 1. Six Summary Cards in a 2-Column Grid */}
             <div className="grid grid-cols-2 gap-3">
               {/* Card 1: Monthly Fee */}
