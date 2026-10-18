@@ -720,7 +720,7 @@ const StudentProfile: React.FC<{
       )}
 
       {tab === 'results' && (
-        <ParentResultsTab parent={admin} child={student} />
+        <ParentResultsTab parent={admin} child={student} allowPrint />
       )}
 
       <SchoolDialog

@@ -36,7 +36,7 @@ import { examName, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { CHART, percentColor } from '../principal/PrincipalShared';
 import { ReportCardPrint } from './ReportCardPrint';
 
-export const ParentResultsTab: React.FC<{ parent: Profile; child: Student }> = ({ parent, child }) => {
+export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allowPrint?: boolean }> = ({ parent, child, allowPrint = false }) => {
   const { stringResource: t, language } = useStringResource();
   const lookups = useAccountantLookups();
   const subjects = useSubjectsMap();
@@ -93,7 +93,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student }> = (
         : undefined;
     return (
       <>
-        {printing && (
+        {allowPrint && printing && (
           <PrintFrame onClose={() => setPrinting(false)}>
             <ReportCardPrint card={open} previous={cards.slice(cards.findIndex((c) => c.exam.id === open.exam.id) + 1)} lookups={lookups} subjects={subjects} />
           </PrintFrame>
@@ -105,7 +105,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student }> = (
           subjects={subjects}
           showPosition={showPosition}
           onBack={() => setOpenId(null)}
-          onPrint={() => setPrinting(true)}
+          onPrint={allowPrint ? () => setPrinting(true) : undefined}
         />
       </>
     );
@@ -156,7 +156,7 @@ interface CardProps {
   showPosition: boolean;
 }
 
-const ReportCard: React.FC<CardProps & { onBack: () => void; onPrint: () => void }> = ({ card, mid, lookups, subjects, showPosition, onBack, onPrint }) => {
+const ReportCard: React.FC<CardProps & { onBack: () => void; onPrint?: () => void }> = ({ card, mid, lookups, subjects, showPosition, onBack, onPrint }) => {
   const { stringResource: t, language } = useStringResource();
   const chart = card.subjectLines.map((l) => ({ name: subjectName(subjects, l.subjectId, language), pct: l.percent }));
   return (
@@ -222,7 +222,7 @@ const ReportCard: React.FC<CardProps & { onBack: () => void; onPrint: () => void
         </div>
       </SchoolCard>
 
-      <PrimaryButton text={t('rs_print')} variant="navy" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={onPrint} />
+      {onPrint && <PrimaryButton text={t('rs_print')} variant="navy" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={onPrint} />}
     </div>
   );
 };

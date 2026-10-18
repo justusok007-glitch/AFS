@@ -396,18 +396,6 @@ export const ParentFeesTab: React.FC<ParentFeesTabProps> = ({
                         </span>
                       </div>
                     </div>
-
-                    <PrimaryButton
-                      text={stringResource('print_save_pdf_button')}
-                      variant="orange"
-                      icon={<Printer className="w-4 h-4" />}
-                      onClick={() =>
-                        triggerPrintDocument({
-                          kind: 'voucher',
-                          voucher: selectedVoucher,
-                        })
-                      }
-                    />
                   </SchoolCard>
 
                   {/* Payments Received Against This Voucher */}
@@ -459,23 +447,6 @@ export const ParentFeesTab: React.FC<ParentFeesTabProps> = ({
                                 {formatRupees(pay.amount)}
                               </span>
                             </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                triggerPrintDocument({
-                                  kind: 'receipt',
-                                  payment: pay,
-                                  allocatedVoucherNo: selectedVoucher.voucherNo,
-                                })
-                              }
-                              className="w-full min-h-[38px] px-3 py-1.5 rounded-xl bg-white border border-[#E4E8F0] text-[#14284B] text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#14284B]/6 transition-colors cursor-pointer"
-                            >
-                              <Printer className="w-3.5 h-3.5 text-[#F28C28]" />
-                              <span>
-                                {stringResource('print_receipt_button')}
-                              </span>
-                            </button>
                           </div>
                         ))}
                       </div>
@@ -707,20 +678,6 @@ export const ParentFeesTab: React.FC<ParentFeesTabProps> = ({
                           {formatRupees(payment.amount)}
                         </div>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          triggerPrintDocument({
-                            kind: 'receipt',
-                            payment,
-                          })
-                        }
-                        className="w-full min-h-[38px] px-3 py-1.5 rounded-xl bg-[#F6F8FC] border border-[#E4E8F0] text-[#14284B] text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#14284B]/8 transition-colors cursor-pointer"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-[#F28C28]" />
-                        <span>{stringResource('print_receipt_button')}</span>
-                      </button>
                     </SchoolCard>
                   ))}
                 </div>
