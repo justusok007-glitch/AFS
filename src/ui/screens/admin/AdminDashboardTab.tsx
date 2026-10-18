@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, GraduationCap, LayoutDashboard, MoreHorizontal, Settings as SettingsIcon, Sliders, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, CalendarCheck, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare, Settings as SettingsIcon, Sliders, Users } from 'lucide-react';
+import { MessagesTab } from '../comms/MessagesTab';
+import { NoticesManager } from '../comms/CommsShared';
+import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
+import { AdminAuditCard } from './AdminMoreTab';
+import { useSectionOptions } from './AdminStudentsTab';
 import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { Profile, Role, StudentStatus } from '../../../domain/models/models';
@@ -78,34 +83,48 @@ export const AdminOverviewTab: React.FC<{
   );
 };
 
-/** Admin home: shortcut tiles. The system overview and school summaries open from their own tile. */
+/** Admin home: shortcut tiles. Overview, corrections, notices, conversations and audit log open from their own tile. */
+type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit';
+
 export const AdminDashboardTab: React.FC<{
+  admin: Profile;
   lookups: AccountantLookups;
   onSwitchTab: (index: number) => void;
   onOpenSettings: () => void;
-}> = ({ lookups, onSwitchTab, onOpenSettings }) => {
+}> = ({ admin, lookups, onSwitchTab, onOpenSettings }) => {
   const { stringResource: t, isRtl } = useStringResource();
-  const [showOverview, setShowOverview] = useState(false);
+  const [view, setView] = useState<DashView>('menu');
+  const sectionOptions = useSectionOptions(lookups);
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
   const ic = 'w-6 h-6';
-  if (showOverview) {
+  const back = () => setView('menu');
+
+  if (view === 'attendance') {
+    return <AdminAttendanceCorrection admin={admin} sectionOptions={sectionOptions} onBack={back} />;
+  }
+  if (view === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={back} />;
+  if (view === 'messages') return <MessagesTab user={admin} readOnly onBack={back} />;
+  if (view === 'overview' || view === 'audit') {
     return (
       <div className="space-y-3">
-        <button type="button" onClick={() => setShowOverview(false)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+        <button type="button" onClick={back} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
           <BackIcon className="w-4 h-4" />
           <span>{t('back_button_label')}</span>
         </button>
-        <AdminOverviewTab lookups={lookups} onSwitchTab={onSwitchTab} />
+        {view === 'overview' ? <AdminOverviewTab lookups={lookups} onSwitchTab={onSwitchTab} /> : <AdminAuditCard />}
       </div>
     );
   }
   return (
     <div className="grid grid-cols-3 gap-3">
-      <HomeTile tone="teal" label={t('ad_sys_title')} icon={<LayoutDashboard className={ic} />} onClick={() => setShowOverview(true)} />
+      <HomeTile tone="teal" label={t('ad_sys_title')} icon={<LayoutDashboard className={ic} />} onClick={() => setView('overview')} />
       <HomeTile tone="orange" label={t('tab_setup')} icon={<Sliders className={ic} />} onClick={() => onSwitchTab(1)} />
       <HomeTile tone="purple" label={t('tab_users')} icon={<Users className={ic} />} onClick={() => onSwitchTab(2)} />
       <HomeTile tone="green" label={t('tab_students')} icon={<GraduationCap className={ic} />} onClick={() => onSwitchTab(3)} />
-      <HomeTile tone="indigo" label={t('tab_more')} icon={<MoreHorizontal className={ic} />} onClick={() => onSwitchTab(4)} />
+      <HomeTile tone="red" label={t('ad_att_btn')} icon={<CalendarCheck className={ic} />} onClick={() => setView('attendance')} />
+      <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => setView('notices')} />
+      <HomeTile tone="indigo" label={t('ms_audit_btn')} icon={<MessageSquare className={ic} />} onClick={() => setView('messages')} />
+      <HomeTile tone="teal" label={t('ad_audit_title')} icon={<ClipboardList className={ic} />} onClick={() => setView('audit')} />
       <HomeTile tone="blue" label={t('settings_title')} icon={<SettingsIcon className={ic} />} onClick={onOpenSettings} />
     </div>
   );

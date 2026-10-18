@@ -21,7 +21,7 @@ export const AdminRoot: React.FC<{
 
   switch (tabId) {
     case 'dashboard':
-      return <AdminDashboardTab lookups={lookups} onSwitchTab={onSwitchTab} onOpenSettings={onOpenSettings} />;
+      return <AdminDashboardTab admin={admin} lookups={lookups} onSwitchTab={onSwitchTab} onOpenSettings={onOpenSettings} />;
     case 'users':
       return (
         <AdminUsersTab
