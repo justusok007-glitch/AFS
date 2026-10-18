@@ -769,7 +769,26 @@ export type StringKey =
   | 'su_grade'
   | 'su_min_percent'
   | 'su_add_grade'
-  | 'su_grade_hint';
+  | 'su_grade_hint'
+  | 'ad_void_btn'
+  | 'ad_void_title'
+  | 'ad_void_note'
+  | 'ad_waive_btn'
+  | 'ad_waive_title'
+  | 'ad_waive_amount'
+  | 'ad_waive_max'
+  | 'ad_waive_err'
+  | 'ad_reason_label'
+  | 'ad_confirm_btn'
+  | 'ad_att_btn'
+  | 'ad_att_title'
+  | 'ad_att_date'
+  | 'ad_att_pick'
+  | 'ad_att_none'
+  | 'ad_att_unmarked'
+  | 'ad_att_save'
+  | 'ad_att_done'
+  | 'ad_att_close';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1541,6 +1560,25 @@ export const stringsEn: Record<StringKey, string> = {
   su_min_percent: 'From %',
   su_add_grade: 'Add grade',
   su_grade_hint: 'A student gets the highest grade whose \'From %\' is at or below their percentage. The lowest grade must start at 0.',
+  ad_void_btn: 'Void payment',
+  ad_void_title: 'Void this payment?',
+  ad_void_note: 'The amount goes back to pending on the vouchers it paid. This cannot be undone.',
+  ad_waive_btn: 'Waive',
+  ad_waive_title: 'Waive fee item',
+  ad_waive_amount: 'Total amount to waive on this item',
+  ad_waive_max: 'Most you can waive:',
+  ad_waive_err: 'Enter a whole amount within the allowed limit.',
+  ad_reason_label: 'Reason (required, saved in the audit log)',
+  ad_confirm_btn: 'Confirm',
+  ad_att_btn: 'Attendance correction',
+  ad_att_title: 'Correct attendance',
+  ad_att_date: 'Date',
+  ad_att_pick: 'Choose a section',
+  ad_att_none: 'No students in this section.',
+  ad_att_unmarked: 'Not marked',
+  ad_att_save: 'Save correction',
+  ad_att_done: 'Attendance updated.',
+  ad_att_close: 'Back',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2313,4 +2351,23 @@ export const stringsUr: Record<StringKey, string> = {
   su_min_percent: 'کم از کم %',
   su_add_grade: 'گریڈ شامل کریں',
   su_grade_hint: 'طالب علم کو وہ سب سے اونچا گریڈ ملتا ہے جس کا \'کم از کم %\' اس کے فیصد کے برابر یا کم ہو۔ سب سے نچلا گریڈ 0 سے شروع ہونا چاہیے۔',
+  ad_void_btn: 'ادائیگی منسوخ کریں',
+  ad_void_title: 'کیا یہ ادائیگی منسوخ کریں؟',
+  ad_void_note: 'رقم واپس واجب الادا ہو جائے گی۔ یہ عمل واپس نہیں ہو سکتا۔',
+  ad_waive_btn: 'معاف کریں',
+  ad_waive_title: 'فیس آئٹم معاف کریں',
+  ad_waive_amount: 'اس آئٹم پر کل معافی کی رقم',
+  ad_waive_max: 'زیادہ سے زیادہ معافی:',
+  ad_waive_err: 'جائز حد کے اندر پوری رقم لکھیں۔',
+  ad_reason_label: 'وجہ (لازمی، آڈٹ لاگ میں محفوظ ہوگی)',
+  ad_confirm_btn: 'تصدیق کریں',
+  ad_att_btn: 'حاضری کی درستی',
+  ad_att_title: 'حاضری درست کریں',
+  ad_att_date: 'تاریخ',
+  ad_att_pick: 'سیکشن چنیں',
+  ad_att_none: 'اس سیکشن میں کوئی طالب علم نہیں۔',
+  ad_att_unmarked: 'درج نہیں',
+  ad_att_save: 'درستی محفوظ کریں',
+  ad_att_done: 'حاضری اپڈیٹ ہو گئی۔',
+  ad_att_close: 'واپس',
 };

@@ -43,7 +43,7 @@ export const AdminRoot: React.FC<{
         />
       );
     case 'more':
-      return <AdminMoreTab onOpenSettings={onOpenSettings} onLogout={onLogout} />;
+      return <AdminMoreTab admin={admin} lookups={lookups} onOpenSettings={onOpenSettings} onLogout={onLogout} />;
     default:
       return null;
   }

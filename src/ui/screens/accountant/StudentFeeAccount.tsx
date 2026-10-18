@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  Ban,
   CheckCircle2,
   Printer,
   Wallet,
@@ -19,6 +20,7 @@ import {
   PaymentAllocation,
   PaymentMethod,
   Profile,
+  Role,
   Student,
   StudentFeeSummary,
 } from '../../../domain/models/models';
@@ -89,6 +91,8 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
   const [openedForm, setOpenedForm] = useState(false);
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
   const [printSpec, setPrintSpec] = useState<PrintSpec | null>(null);
+  const isAdmin = accountant.role === Role.ADMIN;
+  const [adminAction, setAdminAction] = useState<AdminAction | null>(null);
 
   // payment form
   const [amountText, setAmountText] = useState('');
@@ -265,6 +269,18 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
   );
 
   /* ---------- print overlay ---------- */
+  const adminDialog = adminAction ? (
+    <AdminActionDialog
+      action={adminAction}
+      admin={accountant}
+      onClose={() => setAdminAction(null)}
+      onDone={() => {
+        setAdminAction(null);
+        void load(true);
+      }}
+    />
+  ) : null;
+
   const printOverlay = printSpec ? (
     <PrintFrame onClose={() => setPrintSpec(null)}>
       {printSpec.kind === 'receipt' ? (
@@ -471,6 +487,7 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
     return (
       <div className="space-y-3">
         {printOverlay}
+        {adminDialog}
         {backBar(t('back_button_label'), () => setView('account'))}
         <SchoolCard className="space-y-2">
           <div className="flex items-start justify-between gap-2">
@@ -490,9 +507,16 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
           </div>
           {voucher.items.map((it, i) => (
             <div key={i} className="flex items-center justify-between gap-2 text-xs border-t border-[#E4E8F0] pt-1.5">
-              <span>{feeHeadName(it.feeHeadId, it.description, lookups, language)}</span>
-              <span dir="ltr" className="font-mono font-bold text-[#14284B]">
-                {formatRupees(Math.max(0, it.amount - it.waivedAmount))}
+              <span className="min-w-0">{feeHeadName(it.feeHeadId, it.description, lookups, language)}</span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span dir="ltr" className="font-mono font-bold text-[#14284B]">
+                  {formatRupees(Math.max(0, it.amount - it.waivedAmount))}
+                </span>
+                {isAdmin && (it.amount - (it.paidAmount ?? 0) > 0 || it.waivedAmount > 0) && (
+                  <button type="button" className="text-[11px] font-bold text-[#F28C28] cursor-pointer min-h-[32px] px-1" onClick={() => setAdminAction({ kind: 'waive', voucher, feeHeadId: it.feeHeadId, amount: it.amount, paid: it.paidAmount ?? 0, waived: it.waivedAmount })}>
+                    {t('ad_waive_btn')}
+                  </button>
+                )}
               </span>
             </div>
           ))}
@@ -515,7 +539,7 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
             <p className="text-xs text-[#6B7385]">{t('fee_voucher_no_payments')}</p>
           ) : (
             related.map((p) => (
-              <PaymentRow key={p.id} payment={p} lookups={lookups} onPrint={() => setPrintSpec({ kind: 'receipt', payment: p })} />
+              <PaymentRow key={p.id} payment={p} lookups={lookups} onPrint={() => setPrintSpec({ kind: 'receipt', payment: p })} onVoid={isAdmin ? () => setAdminAction({ kind: 'void', payment: p }) : undefined} />
             ))
           )}
           <p className="text-[11px] text-[#6B7385]">{t('acc_void_note')}</p>
@@ -528,6 +552,7 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
   return (
     <div className="space-y-3">
       {printOverlay}
+      {adminDialog}
       {backBar(t('acc_back_to_search_btn'), onBack)}
       {studentHeader}
       <FeeSummaryCards summary={summary} />
@@ -577,7 +602,7 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
       ) : (
         <SchoolCard className="space-y-2">
           {payments.map((p) => (
-            <PaymentRow key={p.id} payment={p} lookups={lookups} onPrint={() => setPrintSpec({ kind: 'receipt', payment: p })} />
+            <PaymentRow key={p.id} payment={p} lookups={lookups} onPrint={() => setPrintSpec({ kind: 'receipt', payment: p })} onVoid={isAdmin ? () => setAdminAction({ kind: 'void', payment: p }) : undefined} />
           ))}
         </SchoolCard>
       )}
@@ -589,7 +614,8 @@ const PaymentRow: React.FC<{
   payment: FeePayment;
   lookups: AccountantLookups;
   onPrint: () => void;
-}> = ({ payment, lookups, onPrint }) => {
+  onVoid?: () => void;
+}> = ({ payment, lookups, onPrint, onVoid }) => {
   const { stringResource: t, language } = useStringResource();
   return (
     <div className={`flex items-center justify-between gap-2 text-xs ${payment.isVoid ? 'opacity-50' : ''}`}>
@@ -616,6 +642,77 @@ const PaymentRow: React.FC<{
             <Printer className="w-4 h-4 text-[#F28C28]" />
           </button>
         )}
+        {!payment.isVoid && onVoid && (
+          <button type="button" onClick={onVoid} aria-label={t('ad_void_btn')} className="p-1.5 rounded-lg hover:bg-[#F6F8FC] cursor-pointer">
+            <Ban className="w-4 h-4 text-[#D64545]" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+type AdminAction =
+  | { kind: 'void'; payment: FeePayment }
+  | { kind: 'waive'; voucher: FeeVoucher; feeHeadId: string; amount: number; paid: number; waived: number };
+
+/** Admin-only: void a payment or waive part of a fee item. A reason is mandatory and goes to the audit log. */
+const AdminActionDialog: React.FC<{
+  action: AdminAction;
+  admin: Profile;
+  onClose: () => void;
+  onDone: () => void;
+}> = ({ action, admin, onClose, onDone }) => {
+  const { stringResource: t } = useStringResource();
+  const maxWaive = action.kind === 'waive' ? Math.max(0, action.amount - action.paid) : 0;
+  const [amount, setAmount] = useState(action.kind === 'waive' ? String(action.waived) : '');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setError(null);
+    if (!reason.trim()) return setError(t('st_err_reason'));
+    setBusy(true);
+    let res;
+    if (action.kind === 'void') {
+      res = await AppModule.feeRepository.voidPayment(admin, action.payment.id, reason);
+    } else {
+      const n = amount.trim() === '' ? NaN : Number(amount);
+      if (!Number.isInteger(n) || n < 0 || n > maxWaive) {
+        setBusy(false);
+        return setError(t('ad_waive_err'));
+      }
+      res = await AppModule.feeRepository.waiveItem(admin, action.voucher.id, action.feeHeadId, n, reason);
+    }
+    setBusy(false);
+    if (!res.ok) return setError(res.error.message);
+    onDone();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#14284B]/45 backdrop-blur-[2px]" role="dialog" aria-modal="true">
+      <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E4E8F0] p-5 shadow-xl space-y-3">
+        <h3 className="font-heading text-sm font-bold text-[#14284B]">
+          {action.kind === 'void' ? t('ad_void_title') : t('ad_waive_title')}
+        </h3>
+        {action.kind === 'void' ? (
+          <p className="text-xs text-[#6B7385]">
+            <span dir="ltr" className="font-mono font-bold">{action.payment.receiptNo}</span> · <span dir="ltr">{formatRupees(action.payment.amount)}</span>
+            <br />{t('ad_void_note')}
+          </p>
+        ) : (
+          <>
+            <SchoolTextField label={t('ad_waive_amount')} value={amount} onValueChange={setAmount} forceLtrValue />
+            <p className="text-[11px] text-[#6B7385]">{t('ad_waive_max')} <span dir="ltr" className="font-mono font-bold">{formatRupees(maxWaive)}</span></p>
+          </>
+        )}
+        <SchoolTextField label={t('ad_reason_label')} value={reason} onValueChange={setReason} />
+        {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+        <div className="grid grid-cols-2 gap-2">
+          <PrimaryButton text={t('acc_cancel_btn')} variant="outline" onClick={onClose} />
+          <PrimaryButton text={t('ad_confirm_btn')} variant="orange" loading={busy} onClick={() => void confirm()} />
+        </div>
       </div>
     </div>
   );

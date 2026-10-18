@@ -1468,7 +1468,21 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       });
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > today()) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'Choose a date that is not in the future.',
+      });
+    }
     const db = getOrSeedLocalDatabase();
+    if (!db.students.some((s) => s.id === studentId)) {
+      return AppResult.failure({
+        kind: 'NotFound',
+        entity: 'Student',
+        id: studentId,
+        message: 'Student not found.',
+      });
+    }
     const existingIdx = db.attendanceRecords.findIndex(
       (r) =>
         r.studentId === studentId &&
@@ -2016,6 +2030,12 @@ export class FakeFeeRepository implements FeeRepository {
       });
     }
 
+    if (payment.isVoid) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'This payment is already voided.',
+      });
+    }
     payment.isVoid = true;
     payment.voidReason = reason.trim();
 
@@ -2114,7 +2134,18 @@ export class FakeFeeRepository implements FeeRepository {
     }
 
     const oldWaived = item.waivedAmount;
-    item.waivedAmount = Math.min(item.amount, Math.round(waivedAmountRupees));
+    const maxWaive = Math.max(0, item.amount - (item.paidAmount ?? 0));
+    if (
+      !Number.isInteger(waivedAmountRupees) ||
+      waivedAmountRupees < 0 ||
+      waivedAmountRupees > maxWaive
+    ) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: `Waived amount must be a whole number between 0 and ${maxWaive} (what is already paid cannot be waived).`,
+      });
+    }
+    item.waivedAmount = waivedAmountRupees;
 
     const totalNet = voucher.items.reduce(
       (s, it) => s + Math.max(0, it.amount - it.waivedAmount),

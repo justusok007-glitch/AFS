@@ -57,7 +57,7 @@ type View =
 const PAGE = 50;
 
 /** "Class 5 - A (Boys)" style options for every section. */
-function useSectionOptions(lookups: AccountantLookups) {
+export function useSectionOptions(lookups: AccountantLookups) {
   const { language } = useStringResource();
   return useMemo(() => {
     const out: { id: string; label: string; classId: string; campusId: string }[] = [];
