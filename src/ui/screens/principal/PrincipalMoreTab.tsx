@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, LogOut, Phone, Search, Settings } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Bell, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Phone, Search, Settings } from 'lucide-react';
+import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
 import { formatSchoolDate } from '../../../domain/formatters/SchoolFormatters';
@@ -12,7 +13,6 @@ import {
 } from '../../../domain/models/models';
 import {
   EmptyState,
-  PrimaryButton,
   SchoolCard,
   SchoolTextField,
   ShimmerPlaceholder,
@@ -31,15 +31,17 @@ import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesManager } from '../comms/CommsShared';
 
 type Range = 'week' | 'month';
+export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages';
 
 export const PrincipalMoreTab: React.FC<{
   principal: Profile;
   lookups: AccountantLookups;
+  view: MoreView;
+  onViewChange: (v: MoreView) => void;
   onOpenSettings: () => void;
   onLogout: () => void;
-}> = ({ principal, lookups, onOpenSettings, onLogout }) => {
+}> = ({ principal, lookups, view, onViewChange, onOpenSettings, onLogout }) => {
   const { stringResource: t, language, isRtl } = useStringResource();
-  const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   // compliance
@@ -160,18 +162,34 @@ export const PrincipalMoreTab: React.FC<{
     );
   }
 
-  if (comms === 'messages') return <MessagesTab user={principal} readOnly onBack={() => setComms(null)} />;
-  if (comms === 'notices') return <NoticesManager actor={principal} lookups={lookups} onBack={() => setComms(null)} />;
+  if (view === 'messages') return <MessagesTab user={principal} readOnly onBack={() => onViewChange('menu')} />;
+  if (view === 'notices') return <NoticesManager actor={principal} lookups={lookups} onBack={() => onViewChange('menu')} />;
+
+  const backBtn = (
+    <button type="button" onClick={() => onViewChange('menu')} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+      <BackIcon className="w-4 h-4" />
+      <span>{t('back_button_label')}</span>
+    </button>
+  );
+  const ic = 'w-6 h-6';
+
+  if (view === 'menu') {
+    return (
+      <div className="grid grid-cols-3 gap-3">
+        <HomeTile tone="teal" label={t('pr_more_students')} icon={<GraduationCap className={ic} />} onClick={() => onViewChange('students')} />
+        <HomeTile tone="indigo" label={t('pr_more_compliance')} icon={<ClipboardCheck className={ic} />} onClick={() => onViewChange('compliance')} />
+        <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => onViewChange('notices')} />
+        <HomeTile tone="green" label={t('ms_audit_btn')} icon={<MessageSquare className={ic} />} onClick={() => onViewChange('messages')} />
+        <HomeTile tone="blue" label={t('settings_open_from_more')} icon={<Settings className={ic} />} onClick={onOpenSettings} />
+        <HomeTile tone="red" label={t('logout_button')} icon={<LogOut className={ic} />} onClick={onLogout} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      <SchoolCard className="space-y-2.5">
-        <PrimaryButton text={t('nt_manage_btn')} variant="orange" onClick={() => setComms('notices')} />
-        <PrimaryButton text={t('ms_audit_btn')} variant="outline" onClick={() => setComms('messages')} />
-        <PrimaryButton text={t('settings_open_from_more')} variant="navy" onClick={onOpenSettings} icon={<Settings className="w-4 h-4 text-[#F28C28]" />} />
-        <PrimaryButton text={t('logout_button')} variant="outline" onClick={onLogout} icon={<LogOut className="w-4 h-4 text-[#14284B]" />} />
-      </SchoolCard>
-
+      {backBtn}
+      {view === 'students' && (
       <SchoolCard className="space-y-2.5">
         <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('pr_more_students')}</h3>
         <SchoolTextField label={t('acc_search_placeholder')} value={query} onValueChange={setQuery} leadingIcon={<Search className="w-4 h-4" />} />
@@ -185,7 +203,9 @@ export const PrincipalMoreTab: React.FC<{
           </button>
         ))}
       </SchoolCard>
+      )}
 
+      {view === 'compliance' && (
       <SchoolCard className="space-y-2.5">
         <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('pr_more_compliance')}</h3>
         <p className="text-[11px] text-[#6B7385]">{t('pr_more_compliance_hint')}</p>
@@ -219,8 +239,7 @@ export const PrincipalMoreTab: React.FC<{
             })
         )}
       </SchoolCard>
-
-      <p className="text-[11px] text-[#6B7385]">{t('pr_notices_soon')}</p>
+      )}
     </div>
   );
 };

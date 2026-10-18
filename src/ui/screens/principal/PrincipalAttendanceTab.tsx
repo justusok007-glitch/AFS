@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { PrincipalAttendanceSummary } from './PrincipalSummaries';
 import { AlertCircle, CalendarX, Download, Printer } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
@@ -117,6 +118,7 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
 
   return (
     <div className="space-y-3">
+      <PrincipalAttendanceSummary lookups={lookups} />
       <SchoolCard className="space-y-2.5">
         <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('pr_att_filters')}</h3>
         <TabRow tabs={campusTabs} selected={campus} onSelect={(v) => { setCampus(v); setCls('ALL'); setSec('ALL'); }} />
@@ -235,43 +237,6 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
             {students.length > 60 && <p className="text-[11px] text-center text-[#6B7385]">{t('acc_showing_first').replace('50', '60')}</p>}
           </SchoolCard>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <PrimaryButton text={t('acc_export_csv_btn')} variant="navy" icon={<Download className="w-4 h-4 text-[#F28C28]" />} onClick={exportCsv} />
-            <PrimaryButton text={t('pr_print_view_btn')} variant="outline" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={() => setPrinting(true)} />
-          </div>
-
-          {printing && (
-            <PrintFrame onClose={() => setPrinting(false)}>
-              <div className="print-sheet-doc">
-                <h2 className="font-heading text-base font-bold text-[#14284B]">{lookups.schoolNameEn} — {t('pr_att_filters')}</h2>
-                <p className="text-xs mb-2" dir="ltr">{formatSchoolDate(eff.from)} → {formatSchoolDate(eff.to)} · {t('pr_overall_percent')}: {report.overallPercent}%</p>
-                <table className="w-full text-[11px] border-collapse">
-                  <tbody>
-                    {[...report.sectionRows].sort((a, b) => sectionLabel(a.sectionId).localeCompare(sectionLabel(b.sectionId))).map((r) => (
-                      <tr key={r.sectionId} className="border-t border-[#E4E8F0]">
-                        <td className="py-0.5">{sectionLabel(r.sectionId)}</td>
-                        <td dir="ltr" className="text-end">{r.present + r.late}P / {r.absent}A / {r.leave}L</td>
-                        <td dir="ltr" className="text-end font-bold">{r.percent}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <h3 className="text-xs font-bold mt-3 mb-1">{chronicOnly ? `${t('pr_chronic_title')} (${t('pr_chronic_below')} ${threshold}%)` : t('pr_student_list')}</h3>
-                <table className="w-full text-[11px] border-collapse">
-                  <tbody>
-                    {students.map((r) => (
-                      <tr key={r.student.id} className="border-t border-[#E4E8F0]">
-                        <td dir="ltr" className="py-0.5 font-mono">{r.student.admissionNo}</td>
-                        <td>{language === 'ur' && r.student.nameUr ? r.student.nameUr : r.student.name}</td>
-                        <td>{studentClassLabel(r.student, lookups, language)}</td>
-                        <td dir="ltr" className="text-end font-bold">{r.percent}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </PrintFrame>
-          )}
         </>
       )}
     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PrincipalFeesSummary } from './PrincipalSummaries';
 import { TabRow } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantDefaultersTab } from '../accountant/AccountantDefaultersTab';
@@ -13,6 +14,7 @@ export const PrincipalFeesTab: React.FC<{ lookups: AccountantLookups }> = ({ loo
   const [sub, setSub] = useState<Sub>('reports');
   return (
     <div className="space-y-3">
+      <PrincipalFeesSummary lookups={lookups} />
       <TabRow
         tabs={[
           { id: 'reports' as Sub, label: t('pr_fees_reports') },
@@ -22,9 +24,9 @@ export const PrincipalFeesTab: React.FC<{ lookups: AccountantLookups }> = ({ loo
         onSelect={setSub}
       />
       {sub === 'reports' ? (
-        <AccountantReportsTab lookups={lookups} />
+        <AccountantReportsTab lookups={lookups} allowExport={false} />
       ) : (
-        <AccountantDefaultersTab lookups={lookups} />
+        <AccountantDefaultersTab lookups={lookups} allowExport={false} />
       )}
     </div>
   );

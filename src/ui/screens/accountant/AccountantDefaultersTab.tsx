@@ -27,7 +27,8 @@ export const AccountantDefaultersTab: React.FC<{
   lookups: AccountantLookups;
   /** Omit for read-only use (principal): hides the Receive payment button. */
   onReceivePayment?: (studentId: string) => void;
-}> = ({ lookups, onReceivePayment }) => {
+  allowExport?: boolean;
+}> = ({ lookups, onReceivePayment, allowExport = true }) => {
   const { stringResource: t, language } = useStringResource();
   const [rows, setRows] = useState<FeeDefaulterSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +146,9 @@ export const AccountantDefaultersTab: React.FC<{
               </div>
             </SchoolCard>
           ))}
-          <PrimaryButton text={t('acc_export_csv_btn')} variant="navy" icon={<Download className="w-4 h-4 text-[#F28C28]" />} onClick={exportCsv} />
+          {allowExport && (
+            <PrimaryButton text={t('acc_export_csv_btn')} variant="navy" icon={<Download className="w-4 h-4 text-[#F28C28]" />} onClick={exportCsv} />
+          )}
         </>
       )}
     </div>

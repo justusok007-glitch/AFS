@@ -59,7 +59,7 @@ const Money: React.FC<{ v: number; className?: string }> = ({ v, className }) =>
   <span dir="ltr" className={`font-mono tabular-nums ${className ?? ''}`}>{formatRupees(v)}</span>
 );
 
-export const AccountantReportsTab: React.FC<{ lookups: AccountantLookups }> = ({ lookups }) => {
+export const AccountantReportsTab: React.FC<{ lookups: AccountantLookups; allowExport?: boolean }> = ({ lookups, allowExport = true }) => {
   const { stringResource: t, language } = useStringResource();
   const [sub, setSub] = useState<Sub>('daily');
   const [students, setStudents] = useState<Record<string, Student>>({});
@@ -272,6 +272,8 @@ export const AccountantReportsTab: React.FC<{ lookups: AccountantLookups }> = ({
                 <h3 className="text-xs font-bold text-[#14284B]">{t('acc_receipts_of_day')}</h3>
                 {dayReceipts.length === 0 ? <p className="text-xs text-[#6B7385]">{t('acc_no_receipts_title')}</p> : dayReceipts.map(receiptRow)}
               </SchoolCard>
+              {allowExport && (
+                <>
               <PrimaryButton text={t('acc_print_report_btn')} variant="navy" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={() => setPrintDaily(true)} />
               {printDaily && (
                 <PrintFrame onClose={() => setPrintDaily(false)}>
@@ -306,6 +308,8 @@ export const AccountantReportsTab: React.FC<{ lookups: AccountantLookups }> = ({
                     </table>
                   </div>
                 </PrintFrame>
+              )}
+                </>
               )}
             </>
           )}
@@ -389,7 +393,9 @@ export const AccountantReportsTab: React.FC<{ lookups: AccountantLookups }> = ({
                   {breakdown(period)}
                 </>
               )}
-              <PrimaryButton text={t('acc_export_csv_btn')} variant="navy" icon={<Download className="w-4 h-4 text-[#F28C28]" />} onClick={exportCsv} disabled={period.receiptsCount === 0} />
+              {allowExport && (
+                <PrimaryButton text={t('acc_export_csv_btn')} variant="navy" icon={<Download className="w-4 h-4 text-[#F28C28]" />} onClick={exportCsv} disabled={period.receiptsCount === 0} />
+              )}
             </>
           )}
         </>
