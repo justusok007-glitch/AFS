@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { HomeTile } from '../../components/HomeTile';
 import { useStringResource } from '../../theme/LocaleContext';
-import { NoticesCard } from '../comms/CommsShared';
 import { Profile } from '../../../domain/models/models';
 import { MoreView } from './PrincipalMoreTab';
 
@@ -26,7 +25,6 @@ export const PrincipalDashboardTab: React.FC<{
   const ic = 'w-6 h-6';
   return (
     <div className="space-y-3">
-      <NoticesCard user={principal} />
       <div className="grid grid-cols-3 gap-3">
         <HomeTile tone="red" label={t('tab_attendance')} icon={<CalendarCheck className={ic} />} onClick={() => onSwitchTab(1)} />
         <HomeTile tone="orange" label={t('tab_fees')} icon={<Wallet className={ic} />} onClick={() => onSwitchTab(2)} />

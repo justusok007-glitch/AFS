@@ -28,7 +28,7 @@ import {
 } from '../accountant/AccountantShared';
 import { percentColor } from './PrincipalShared';
 import { MessagesTab } from '../comms/MessagesTab';
-import { NoticesManager } from '../comms/CommsShared';
+import { NoticesCard, NoticesManager } from '../comms/CommsShared';
 
 type Range = 'week' | 'month';
 export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages';
@@ -163,7 +163,13 @@ export const PrincipalMoreTab: React.FC<{
   }
 
   if (view === 'messages') return <MessagesTab user={principal} readOnly onBack={() => onViewChange('menu')} />;
-  if (view === 'notices') return <NoticesManager actor={principal} lookups={lookups} onBack={() => onViewChange('menu')} />;
+  if (view === 'notices')
+    return (
+      <div className="space-y-3">
+        <NoticesCard user={principal} />
+        <NoticesManager actor={principal} lookups={lookups} onBack={() => onViewChange('menu')} />
+      </div>
+    );
 
   const backBtn = (
     <button type="button" onClick={() => onViewChange('menu')} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">

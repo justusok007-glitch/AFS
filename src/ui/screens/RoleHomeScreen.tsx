@@ -44,6 +44,7 @@ import {
   TabRow,
 } from '../components/SchoolComposables';
 import { SchoolLogo } from '../components/SchoolLogo';
+import { PrincipalAvatar } from '../components/PrincipalAvatar';
 import { StudentAvatar } from '../components/StudentAvatar';
 import { useStringResource } from '../theme/LocaleContext';
 import { AccountantRoot } from './accountant/AccountantRoot';
@@ -678,6 +679,27 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   <SchoolLogo size={36} />
                 </div>
               )}
+              {session.role === UserRole.PRINCIPAL && currentTab.id === 'dashboard' ? (
+                <>
+                  <PrincipalAvatar size={62} />
+                  <div className="min-w-0 py-0.5">
+                    <h1
+                      className={`font-heading text-[18px] font-bold text-white ${
+                        language === 'ur' ? 'font-urdu leading-[2.4] py-0.5' : 'leading-snug'
+                      }`}
+                    >
+                      {language === 'ur' ? session.profile.fullNameUr : session.profile.fullName}
+                    </h1>
+                    <p
+                      className={`text-[13px] text-white/85 ${
+                        language === 'ur' ? 'font-urdu leading-[2.3] py-0.5' : 'leading-normal'
+                      }`}
+                    >
+                      {stringResource(`role_${session.role}` as StringKey)}
+                    </p>
+                  </div>
+                </>
+              ) : (
               <div className="min-w-0 py-0.5">
                 <h1
                   className={`font-heading text-sm font-bold text-white ${
@@ -701,6 +723,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   · {stringResource(`role_${session.role}` as StringKey)}
                 </p>
               </div>
+              )}
             </div>
           )}
 
