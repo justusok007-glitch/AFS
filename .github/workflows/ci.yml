@@ -10,6 +10,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npx tsc --noEmit
-      - run: npx vite build
+      - name: Install
+        run: |
+          set +e
+          npm install --no-audit --no-fund > install.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "::error title=npm install failed::$(tail -n 25 install.log | tr '\n' '|' | cut -c1-1500)"
+          fi
+          exit $code
+      - name: Typecheck
+        run: |
+          set +e
+          npx tsc --noEmit > tsc.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            head -n 40 tsc.log | while IFS= read -r line; do echo "::error title=tsc::${line:0:300}"; done
+          fi
+          exit $code
+      - name: Build
+        run: |
+          set +e
+          npx vite build > build.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "::error title=vite build failed::$(tail -n 25 build.log | tr '\n' '|' | cut -c1-1500)"
+          fi
+          exit $code
