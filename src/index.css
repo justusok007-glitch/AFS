@@ -466,7 +466,7 @@
 .parent-skin .ps-header .ps-building { inset-inline-end: 70px; top: 18px; width: 210px; height: auto; opacity: 0.22; }
 .parent-skin .ps-header .ps-books-img { inset-inline-start: -14px; bottom: 6px; width: 120px; height: auto; opacity: 0.6; z-index: 1 !important; }
 .parent-skin .ps-doodle {
-  background-image: url('/ps-doodle.png');
+  background-image: url('/ps-doodle-v2.png');
   background-size: 420px 420px;
   background-repeat: repeat;
   background-attachment: local;
