@@ -619,7 +619,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   return (
     <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] parent-skin`}>
       {/* Curved Navy Top Bar */}
-      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT ? '' : 'ps-header-lite'}`}>
+      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL ? '' : 'ps-header-lite'}`}>
         <div className="flex items-center justify-between gap-2.5">
           {/* Left / Start Slot: Parent Child Switcher OR Role Header */}
           {session.role === UserRole.PARENT && selectedChild ? (
@@ -673,9 +673,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             </button>
           ) : (
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
-                <SchoolLogo size={36} />
-              </div>
+              {session.role !== UserRole.PRINCIPAL && (
+                <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                  <SchoolLogo size={36} />
+                </div>
+              )}
               <div className="min-w-0 py-0.5">
                 <h1
                   className={`font-heading text-sm font-bold text-white ${
@@ -731,7 +733,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             </button>
           </div>
         </div>
-        {session.role === UserRole.PARENT && (
+        {(session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL) && (
           <div className="ps-deco ps-books ps-logo-badge">
             <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
           </div>
