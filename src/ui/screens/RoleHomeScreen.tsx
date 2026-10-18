@@ -54,6 +54,8 @@ import { ParentResultsTab } from './parent/ParentResultsTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
+import { MessagesTab } from './comms/MessagesTab';
+import { NotificationsSheet, useUnreadNotifications } from './comms/CommsShared';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
@@ -238,7 +240,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   );
   const [childSheetOpen, setChildSheetOpen] = useState<boolean>(false);
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const { count: unreadCount, refresh: refreshUnread } = useUnreadNotifications(session.profile.id);
 
   const [classesMap, setClassesMap] = useState<Record<string, SchoolClass>>({});
   const [sectionsMap, setSectionsMap] = useState<Record<string, Section>>({});
@@ -484,7 +486,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       );
     }
 
-    // Messages tab stays "Coming soon"
+    if (currentTab.id === 'messages') {
+      return <MessagesTab key={`msg_${selectedChild.id}`} user={session.profile} child={selectedChild} />;
+    }
+
+    // Fallback
     return (
       <>
         <SchoolCard className="flex items-center justify-between gap-3 py-3.5 px-4">
@@ -564,7 +570,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       return <TeacherMarksTab teacher={session.profile} />;
     }
 
-    // Messages tab stays "Coming soon"
+    if (currentTab.id === 'messages') {
+      return <MessagesTab user={session.profile} />;
+    }
+
+    // Fallback
     return (
       <>
         <SchoolCard className="flex items-center justify-between gap-3 py-3.5 px-4">
@@ -952,15 +962,11 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
         </div>
       )}
 
-      {/* Notifications Dialog (0 Unread) */}
-      <SchoolDialog
+      <NotificationsSheet
+        user={session.profile}
         open={notificationsOpen}
-        title={stringResource('notifications_label')}
-        message={stringResource('notifications_unread_zero')}
-        confirmText={stringResource('dialog_confirm')}
-        cancelText={stringResource('dialog_cancel')}
-        onConfirm={() => setNotificationsOpen(false)}
-        onDismiss={() => setNotificationsOpen(false)}
+        onClose={() => setNotificationsOpen(false)}
+        onChanged={refreshUnread}
       />
 
       {/* Unsaved Teacher Attendance Changes Dialog when leaving tab / settings / logout */}

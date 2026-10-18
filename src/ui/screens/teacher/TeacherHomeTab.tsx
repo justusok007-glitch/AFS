@@ -41,6 +41,7 @@ import {
   formatSectionCampusLabel,
   SectionSubmissionBadge,
 } from './TeacherHelpers';
+import { NoticesCard, UnreadMessagesCard } from '../comms/CommsShared';
 
 export interface TeacherHomeTabProps {
   teacherProfile: Profile;
@@ -371,21 +372,8 @@ export const TeacherHomeTab: React.FC<TeacherHomeTabProps> = ({
           </p>
         </SchoolCard>
 
-        <SchoolCard className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-heading text-xs font-bold text-[#14284B]">
-              <MessageSquare className="w-4 h-4 text-[#F28C28]" />
-              <span>{stringResource('teacher_unread_messages_title')}</span>
-            </div>
-            <StatusChip
-              label={stringResource('coming_soon_title')}
-              tone="info"
-            />
-          </div>
-          <p className="text-xs text-[#6B7385] leading-relaxed">
-            {stringResource('teacher_unread_messages_subtitle')}
-          </p>
-        </SchoolCard>
+        <UnreadMessagesCard user={teacherProfile} />
+        <NoticesCard user={teacherProfile} />
       </div>
     </PullToRefreshContainer>
   );

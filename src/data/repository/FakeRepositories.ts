@@ -2,6 +2,7 @@ import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
   AdmitResult,
+  NotificationType,
   ConcessionType,
   ExamAnalytics,
   MarkSubmission,
@@ -164,6 +165,10 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
         parsed.examSubjects ??= [];
         parsed.marks ??= [];
         parsed.markSubmissions ??= [];
+        parsed.conversations ??= [];
+        parsed.messages ??= [];
+        parsed.notices ??= [];
+        parsed.notifications ??= [];
         return parsed;
       }
     }
@@ -566,6 +571,80 @@ function admitStudentInDb(
     changedAt: new Date().toISOString(),
   });
   return { ok: true, data: { student, parent, parentPassword }, warnings };
+}
+
+
+// ----------------------------------------------------------------------------
+// In-app notifications. They are written inside the same save as the event that causes them.
+// ----------------------------------------------------------------------------
+
+function pushNotification(
+  db: LocalDatabaseSnapshot,
+  userId: string,
+  type: NotificationType,
+  title: string,
+  titleUr: string,
+  body: string,
+  bodyUr: string
+): void {
+  db.notifications.unshift({
+    id: `ntf_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    userId,
+    type,
+    title,
+    titleUr,
+    body,
+    bodyUr,
+    createdAt: new Date().toISOString(),
+    readAt: null,
+  });
+  // keep the list short so local storage does not grow forever
+  let seen = 0;
+  db.notifications = db.notifications.filter((n) => (n.userId === userId ? ++seen <= 100 : true));
+}
+
+function parentIdsOfStudent(db: LocalDatabaseSnapshot, studentId: string): string[] {
+  return db.parentStudents.filter((ps) => ps.studentId === studentId).map((ps) => ps.parentId);
+}
+
+function notifyParents(
+  db: LocalDatabaseSnapshot,
+  studentId: string,
+  type: NotificationType,
+  title: string,
+  titleUr: string,
+  body: string,
+  bodyUr: string
+): void {
+  parentIdsOfStudent(db, studentId).forEach((pid) =>
+    pushNotification(db, pid, type, title, titleUr, body, bodyUr)
+  );
+}
+
+/** Class-level audience rules shared by notices and notifications. */
+function userSeesNotice(db: LocalDatabaseSnapshot, user: Profile, n: Notice): boolean {
+  if (user.role === Role.ADMIN || user.role === Role.PRINCIPAL) return true;
+  const isStaff = user.role !== Role.PARENT;
+  switch (n.audience) {
+    case NoticeAudience.ALL:
+      return true;
+    case NoticeAudience.STAFF:
+      return isStaff;
+    case NoticeAudience.PARENTS:
+      return !isStaff;
+    case NoticeAudience.CAMPUS:
+      return user.campusId === n.audienceId;
+    case NoticeAudience.CLASS: {
+      if (user.role === Role.PARENT) {
+        const kids = db.parentStudents.filter((ps) => ps.parentId === user.id).map((ps) => ps.studentId);
+        return db.students.some((st) => kids.includes(st.id) && db.sections.find((x) => x.id === st.sectionId)?.classId === n.audienceId);
+      }
+      if (user.role === Role.TEACHER) {
+        return db.teacherAssignments.some((a) => a.teacherId === user.id && db.sections.find((x) => x.id === a.sectionId)?.classId === n.audienceId);
+      }
+      return false;
+    }
+  }
 }
 
 // ============================================================================
@@ -1324,6 +1403,12 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       });
     }
 
+    const previousStatus = new Map(
+      db.attendanceRecords
+        .filter((r) => r.sectionId === sectionId && r.date === date)
+        .map((r) => [r.studentId, r.status])
+    );
+
     // Replace existing records for sectionId + date
     db.attendanceRecords = db.attendanceRecords.filter(
       (r) => !(r.sectionId === sectionId && r.date === date)
@@ -1340,6 +1425,22 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       (s) => !(s.sectionId === sectionId && s.date === date)
     );
     db.attendanceSubmissions.push(submission);
+    records.forEach((r) => {
+      if (r.status !== AttendanceStatus.ABSENT && r.status !== AttendanceStatus.LATE) return;
+      if (previousStatus.get(r.studentId) === r.status) return;
+      const stu = db.students.find((x) => x.id === r.studentId);
+      if (!stu) return;
+      const absent = r.status === AttendanceStatus.ABSENT;
+      notifyParents(
+        db,
+        stu.id,
+        NotificationType.ATTENDANCE,
+        absent ? `${stu.name} was absent today` : `${stu.name} was late today`,
+        absent ? `${stu.nameUr || stu.name} آج غیر حاضر تھا/تھی` : `${stu.nameUr || stu.name} آج دیر سے آیا/آئی`,
+        date,
+        date
+      );
+    });
     saveLocalDatabase(db);
 
     return AppResult.success(submission);
@@ -1789,6 +1890,19 @@ export class FakeFeeRepository implements FeeRepository {
     }
 
     if (createdVouchers.length > 0) {
+      createdVouchers.forEach((v) => {
+        const stu = db.students.find((x) => x.id === v.studentId);
+        const total = v.items.reduce((sum, it) => sum + Math.max(0, it.amount - it.waivedAmount), 0);
+        notifyParents(
+          db,
+          v.studentId,
+          NotificationType.FEE,
+          `New fee voucher ${v.voucherNo}`,
+          `نیا فیس واؤچر ${v.voucherNo}`,
+          `${stu?.name ?? ''} · ${v.billingMonth} · Rs ${total.toLocaleString('en-US')}`,
+          `${stu?.nameUr || stu?.name || ''} · ${v.billingMonth} · Rs ${total.toLocaleString('en-US')}`
+        );
+      });
       saveLocalDatabase(db);
     }
 
@@ -2001,6 +2115,15 @@ export class FakeFeeRepository implements FeeRepository {
     }
 
     db.feePayments.push(payment);
+    notifyParents(
+      db,
+      studentId,
+      NotificationType.FEE,
+      `Payment received Rs ${payment.amount.toLocaleString('en-US')}`,
+      `ادائیگی موصول Rs ${payment.amount.toLocaleString('en-US')}`,
+      `Receipt ${payment.receiptNo}`,
+      `رسید ${payment.receiptNo}`
+    );
     saveLocalDatabase(db);
 
     return AppResult.success({ payment, allocations });
@@ -2682,6 +2805,14 @@ export class FakeExamRepository implements ExamRepository {
       return fail('This status change is not allowed.');
     }
     exam.status = status;
+    if (status === ExamStatus.PUBLISHED) {
+      const classIds = new Set(db.examSubjects.filter((es) => es.examId === examId).map((es) => es.classId));
+      db.students
+        .filter((stu) => stu.status === StudentStatus.ACTIVE && classIds.has(db.sections.find((x) => x.id === stu.sectionId)?.classId ?? ''))
+        .forEach((stu) =>
+          notifyParents(db, stu.id, NotificationType.EXAM, `Result published: ${exam.nameEn}`, `نتیجہ شائع: ${exam.nameUr || exam.nameEn}`, stu.name, stu.nameUr || stu.name)
+        );
+    }
     examAudit(db, actorId, 'EXAM_STATUS', examId, from, status, `Exam ${exam.nameEn}: ${from} -> ${status}`);
     saveLocalDatabase(db);
     return AppResult.success(exam);
@@ -2978,11 +3109,14 @@ export class FakeExamRepository implements ExamRepository {
 
 export class FakeMessageRepository implements MessageRepository {
   async getConversationsForUser(
-    _userId: string,
-    _role: Role
+    userId: string,
+    role: Role
   ): Promise<AppResult<Conversation[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const all = role === Role.ADMIN || role === Role.PRINCIPAL;
+    const list = db.conversations.filter((c) => all || c.parentId === userId || c.teacherId === userId);
+    return AppResult.success([...list].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt)));
   }
 
   async getOrCreateConversation(
@@ -2991,18 +3125,41 @@ export class FakeMessageRepository implements MessageRepository {
     teacherId: string
   ): Promise<AppResult<Conversation>> {
     await simulateLocalDelay();
-    return AppResult.success({
-      id: `conv_${studentId}_${teacherId}`,
+    const db = getOrSeedLocalDatabase();
+    const fail = (message: string) => AppResult.failure<Conversation>({ kind: 'ValidationFailed', message });
+    const student = db.students.find((x) => x.id === studentId);
+    if (!student) return fail('Student not found.');
+    if (!db.parentStudents.some((ps) => ps.parentId === parentId && ps.studentId === studentId)) {
+      return fail('This parent is not linked to the student.');
+    }
+    const teaches = teacherIdsOfSection(db, student.sectionId).includes(teacherId);
+    if (!teaches) return fail('This teacher does not teach the student.');
+    const existing = db.conversations.find((c) => c.studentId === studentId && c.parentId === parentId && c.teacherId === teacherId);
+    if (existing) return AppResult.success(existing);
+    const conv: Conversation = {
+      id: `conv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       studentId,
       parentId,
       teacherId,
       lastMessageAt: new Date().toISOString(),
-    });
+    };
+    db.conversations.push(conv);
+    saveLocalDatabase(db);
+    return AppResult.success(conv);
   }
 
-  async getMessages(_conversationId: string): Promise<AppResult<Message[]>> {
+  async getMessages(conversationId: string, viewer: Profile): Promise<AppResult<Message[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const conv = db.conversations.find((c) => c.id === conversationId);
+    if (!conv) {
+      return AppResult.failure({ kind: 'NotFound', entity: 'Conversation', id: conversationId, message: 'Conversation not found.' });
+    }
+    const allowed = viewer.role === Role.ADMIN || viewer.role === Role.PRINCIPAL || viewer.id === conv.parentId || viewer.id === conv.teacherId;
+    if (!allowed) return AppResult.failure({ kind: 'UnauthorizedRole', message: 'You cannot open this conversation.' });
+    return AppResult.success(
+      db.messages.filter((m) => m.conversationId === conversationId).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    );
   }
 
   async sendMessage(
@@ -3011,42 +3168,133 @@ export class FakeMessageRepository implements MessageRepository {
     body: string
   ): Promise<AppResult<Message>> {
     await simulateLocalDelay();
-    if (!body.trim()) {
-      return AppResult.failure({
-        kind: 'ValidationFailed',
-        message: 'Message body cannot be empty.',
-      });
+    const text = body.trim();
+    if (!text) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Message body cannot be empty.' });
     }
-    return AppResult.success({
-      id: `msg_${Date.now()}`,
+    if (text.length > 1000) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Message is too long (1000 characters at most).' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const conv = db.conversations.find((c) => c.id === conversationId);
+    if (!conv) {
+      return AppResult.failure({ kind: 'NotFound', entity: 'Conversation', id: conversationId, message: 'Conversation not found.' });
+    }
+    if (senderId !== conv.parentId && senderId !== conv.teacherId) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the parent or the teacher can write in this conversation.' });
+    }
+    const sender = db.profiles.find((p) => p.id === senderId);
+    if (!sender || !sender.isActive) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'This account cannot send messages.' });
+    }
+    const now = new Date().toISOString();
+    const msg: Message = {
+      id: `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       conversationId,
       senderId,
-      body: body.trim(),
-      createdAt: new Date().toISOString(),
+      body: text,
+      createdAt: now,
       readAt: null,
-    });
+    };
+    db.messages.push(msg);
+    conv.lastMessageAt = now;
+    const student = db.students.find((x) => x.id === conv.studentId);
+    const to = senderId === conv.parentId ? conv.teacherId : conv.parentId;
+    pushNotification(
+      db,
+      to,
+      NotificationType.MESSAGE,
+      `New message from ${sender.fullName}`,
+      `${sender.fullNameUr || sender.fullName} کی طرف سے نیا پیغام`,
+      student ? `About ${student.name}: ${text.slice(0, 80)}` : text.slice(0, 80),
+      student ? `${student.nameUr || student.name} کے بارے میں: ${text.slice(0, 80)}` : text.slice(0, 80)
+    );
+    saveLocalDatabase(db);
+    return AppResult.success(msg);
   }
 
   async markConversationRead(
-    _conversationId: string,
-    _readerUserId: string
+    conversationId: string,
+    readerUserId: string
   ): Promise<AppResult<number>> {
     await simulateLocalDelay();
-    return AppResult.success(0);
+    const db = getOrSeedLocalDatabase();
+    const now = new Date().toISOString();
+    let n = 0;
+    db.messages.forEach((m) => {
+      if (m.conversationId === conversationId && m.senderId !== readerUserId && !m.readAt) {
+        m.readAt = now;
+        n++;
+      }
+    });
+    const reader = db.profiles.find((p) => p.id === readerUserId);
+    // Principal/Admin only look; they must not mark messages as read for the real participants.
+    if (reader && (reader.role === Role.ADMIN || reader.role === Role.PRINCIPAL)) {
+      return AppResult.success(0);
+    }
+    if (n > 0) saveLocalDatabase(db);
+    return AppResult.success(n);
+  }
+
+  async getUnreadMessageCount(userId: string): Promise<AppResult<number>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const mine = new Set(db.conversations.filter((c) => c.parentId === userId || c.teacherId === userId).map((c) => c.id));
+    return AppResult.success(db.messages.filter((m) => mine.has(m.conversationId) && m.senderId !== userId && !m.readAt).length);
+  }
+
+  async teachersOfStudent(studentId: string): Promise<AppResult<Profile[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const student = db.students.find((x) => x.id === studentId);
+    if (!student) return AppResult.success([]);
+    const ids = teacherIdsOfSection(db, student.sectionId);
+    return AppResult.success(db.profiles.filter((p) => ids.includes(p.id) && p.isActive));
+  }
+
+  async studentsForTeacher(teacherId: string): Promise<AppResult<Student[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const secIds = new Set<string>();
+    db.teacherAssignments.filter((a) => a.teacherId === teacherId).forEach((a) => secIds.add(a.sectionId));
+    db.sections.filter((x) => x.classTeacherId === teacherId).forEach((x) => secIds.add(x.id));
+    return AppResult.success(
+      db.students.filter((x) => secIds.has(x.sectionId) && x.status === StudentStatus.ACTIVE).sort((a, b) => a.name.localeCompare(b.name))
+    );
   }
 }
 
+function teacherIdsOfSection(db: LocalDatabaseSnapshot, sectionId: string): string[] {
+  const ids = new Set<string>();
+  db.teacherAssignments.filter((a) => a.sectionId === sectionId).forEach((a) => ids.add(a.teacherId));
+  const sec = db.sections.find((x) => x.id === sectionId);
+  if (sec?.classTeacherId) ids.add(sec.classTeacherId);
+  return [...ids];
+}
+
 // ============================================================================
-// 7. FAKE NOTICE REPOSITORY (Empty Fake for now)
+// 7. FAKE NOTICE REPOSITORY
 // ============================================================================
 
 export class FakeNoticeRepository implements NoticeRepository {
-  async getNotices(
-    _campusId: string | null,
-    _audience?: NoticeAudience
-  ): Promise<AppResult<Notice[]>> {
+  async getNoticesForUser(user: Profile): Promise<AppResult<Notice[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    const nowIso = new Date().toISOString();
+    return AppResult.success(
+      db.notices
+        .filter((n) => (!n.expiresAt || n.expiresAt > nowIso) && userSeesNotice(db, user, n))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    );
+  }
+
+  async getAllNotices(actor: Profile): Promise<AppResult<Notice[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only Principal or Admin can manage notices.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success([...db.notices].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
   }
 
   async createNotice(
@@ -3060,29 +3308,113 @@ export class FakeNoticeRepository implements NoticeRepository {
         message: 'Only Principal or Admin can publish school notices.',
       });
     }
-    return AppResult.success(notice);
+    const fail = (message: string) => AppResult.failure<Notice>({ kind: 'ValidationFailed', message });
+    const title = notice.title.trim();
+    const body = notice.body.trim();
+    if (title.length < 3) return fail('Notice title is required.');
+    if (body.length < 3) return fail('Notice text is required.');
+    if (body.length > 2000) return fail('Notice text is too long.');
+    const db = getOrSeedLocalDatabase();
+    if (notice.audience === NoticeAudience.CAMPUS && !db.campuses.some((c) => c.id === notice.audienceId)) {
+      return fail('Choose a campus.');
+    }
+    if (notice.audience === NoticeAudience.CLASS && !db.classes.some((c) => c.id === notice.audienceId)) {
+      return fail('Choose a class.');
+    }
+    const nowIso = new Date().toISOString();
+    if (notice.expiresAt && notice.expiresAt <= nowIso) return fail('Expiry must be in the future.');
+    const created: Notice = {
+      id: `ntc_${Date.now().toString(36)}`,
+      title,
+      body,
+      audience: notice.audience,
+      audienceId: notice.audience === NoticeAudience.CAMPUS || notice.audience === NoticeAudience.CLASS ? notice.audienceId : null,
+      createdBy: actor.id,
+      createdAt: nowIso,
+      expiresAt: notice.expiresAt || null,
+    };
+    db.notices.push(created);
+    db.profiles
+      .filter((p) => p.isActive && p.id !== actor.id && userSeesNotice(db, p, created))
+      .filter((p) => p.role !== Role.ADMIN && p.role !== Role.PRINCIPAL)
+      .forEach((p) =>
+        pushNotification(db, p.id, NotificationType.NOTICE, `Notice: ${title}`, `نوٹس: ${title}`, body.slice(0, 100), body.slice(0, 100))
+      );
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'CREATE_NOTICE',
+      tableName: 'notices',
+      recordId: created.id,
+      oldValue: null,
+      newValue: `${created.audience}: ${title}`,
+      reason: 'Notice published',
+      changedBy: actor.id,
+      changedAt: nowIso,
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(created);
   }
 
   async deleteNotice(
-    _noticeId: string,
-    _actor: Profile
+    noticeId: string,
+    actor: Profile
   ): Promise<AppResult<void>> {
     await simulateLocalDelay();
+    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only Principal or Admin can delete notices.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const old = db.notices.find((n) => n.id === noticeId);
+    db.notices = db.notices.filter((n) => n.id !== noticeId);
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'DELETE_NOTICE',
+      tableName: 'notices',
+      recordId: noticeId,
+      oldValue: old ? old.title : null,
+      newValue: null,
+      reason: 'Notice deleted',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
     return AppResult.success(undefined);
   }
 
   async getNotificationsForUser(
-    _userId: string
+    userId: string
   ): Promise<AppResult<AppNotification[]>> {
     await simulateLocalDelay();
-    return AppResult.success([]);
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success(db.notifications.filter((n) => n.userId === userId));
   }
 
   async markNotificationRead(
-    _notificationId: string,
-    _userId: string
+    notificationId: string,
+    userId: string
   ): Promise<AppResult<void>> {
     await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const n = db.notifications.find((x) => x.id === notificationId && x.userId === userId);
+    if (n && !n.readAt) {
+      n.readAt = new Date().toISOString();
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(undefined);
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<AppResult<void>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const now = new Date().toISOString();
+    let changed = false;
+    db.notifications.forEach((n) => {
+      if (n.userId === userId && !n.readAt) {
+        n.readAt = now;
+        changed = true;
+      }
+    });
+    if (changed) saveLocalDatabase(db);
     return AppResult.success(undefined);
   }
 }

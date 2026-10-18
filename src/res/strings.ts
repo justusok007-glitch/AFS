@@ -858,7 +858,48 @@ export type StringKey =
   | 'rs_top10'
   | 'rs_all_classes'
   | 'rs_no_exams'
-  | 'rs_publish_hint';
+  | 'rs_publish_hint'
+  | 'nt_title'
+  | 'nt_none'
+  | 'nt_view_all'
+  | 'nt_show_less'
+  | 'nt_new'
+  | 'nt_field_title'
+  | 'nt_field_body'
+  | 'nt_audience'
+  | 'nt_aud_ALL'
+  | 'nt_aud_CAMPUS'
+  | 'nt_aud_CLASS'
+  | 'nt_aud_STAFF'
+  | 'nt_aud_PARENTS'
+  | 'nt_expiry'
+  | 'nt_publish'
+  | 'nt_expired'
+  | 'nt_delete'
+  | 'nt_manage_btn'
+  | 'nf_none'
+  | 'nf_mark_all'
+  | 'nf_close'
+  | 'ms_new'
+  | 'ms_pick_teacher'
+  | 'ms_pick_student'
+  | 'ms_pick_parent'
+  | 'ms_none'
+  | 'ms_type'
+  | 'ms_send'
+  | 'ms_note'
+  | 'ms_templates'
+  | 'ms_tpl_1'
+  | 'ms_tpl_2'
+  | 'ms_tpl_3'
+  | 'ms_tpl_4'
+  | 'ms_tpl_5'
+  | 'ms_audit_btn'
+  | 'ms_audit_title'
+  | 'ms_about'
+  | 'ms_read_only'
+  | 'ms_back'
+  | 'ms_empty_chat';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1719,6 +1760,47 @@ export const stringsEn: Record<StringKey, string> = {
   rs_all_classes: 'All classes',
   rs_no_exams: 'No exam has reached marks entry yet.',
   rs_publish_hint: 'Parents see results only after you publish.',
+  nt_title: 'Notices',
+  nt_none: 'No notices right now.',
+  nt_view_all: 'View all',
+  nt_show_less: 'Show less',
+  nt_new: 'New notice',
+  nt_field_title: 'Title',
+  nt_field_body: 'Notice text',
+  nt_audience: 'Audience',
+  nt_aud_ALL: 'Everyone',
+  nt_aud_CAMPUS: 'One campus',
+  nt_aud_CLASS: 'One class',
+  nt_aud_STAFF: 'Staff only',
+  nt_aud_PARENTS: 'Parents only',
+  nt_expiry: 'Expires on (optional)',
+  nt_publish: 'Publish',
+  nt_expired: 'Expired',
+  nt_delete: 'Delete',
+  nt_manage_btn: 'Notices',
+  nf_none: 'No notifications yet.',
+  nf_mark_all: 'Mark all as read',
+  nf_close: 'Close',
+  ms_new: 'New message',
+  ms_pick_teacher: 'Choose a teacher',
+  ms_pick_student: 'Choose a student',
+  ms_pick_parent: 'Choose a parent',
+  ms_none: 'No conversations yet.',
+  ms_type: 'Type a message',
+  ms_send: 'Send',
+  ms_note: 'The school office may review messages.',
+  ms_templates: 'Quick messages',
+  ms_tpl_1: 'Homework was not done today. Please follow up.',
+  ms_tpl_2: 'Your child was absent without leave. Please tell us the reason.',
+  ms_tpl_3: 'Great performance today. Well done!',
+  ms_tpl_4: 'Please send the diary and books tomorrow.',
+  ms_tpl_5: 'Please meet me at school at your convenience.',
+  ms_audit_btn: 'All conversations',
+  ms_audit_title: 'All conversations (read only)',
+  ms_about: 'About',
+  ms_read_only: 'Read-only view',
+  ms_back: 'Back',
+  ms_empty_chat: 'No messages yet. Say hello.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2580,4 +2662,45 @@ export const stringsUr: Record<StringKey, string> = {
   rs_all_classes: 'تمام کلاسیں',
   rs_no_exams: 'ابھی کوئی امتحان نمبر اندراج تک نہیں پہنچا۔',
   rs_publish_hint: 'والدین نتیجہ شائع کرنے کے بعد ہی دیکھ سکتے ہیں۔',
+  nt_title: 'نوٹس',
+  nt_none: 'اس وقت کوئی نوٹس نہیں۔',
+  nt_view_all: 'سب دیکھیں',
+  nt_show_less: 'کم دکھائیں',
+  nt_new: 'نیا نوٹس',
+  nt_field_title: 'عنوان',
+  nt_field_body: 'نوٹس کا متن',
+  nt_audience: 'مخاطب',
+  nt_aud_ALL: 'سب',
+  nt_aud_CAMPUS: 'ایک کیمپس',
+  nt_aud_CLASS: 'ایک کلاس',
+  nt_aud_STAFF: 'صرف عملہ',
+  nt_aud_PARENTS: 'صرف والدین',
+  nt_expiry: 'ختم ہونے کی تاریخ (اختیاری)',
+  nt_publish: 'شائع کریں',
+  nt_expired: 'میعاد ختم',
+  nt_delete: 'حذف کریں',
+  nt_manage_btn: 'نوٹس',
+  nf_none: 'ابھی کوئی اطلاع نہیں۔',
+  nf_mark_all: 'سب پڑھا ہوا کریں',
+  nf_close: 'بند کریں',
+  ms_new: 'نیا پیغام',
+  ms_pick_teacher: 'استاد چنیں',
+  ms_pick_student: 'طالب علم چنیں',
+  ms_pick_parent: 'والدین چنیں',
+  ms_none: 'ابھی کوئی گفتگو نہیں۔',
+  ms_type: 'پیغام لکھیں',
+  ms_send: 'بھیجیں',
+  ms_note: 'اسکول دفتر پیغامات دیکھ سکتا ہے۔',
+  ms_templates: 'فوری پیغامات',
+  ms_tpl_1: 'آج ہوم ورک نہیں کیا گیا۔ براہِ کرم توجہ فرمائیں۔',
+  ms_tpl_2: 'آپ کا بچہ بغیر اطلاع کے غیر حاضر رہا۔ براہِ کرم وجہ سے آگاہ کریں۔',
+  ms_tpl_3: 'آج کی کارکردگی بہت اچھی رہی۔ شاباش!',
+  ms_tpl_4: 'براہِ کرم کل ڈائری اور کتابیں ساتھ بھیجیں۔',
+  ms_tpl_5: 'براہِ کرم کسی وقت اسکول آ کر مل لیں۔',
+  ms_audit_btn: 'تمام گفتگو',
+  ms_audit_title: 'تمام گفتگو (صرف مطالعہ)',
+  ms_about: 'متعلق',
+  ms_read_only: 'صرف مطالعہ',
+  ms_back: 'واپس',
+  ms_empty_chat: 'ابھی کوئی پیغام نہیں۔ بات شروع کریں۔',
 };

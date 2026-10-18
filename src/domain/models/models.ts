@@ -640,6 +640,8 @@ export interface AppNotification {
   type: NotificationType;
   title: string;
   body: string;
+  titleUr?: string;
+  bodyUr?: string;
   createdAt: string; // Instant ISO
   readAt: string | null; // Instant ISO
 }

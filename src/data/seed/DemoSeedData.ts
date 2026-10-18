@@ -1,5 +1,9 @@
 import {
   AcademicYear,
+  AppNotification,
+  Conversation,
+  Message,
+  Notice,
   AttendanceRecord,
   AttendanceStatus,
   AttendanceSubmission,
@@ -73,6 +77,10 @@ export interface LocalDatabaseSnapshot {
   examSubjects: ExamSubject[];
   marks: Mark[];
   markSubmissions: MarkSubmission[];
+  conversations: Conversation[];
+  messages: Message[];
+  notices: Notice[];
+  notifications: AppNotification[];
 }
 
 interface ClassTemplate {
@@ -1268,5 +1276,9 @@ export function buildInitialDemoDatabase(
     examSubjects: [],
     marks: [],
     markSubmissions: [],
+    conversations: [],
+    messages: [],
+    notices: [],
+    notifications: [],
   };
 }

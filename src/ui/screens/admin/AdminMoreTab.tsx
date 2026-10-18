@@ -4,6 +4,8 @@ import { AppModule } from '../../../di/AppModule';
 import { AuditLogEntry, Profile } from '../../../domain/models/models';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
+import { MessagesTab } from '../comms/MessagesTab';
+import { NoticesManager } from '../comms/CommsShared';
 import { useSectionOptions } from './AdminStudentsTab';
 import {
   EmptyState,
@@ -22,6 +24,7 @@ export const AdminMoreTab: React.FC<{
   const { stringResource: t } = useStringResource();
   const sectionOptions = useSectionOptions(lookups);
   const [showAtt, setShowAtt] = useState(false);
+  const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [staff, setStaff] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,9 @@ export const AdminMoreTab: React.FC<{
     void load();
   }, [load]);
 
+  if (comms === 'messages') return <MessagesTab user={admin} readOnly onBack={() => setComms(null)} />;
+  if (comms === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={() => setComms(null)} />;
+
   if (showAtt) {
     return <AdminAttendanceCorrection admin={admin} sectionOptions={sectionOptions} onBack={() => { setShowAtt(false); void load(); }} />;
   }
@@ -57,6 +63,8 @@ export const AdminMoreTab: React.FC<{
     <div className="space-y-3">
       <SchoolCard className="space-y-2.5">
         <PrimaryButton text={t('ad_att_btn')} variant="orange" onClick={() => setShowAtt(true)} />
+        <PrimaryButton text={t('nt_manage_btn')} variant="navy" onClick={() => setComms('notices')} />
+        <PrimaryButton text={t('ms_audit_btn')} variant="outline" onClick={() => setComms('messages')} />
         <PrimaryButton text={t('settings_open_from_more')} variant="navy" onClick={onOpenSettings} icon={<Settings className="w-4 h-4 text-[#F28C28]" />} />
         <PrimaryButton text={t('logout_button')} variant="outline" onClick={onLogout} icon={<LogOut className="w-4 h-4 text-[#14284B]" />} />
       </SchoolCard>

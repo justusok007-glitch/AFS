@@ -352,36 +352,49 @@ export interface ExamRepository {
 }
 
 export interface MessageRepository {
+  /** Parents/teachers see their own conversations; Principal/Admin see all (read-only). Newest first. */
   getConversationsForUser(
     userId: string,
     role: Role
   ): Promise<AppResult<Conversation[]>>;
+  /**
+   * One conversation per student + parent + teacher. The parent must be linked to the student and
+   * the teacher must teach the student's section.
+   */
   getOrCreateConversation(
     studentId: string,
     parentId: string,
     teacherId: string
   ): Promise<AppResult<Conversation>>;
-  getMessages(conversationId: string): Promise<AppResult<Message[]>>;
+  /** Participants, Principal and Admin only. */
+  getMessages(
+    conversationId: string,
+    viewer: Profile
+  ): Promise<AppResult<Message[]>>;
+  /** Only the parent or teacher of the conversation can send. */
   sendMessage(
     conversationId: string,
     senderId: string,
     body: string
   ): Promise<AppResult<Message>>;
+  /** Marks the other side's messages as read. Returns how many changed. */
   markConversationRead(
     conversationId: string,
     readerUserId: string
   ): Promise<AppResult<number>>;
+  getUnreadMessageCount(userId: string): Promise<AppResult<number>>;
+  /** Class teacher + teachers assigned to the student's section. */
+  teachersOfStudent(studentId: string): Promise<AppResult<Profile[]>>;
+  /** Students of every section the teacher is assigned to. */
+  studentsForTeacher(teacherId: string): Promise<AppResult<Student[]>>;
 }
 
-// ============================================================================
-// 7. NOTICE REPOSITORY
-// ============================================================================
-
 export interface NoticeRepository {
-  getNotices(
-    campusId: string | null,
-    audience?: NoticeAudience
-  ): Promise<AppResult<Notice[]>>;
+  /** Active (not expired) notices this user is allowed to see, newest first. */
+  getNoticesForUser(user: Profile): Promise<AppResult<Notice[]>>;
+  /** Principal/Admin: every notice including expired ones. */
+  getAllNotices(actor: Profile): Promise<AppResult<Notice[]>>;
+  /** id and createdAt are assigned here. Also creates in-app notifications for the audience. */
   createNotice(notice: Notice, actor: Profile): Promise<AppResult<Notice>>;
   deleteNotice(noticeId: string, actor: Profile): Promise<AppResult<void>>;
   getNotificationsForUser(
@@ -391,6 +404,7 @@ export interface NoticeRepository {
     notificationId: string,
     userId: string
   ): Promise<AppResult<void>>;
+  markAllNotificationsRead(userId: string): Promise<AppResult<void>>;
 }
 
 // ============================================================================

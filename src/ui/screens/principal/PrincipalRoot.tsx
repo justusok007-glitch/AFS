@@ -33,7 +33,7 @@ export const PrincipalRoot: React.FC<PrincipalRootProps> = ({
     case 'results':
       return <PrincipalResultsTab principal={principal} lookups={lookups} />;
     case 'more':
-      return <PrincipalMoreTab lookups={lookups} onOpenSettings={onOpenSettings} onLogout={onLogout} />;
+      return <PrincipalMoreTab principal={principal} lookups={lookups} onOpenSettings={onOpenSettings} onLogout={onLogout} />;
     default:
       return null;
   }

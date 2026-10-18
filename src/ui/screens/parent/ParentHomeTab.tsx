@@ -45,6 +45,7 @@ import {
   formatYearMonthLabel,
   PullToRefreshContainer,
 } from './ParentHelpers';
+import { NoticesCard } from '../comms/CommsShared';
 
 export interface ParentHomeTabProps {
   parentProfile: Profile;
@@ -430,21 +431,7 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
           </p>
         </SchoolCard>
 
-        <SchoolCard className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 font-heading text-xs font-bold text-[#14284B]">
-              <BellRing className="w-4 h-4 text-[#F28C28]" />
-              <span>{stringResource('home_latest_notices_title')}</span>
-            </div>
-            <StatusChip
-              label={stringResource('coming_soon_title')}
-              tone="info"
-            />
-          </div>
-          <p className="text-xs text-[#6B7385] leading-relaxed">
-            {stringResource('home_latest_notices_subtitle')}
-          </p>
-        </SchoolCard>
+        <NoticesCard user={parentProfile} />
       </div>
     </PullToRefreshContainer>
   );

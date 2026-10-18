@@ -5,6 +5,7 @@ import { addDaysIso, today } from '../../../domain/clock';
 import { formatSchoolDate } from '../../../domain/formatters/SchoolFormatters';
 import {
   ParentAttendanceSummary,
+  Profile,
   StaffComplianceRow,
   Student,
   StudentFeeSummary,
@@ -26,15 +27,19 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { percentColor } from './PrincipalShared';
+import { MessagesTab } from '../comms/MessagesTab';
+import { NoticesManager } from '../comms/CommsShared';
 
 type Range = 'week' | 'month';
 
 export const PrincipalMoreTab: React.FC<{
+  principal: Profile;
   lookups: AccountantLookups;
   onOpenSettings: () => void;
   onLogout: () => void;
-}> = ({ lookups, onOpenSettings, onLogout }) => {
+}> = ({ principal, lookups, onOpenSettings, onLogout }) => {
   const { stringResource: t, language, isRtl } = useStringResource();
+  const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   // compliance
@@ -155,9 +160,14 @@ export const PrincipalMoreTab: React.FC<{
     );
   }
 
+  if (comms === 'messages') return <MessagesTab user={principal} readOnly onBack={() => setComms(null)} />;
+  if (comms === 'notices') return <NoticesManager actor={principal} lookups={lookups} onBack={() => setComms(null)} />;
+
   return (
     <div className="space-y-3">
       <SchoolCard className="space-y-2.5">
+        <PrimaryButton text={t('nt_manage_btn')} variant="orange" onClick={() => setComms('notices')} />
+        <PrimaryButton text={t('ms_audit_btn')} variant="outline" onClick={() => setComms('messages')} />
         <PrimaryButton text={t('settings_open_from_more')} variant="navy" onClick={onOpenSettings} icon={<Settings className="w-4 h-4 text-[#F28C28]" />} />
         <PrimaryButton text={t('logout_button')} variant="outline" onClick={onLogout} icon={<LogOut className="w-4 h-4 text-[#14284B]" />} />
       </SchoolCard>
