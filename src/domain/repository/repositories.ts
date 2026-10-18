@@ -19,6 +19,7 @@ import {
   ExamSubject,
   AttendanceReport,
   NewProfileInput,
+  NewStudentInput,
   AttendanceReportFilter,
   FeeCollectionReport,
   PrincipalDashboard,
@@ -92,6 +93,18 @@ export interface AuthRepository {
 export interface StudentRepository {
   search(filter: StudentSearchFilter): Promise<AppResult<Student[]>>;
   getById(studentId: string): Promise<AppResult<Student>>;
+  /** Validates, auto-generates admission no. (AFS-B-2026-031) and roll no., writes an audit entry. */
+  admitStudent(
+    input: NewStudentInput,
+    actor: Profile
+  ): Promise<AppResult<Student>>;
+  /** Moves a student to another section (and campus when the section belongs to the other campus). */
+  transferStudent(
+    studentId: string,
+    newSectionId: string,
+    reason: string,
+    actor: Profile
+  ): Promise<AppResult<Student>>;
   create(student: Student, createdBy: string): Promise<AppResult<Student>>;
   update(student: Student, updatedBy: string): Promise<AppResult<Student>>;
   markLeft(

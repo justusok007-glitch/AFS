@@ -2,6 +2,7 @@ import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
   NewProfileInput,
+  NewStudentInput,
   AttendanceReport,
   AttendanceReportFilter,
   AttendanceReportSectionRow,
@@ -472,6 +473,157 @@ export class FakeStudentRepository implements StudentRepository {
       });
     }
     return AppResult.success(student);
+  }
+
+  async admitStudent(
+    input: NewStudentInput,
+    actor: Profile
+  ): Promise<AppResult<Student>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({
+        kind: 'UnauthorizedRole',
+        message: 'Only the Admin can admit students.',
+      });
+    }
+    const fail = (message: string) =>
+      AppResult.failure<Student>({ kind: 'ValidationFailed', message });
+    const name = input.name.trim();
+    const nameUr = input.nameUr.trim();
+    const fatherName = input.fatherName.trim();
+    const phone = input.guardianPhone.replace(/[\s-]/g, '');
+    if (name.length < 3) return fail('Student name (English) is required.');
+    if (nameUr.length < 2) return fail('Student name (Urdu) is required.');
+    if (fatherName.length < 3) return fail("Father's name is required.");
+    if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid guardian phone number.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) return fail('Date of birth is required.');
+    if (input.dateOfBirth >= today()) return fail('Date of birth must be in the past.');
+    const age = Number(today().slice(0, 4)) - Number(input.dateOfBirth.slice(0, 4));
+    if (age < 2 || age > 25) return fail('Date of birth looks wrong for a student.');
+    if (!input.admissionDate || input.admissionDate > today()) {
+      return fail('Admission date cannot be in the future.');
+    }
+
+    const db = getOrSeedLocalDatabase();
+    const section = db.sections.find((x) => x.id === input.sectionId);
+    const cls = section ? db.classes.find((c) => c.id === section.classId) : undefined;
+    if (!section || !cls) return fail('Choose a class and section.');
+    const campus = db.campuses.find((c) => c.id === cls.campusId);
+    if (!campus) return fail('Campus not found for this section.');
+
+    const duplicate = db.students.some(
+      (s) =>
+        s.name.trim().toLowerCase() === name.toLowerCase() &&
+        s.fatherName.trim().toLowerCase() === fatherName.toLowerCase() &&
+        s.dateOfBirth === input.dateOfBirth &&
+        s.status === StudentStatus.ACTIVE
+    );
+    if (duplicate) return fail('A student with the same name, father and date of birth already exists.');
+
+    const seqOf = (id: string) => Number(/(\d+)$/.exec(id)?.[1] ?? 0);
+    const nextSeq =
+      db.students
+        .filter((s) => s.campusId === campus.id)
+        .reduce((m, s) => Math.max(m, seqOf(s.admissionNo)), 0) + 1;
+    const nextIdNum = db.students.reduce((m, s) => Math.max(m, seqOf(s.id)), 0) + 1;
+    const roll =
+      db.students
+        .filter((s) => s.sectionId === section.id)
+        .reduce((m, s) => Math.max(m, s.rollNo), 0) + 1;
+
+    const student: Student = {
+      id: `stu_${String(nextIdNum).padStart(3, '0')}`,
+      admissionNo: `AFS-${campus.code}-${input.admissionDate.slice(0, 4)}-${String(nextSeq).padStart(3, '0')}`,
+      name,
+      nameUr,
+      fatherName,
+      gender: input.gender,
+      dateOfBirth: input.dateOfBirth,
+      campusId: campus.id,
+      sectionId: section.id,
+      rollNo: roll,
+      admissionDate: input.admissionDate,
+      status: StudentStatus.ACTIVE,
+      guardianPhone: phone,
+    };
+    db.students.push(student);
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'CREATE_STUDENT',
+      tableName: 'students',
+      recordId: student.id,
+      oldValue: null,
+      newValue: `${student.admissionNo} - ${student.name}`,
+      reason: 'New student admission',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(student);
+  }
+
+  async transferStudent(
+    studentId: string,
+    newSectionId: string,
+    reason: string,
+    actor: Profile
+  ): Promise<AppResult<Student>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({
+        kind: 'UnauthorizedRole',
+        message: 'Only the Admin can transfer students.',
+      });
+    }
+    if (!reason.trim()) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'A reason is required for a transfer.',
+      });
+    }
+    const db = getOrSeedLocalDatabase();
+    const idx = db.students.findIndex((s) => s.id === studentId);
+    const section = db.sections.find((x) => x.id === newSectionId);
+    const cls = section ? db.classes.find((c) => c.id === section.classId) : undefined;
+    if (idx === -1 || !section || !cls) {
+      return AppResult.failure({
+        kind: 'NotFound',
+        entity: 'Student',
+        id: studentId,
+        message: 'Student or section not found.',
+      });
+    }
+    const prev = db.students[idx];
+    if (prev.sectionId === newSectionId) {
+      return AppResult.failure({
+        kind: 'ValidationFailed',
+        message: 'The student is already in this section.',
+      });
+    }
+    const roll =
+      db.students
+        .filter((s) => s.sectionId === newSectionId)
+        .reduce((m, s) => Math.max(m, s.rollNo), 0) + 1;
+    const updated: Student = {
+      ...prev,
+      sectionId: newSectionId,
+      campusId: cls.campusId,
+      rollNo: roll,
+    };
+    db.students[idx] = updated;
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'TRANSFER_STUDENT',
+      tableName: 'students',
+      recordId: studentId,
+      oldValue: `${prev.sectionId} (${prev.campusId})`,
+      newValue: `${newSectionId} (${cls.campusId})`,
+      reason: reason.trim(),
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(updated);
   }
 
   async create(student: Student, createdBy: string): Promise<AppResult<Student>> {

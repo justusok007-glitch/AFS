@@ -623,7 +623,89 @@ export type StringKey =
   | 'ad_audit_none'
   | 'ad_audit_by'
   | 'ad_soon_setup'
-  | 'ad_soon_students';
+  | 'ad_soon_students'
+  | 'st_search'
+  | 'st_new_btn'
+  | 'st_promote_btn'
+  | 'st_status_all'
+  | 'st_status_active'
+  | 'st_status_left'
+  | 'st_none'
+  | 'st_section_label'
+  | 'st_pick_section'
+  | 'st_form_admit_title'
+  | 'st_form_edit_title'
+  | 'st_name_en'
+  | 'st_name_ur'
+  | 'st_father'
+  | 'st_gender'
+  | 'st_gender_MALE'
+  | 'st_gender_FEMALE'
+  | 'st_dob'
+  | 'st_admission_date'
+  | 'st_phone'
+  | 'st_save_admit'
+  | 'st_save_edit'
+  | 'st_err_name_en'
+  | 'st_err_name_ur'
+  | 'st_err_father'
+  | 'st_err_phone'
+  | 'st_err_dob'
+  | 'st_err_section'
+  | 'st_err_admission_date'
+  | 'st_parent_heading'
+  | 'st_parent_none'
+  | 'st_parent_create'
+  | 'st_parent_link'
+  | 'st_parent_search'
+  | 'st_parent_pick'
+  | 'st_admitted'
+  | 'st_admitted_no'
+  | 'st_tab_info'
+  | 'st_tab_attendance'
+  | 'st_tab_fees'
+  | 'st_tab_results'
+  | 'st_results_soon'
+  | 'st_edit_btn'
+  | 'st_linked_parents'
+  | 'st_no_parents'
+  | 'st_roll'
+  | 'st_transfer_btn'
+  | 'st_transfer_title'
+  | 'st_transfer_reason'
+  | 'st_transfer_confirm'
+  | 'st_err_reason'
+  | 'st_left_btn'
+  | 'st_left_title'
+  | 'st_left_reason'
+  | 'st_left_date'
+  | 'st_left_confirm'
+  | 'st_left_note'
+  | 'st_promo_title'
+  | 'st_promo_from'
+  | 'st_promo_to'
+  | 'st_promo_students'
+  | 'st_promo_preview'
+  | 'st_promo_confirm'
+  | 'st_promo_summary'
+  | 'st_promo_done'
+  | 'st_promo_none'
+  | 'st_promo_same'
+  | 'st_promo_campus'
+  | 'st_csv_btn'
+  | 'st_csv_title'
+  | 'st_csv_hint'
+  | 'st_csv_pick'
+  | 'st_csv_valid'
+  | 'st_csv_invalid'
+  | 'st_csv_row'
+  | 'st_csv_create'
+  | 'st_csv_done'
+  | 'st_csv_none'
+  | 'st_father_ur'
+  | 'st_err_father_ur'
+  | 'st_view_profile'
+  | 'st_att_monthly';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1249,6 +1331,88 @@ export const stringsEn: Record<StringKey, string> = {
   ad_audit_by: 'by',
   ad_soon_setup: 'School setup (classes, fees, holidays, grading) is the next update.',
   ad_soon_students: 'Student admission and profiles are the next update.',
+  st_search: 'Search by name, admission no., father name or phone',
+  st_new_btn: 'Admit student',
+  st_promote_btn: 'Year-end promotion',
+  st_status_all: 'All',
+  st_status_active: 'Active',
+  st_status_left: 'Left',
+  st_none: 'No students match',
+  st_section_label: 'Class and section',
+  st_pick_section: 'Choose class / section',
+  st_form_admit_title: 'Admit a new student',
+  st_form_edit_title: 'Edit student',
+  st_name_en: 'Student name (English)',
+  st_name_ur: 'Student name (Urdu)',
+  st_father: 'Father\'s name',
+  st_gender: 'Gender',
+  st_gender_MALE: 'Boy',
+  st_gender_FEMALE: 'Girl',
+  st_dob: 'Date of birth',
+  st_admission_date: 'Admission date',
+  st_phone: 'Guardian phone',
+  st_save_admit: 'Admit student',
+  st_save_edit: 'Save changes',
+  st_err_name_en: 'Enter the student\'s name in English.',
+  st_err_name_ur: 'Enter the student\'s name in Urdu.',
+  st_err_father: 'Enter the father\'s name.',
+  st_err_phone: 'Enter a valid phone number (10–13 digits).',
+  st_err_dob: 'Choose a valid date of birth in the past.',
+  st_err_section: 'Choose a class and section.',
+  st_err_admission_date: 'Admission date cannot be in the future.',
+  st_parent_heading: 'Parent account',
+  st_parent_none: 'Do not link now',
+  st_parent_create: 'Create new parent account',
+  st_parent_link: 'Link existing parent',
+  st_parent_search: 'Search parent by name, login ID or phone',
+  st_parent_pick: 'Choose a parent from the list.',
+  st_admitted: 'Student admitted',
+  st_admitted_no: 'Admission no.',
+  st_tab_info: 'Info',
+  st_tab_attendance: 'Attendance',
+  st_tab_fees: 'Fees',
+  st_tab_results: 'Results',
+  st_results_soon: 'Results will appear here once exams are added.',
+  st_edit_btn: 'Edit',
+  st_linked_parents: 'Linked parents',
+  st_no_parents: 'No parent account linked yet.',
+  st_roll: 'Roll no.',
+  st_transfer_btn: 'Transfer',
+  st_transfer_title: 'Transfer to another section',
+  st_transfer_reason: 'Reason for transfer',
+  st_transfer_confirm: 'Confirm transfer',
+  st_err_reason: 'A reason is required.',
+  st_left_btn: 'Mark as left',
+  st_left_title: 'Mark student as left',
+  st_left_reason: 'Reason',
+  st_left_date: 'Date left',
+  st_left_confirm: 'Confirm',
+  st_left_note: 'Fee and attendance history is kept. The student no longer appears in active lists.',
+  st_promo_title: 'Year-end promotion',
+  st_promo_from: 'From section',
+  st_promo_to: 'Promote to section',
+  st_promo_students: 'Students to promote (untick to keep back)',
+  st_promo_preview: 'Preview',
+  st_promo_confirm: 'Confirm promotion',
+  st_promo_summary: 'students will move to the new section; the rest stay.',
+  st_promo_done: 'Students promoted',
+  st_promo_none: 'No students selected.',
+  st_promo_same: 'Choose a different target section.',
+  st_promo_campus: 'Target section must be in the same campus.',
+  st_csv_btn: 'Import parents (CSV)',
+  st_csv_title: 'Bulk create parent accounts',
+  st_csv_hint: 'CSV columns: name_en, name_ur, phone, campus (B or G). First row can be a header.',
+  st_csv_pick: 'Choose CSV file',
+  st_csv_valid: 'valid rows',
+  st_csv_invalid: 'rows with problems',
+  st_csv_row: 'Row',
+  st_csv_create: 'Create accounts',
+  st_csv_done: 'Accounts created. Print the slips from the queue.',
+  st_csv_none: 'No valid rows found.',
+  st_father_ur: 'Father\'s name (Urdu)',
+  st_err_father_ur: 'Enter the father\'s name in Urdu to create the parent account.',
+  st_view_profile: 'Student profile',
+  st_att_monthly: 'Monthly attendance',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -1875,4 +2039,86 @@ export const stringsUr: Record<StringKey, string> = {
   ad_audit_by: 'بذریعہ',
   ad_soon_setup: 'اسکول سیٹ اپ (کلاسز، فیس، چھٹیاں، گریڈنگ) اگلی اپڈیٹ میں آئے گا۔',
   ad_soon_students: 'طلبہ کا داخلہ اور پروفائلز اگلی اپڈیٹ میں آئیں گے۔',
+  st_search: 'نام، داخلہ نمبر، والد کا نام یا فون سے تلاش کریں',
+  st_new_btn: 'داخلہ کریں',
+  st_promote_btn: 'سالانہ ترقی',
+  st_status_all: 'سب',
+  st_status_active: 'فعال',
+  st_status_left: 'چھوڑ گئے',
+  st_none: 'کوئی طالب علم نہیں ملا',
+  st_section_label: 'کلاس اور سیکشن',
+  st_pick_section: 'کلاس / سیکشن منتخب کریں',
+  st_form_admit_title: 'نئے طالب علم کا داخلہ',
+  st_form_edit_title: 'طالب علم میں ترمیم',
+  st_name_en: 'طالب علم کا نام (انگریزی)',
+  st_name_ur: 'طالب علم کا نام (اردو)',
+  st_father: 'والد کا نام',
+  st_gender: 'جنس',
+  st_gender_MALE: 'لڑکا',
+  st_gender_FEMALE: 'لڑکی',
+  st_dob: 'تاریخ پیدائش',
+  st_admission_date: 'تاریخ داخلہ',
+  st_phone: 'سرپرست کا فون',
+  st_save_admit: 'داخلہ محفوظ کریں',
+  st_save_edit: 'تبدیلیاں محفوظ کریں',
+  st_err_name_en: 'طالب علم کا نام انگریزی میں لکھیں۔',
+  st_err_name_ur: 'طالب علم کا نام اردو میں لکھیں۔',
+  st_err_father: 'والد کا نام لکھیں۔',
+  st_err_phone: 'درست فون نمبر لکھیں (10 تا 13 ہندسے)۔',
+  st_err_dob: 'ماضی کی درست تاریخ پیدائش منتخب کریں۔',
+  st_err_section: 'کلاس اور سیکشن منتخب کریں۔',
+  st_err_admission_date: 'تاریخ داخلہ آنے والے دنوں کی نہیں ہو سکتی۔',
+  st_parent_heading: 'والدین کا اکاؤنٹ',
+  st_parent_none: 'ابھی منسلک نہ کریں',
+  st_parent_create: 'نیا پیرنٹ اکاؤنٹ بنائیں',
+  st_parent_link: 'موجودہ پیرنٹ منسلک کریں',
+  st_parent_search: 'نام، لاگ ان آئی ڈی یا فون سے پیرنٹ تلاش کریں',
+  st_parent_pick: 'فہرست میں سے پیرنٹ منتخب کریں۔',
+  st_admitted: 'داخلہ ہو گیا',
+  st_admitted_no: 'داخلہ نمبر',
+  st_tab_info: 'معلومات',
+  st_tab_attendance: 'حاضری',
+  st_tab_fees: 'فیس',
+  st_tab_results: 'نتائج',
+  st_results_soon: 'امتحانات شامل ہونے کے بعد نتائج یہاں نظر آئیں گے۔',
+  st_edit_btn: 'ترمیم',
+  st_linked_parents: 'منسلک والدین',
+  st_no_parents: 'ابھی کوئی پیرنٹ اکاؤنٹ منسلک نہیں۔',
+  st_roll: 'رول نمبر',
+  st_transfer_btn: 'تبادلہ',
+  st_transfer_title: 'دوسرے سیکشن میں تبادلہ',
+  st_transfer_reason: 'تبادلے کی وجہ',
+  st_transfer_confirm: 'تبادلے کی تصدیق',
+  st_err_reason: 'وجہ لکھنا لازمی ہے۔',
+  st_left_btn: 'چھوڑ گیا قرار دیں',
+  st_left_title: 'طالب علم کو چھوڑ گیا قرار دیں',
+  st_left_reason: 'وجہ',
+  st_left_date: 'چھوڑنے کی تاریخ',
+  st_left_confirm: 'تصدیق',
+  st_left_note: 'فیس اور حاضری کا ریکارڈ محفوظ رہتا ہے۔ طالب علم فعال فہرستوں میں نظر نہیں آئے گا۔',
+  st_promo_title: 'سالانہ ترقی',
+  st_promo_from: 'موجودہ سیکشن',
+  st_promo_to: 'ترقی کا سیکشن',
+  st_promo_students: 'ترقی پانے والے طلبہ (روکنے کے لیے نشان ہٹائیں)',
+  st_promo_preview: 'پیش نظارہ',
+  st_promo_confirm: 'ترقی کی تصدیق',
+  st_promo_summary: 'طلبہ نئے سیکشن میں جائیں گے؛ باقی اسی میں رہیں گے۔',
+  st_promo_done: 'طلبہ کو ترقی دے دی گئی',
+  st_promo_none: 'کوئی طالب علم منتخب نہیں۔',
+  st_promo_same: 'مختلف سیکشن منتخب کریں۔',
+  st_promo_campus: 'ہدف سیکشن اسی کیمپس میں ہونا چاہیے۔',
+  st_csv_btn: 'پیرنٹس درآمد کریں (CSV)',
+  st_csv_title: 'پیرنٹ اکاؤنٹس اکٹھے بنائیں',
+  st_csv_hint: 'CSV کالم: name_en, name_ur, phone, campus (B یا G)۔ پہلی قطار عنوان ہو سکتی ہے۔',
+  st_csv_pick: 'CSV فائل منتخب کریں',
+  st_csv_valid: 'درست قطاریں',
+  st_csv_invalid: 'مسئلے والی قطاریں',
+  st_csv_row: 'قطار',
+  st_csv_create: 'اکاؤنٹس بنائیں',
+  st_csv_done: 'اکاؤنٹس بن گئے۔ قطار سے سلپس پرنٹ کریں۔',
+  st_csv_none: 'کوئی درست قطار نہیں ملی۔',
+  st_father_ur: 'والد کا نام (اردو)',
+  st_err_father_ur: 'پیرنٹ اکاؤنٹ بنانے کے لیے والد کا نام اردو میں لکھیں۔',
+  st_view_profile: 'طالب علم پروفائل',
+  st_att_monthly: 'ماہانہ حاضری',
 };

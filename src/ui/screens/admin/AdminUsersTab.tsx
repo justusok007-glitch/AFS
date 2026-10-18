@@ -3,7 +3,6 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Copy,
   KeyRound,
   Plus,
   Printer,
@@ -40,7 +39,8 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { selectCls } from '../principal/PrincipalShared';
-import { CredentialSlip } from './AdminShared';
+import { AdminBulkParents } from './AdminBulkParents';
+import { CredentialDialog, CredentialSlip } from './AdminShared';
 
 const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
 const roleKey = (r: Role) => `role_${r.toLowerCase()}` as StringKey;
@@ -66,6 +66,7 @@ export const AdminUsersTab: React.FC<{
   const [credential, setCredential] = useState<CredentialSlip | null>(null);
   const [printSlips, setPrintSlips] = useState<CredentialSlip[] | null>(null);
   const [showSlips, setShowSlips] = useState(false);
+  const [showCsv, setShowCsv] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,33 +100,7 @@ export const AdminUsersTab: React.FC<{
   const userName = (u: Profile) => (language === 'ur' && u.fullNameUr ? u.fullNameUr : u.fullName);
 
   const credentialOverlay = credential && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#14284B]/45">
-      <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E4E8F0] p-5 shadow-xl space-y-3">
-        <h3 className="font-heading text-base font-bold text-[#14284B]">{t('ad_cred_title')}</h3>
-        <p className="text-xs text-[#D64545] font-semibold">{t('ad_cred_once')}</p>
-        <div className="rounded-xl bg-[#F6F8FC] p-3 space-y-2 text-sm">
-          <div>{userName(credential.profile)}</div>
-          <div className="flex justify-between"><span className="text-[#6B7385]">{t('ad_cred_login_id')}</span><b dir="ltr" className="font-mono">{credential.profile.loginId}</b></div>
-          <div className="flex justify-between"><span className="text-[#6B7385]">{t('ad_cred_password')}</span><b dir="ltr" className="font-mono">{credential.password}</b></div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <PrimaryButton
-            text={t('ad_cred_copy')}
-            variant="outline"
-            icon={<Copy className="w-4 h-4" />}
-            onClick={() => {
-              try {
-                void navigator.clipboard.writeText(`${credential.profile.loginId} / ${credential.password}`);
-              } catch {
-                /* clipboard unavailable */
-              }
-            }}
-          />
-          <PrimaryButton text={t('ad_cred_print')} variant="navy" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={() => setPrintSlips([credential])} />
-        </div>
-        <PrimaryButton text={t('ad_cred_done')} variant="orange" onClick={() => setCredential(null)} />
-      </div>
-    </div>
+    <CredentialDialog credential={credential} onPrint={() => setPrintSlips([credential])} onDone={() => setCredential(null)} />
   );
 
   const slipsPrint = printSlips && (
@@ -168,6 +143,11 @@ export const AdminUsersTab: React.FC<{
         <PrimaryButton text={t('ad_users_new_btn')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setCreating((v) => !v)} />
         <PrimaryButton text={`${t('ad_slips_btn')} (${slips.length})`} variant="outline" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={() => setShowSlips((v) => !v)} />
       </div>
+
+      <PrimaryButton text={t('st_csv_btn')} variant="outline" onClick={() => setShowCsv((v) => !v)} />
+      {showCsv && (
+        <AdminBulkParents admin={admin} lookups={lookups} onAddSlip={onAddSlip} onClose={() => setShowCsv(false)} onDone={() => void load()} />
+      )}
 
       {showSlips && (
         <SchoolCard className="space-y-2">
@@ -576,7 +556,7 @@ const TeacherAssignments: React.FC<{ admin: Profile; teacher: Profile; lookups: 
 
 /* ---------------------------------------------------------------- slips */
 
-const SlipSheet: React.FC<{ slips: CredentialSlip[]; lookups: AccountantLookups }> = ({ slips, lookups }) => {
+export const SlipSheet: React.FC<{ slips: CredentialSlip[]; lookups: AccountantLookups }> = ({ slips, lookups }) => {
   const { stringResource: t, language } = useStringResource();
   const [childrenByParent, setChildrenByParent] = useState<Record<string, string[]>>({});
 
