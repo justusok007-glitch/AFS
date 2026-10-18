@@ -42,6 +42,7 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { StudentFeeAccount } from '../accountant/StudentFeeAccount';
+import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { percentColor, selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
 import { AdminBulkStudents } from './AdminBulkStudents';
@@ -719,7 +720,7 @@ const StudentProfile: React.FC<{
       )}
 
       {tab === 'results' && (
-        <EmptyState title={t('pr_results_soon_title')} description={t('st_results_soon')} />
+        <ParentResultsTab parent={admin} child={student} />
       )}
 
       <SchoolDialog
