@@ -629,7 +629,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   setChildSheetOpen(true);
                 }
               }}
-              className={`min-h-[48px] px-3 py-1.5 rounded-2xl bg-white/12 border border-white/20 flex items-center gap-2.5 text-start transition-colors min-w-0 ${
+              className={`ps-child min-h-[48px] px-3 py-1.5 rounded-2xl bg-white/12 border border-white/20 flex items-center gap-2.5 text-start transition-colors min-w-0 ${
                 childrenList.length > 1
                   ? 'hover:bg-white/20 active:scale-[0.99] cursor-pointer'
                   : 'cursor-default'
@@ -713,7 +713,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               type="button"
               onClick={() => setNotificationsOpen(true)}
               aria-label={stringResource('notifications_label')}
-              className="relative w-10 h-10 rounded-xl bg-white/12 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="ps-round relative w-10 h-10 rounded-xl bg-white/12 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -730,12 +730,31 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               type="button"
               onClick={handleGuardedOpenSettings}
               aria-label={stringResource('settings_title')}
-              className="w-10 h-10 rounded-xl bg-white/12 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="ps-round w-10 h-10 rounded-xl bg-white/12 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               <Settings className="w-4 h-4" />
             </button>
           </div>
         </div>
+        {session.role === UserRole.PARENT && (
+          <>
+            <svg className="ps-deco ps-books" width="150" height="96" viewBox="0 0 150 96" aria-hidden="true">
+              <path d="M104 40c-2-16 4-26 10-34 2 12 1 22-3 34z" fill="#34C7B5" />
+              <path d="M96 42c-8-12-8-22-6-30 8 8 10 18 8 30z" fill="#7BE0A8" />
+              <rect x="86" y="30" width="22" height="14" rx="3" fill="#8B6CF0" />
+              <rect x="14" y="62" width="124" height="22" rx="6" fill="#6A4FE0" />
+              <rect x="22" y="68" width="116" height="9" rx="3" fill="#fff" opacity="0.92" />
+              <rect x="22" y="40" width="112" height="22" rx="6" fill="#F5A031" />
+              <rect x="30" y="46" width="104" height="9" rx="3" fill="#fff" opacity="0.92" />
+              <rect x="30" y="20" width="100" height="22" rx="6" fill="#2E9BF2" />
+              <rect x="38" y="26" width="92" height="9" rx="3" fill="#fff" opacity="0.92" />
+              <path d="M118 84c10-10 22-14 30-12-2 10-14 16-30 12z" fill="#2BB6A3" />
+            </svg>
+            <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#E4F4FD" />
+            </svg>
+          </>
+        )}
       </header>
 
       {/* Main Scrollable Tab Body */}

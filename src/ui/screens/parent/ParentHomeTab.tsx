@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Award,
+  ChevronRight,
+  ChevronLeft,
   Bell,
   CalendarCheck,
   MessageSquare,
@@ -40,7 +42,8 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
   unreadNotifications,
   unreadMessages,
 }) => {
-  const { stringResource: t, language } = useStringResource();
+  const { stringResource: t, language, isRtl } = useStringResource();
+  const Chev = isRtl ? ChevronLeft : ChevronRight;
   const [todayDate, setTodayDate] = useState(() => today());
   const [statusByChild, setStatusByChild] = useState<Record<string, AttendanceStatus | null> | null>(null);
   const [pendingFee, setPendingFee] = useState(0);
@@ -77,13 +80,13 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
     </span>
   );
 
-  const tiles: { key: string; label: string; icon: React.ReactNode; grad: [string, string]; onClick: () => void; badge?: React.ReactNode }[] = [
-    { key: 'att', grad: ['#FF7A7A', '#E8456B'], label: t('tab_attendance'), icon: <CalendarCheck className="w-7 h-7" />, onClick: () => onOpenTab(1) },
-    { key: 'fees', grad: ['#FFC15A', '#F28C28'], label: t('tab_fees'), icon: <Wallet className="w-7 h-7" />, onClick: () => onOpenTab(2), badge: pendingFee > 0 ? badge(formatRupees(pendingFee)) : undefined },
-    { key: 'res', grad: ['#B993FF', '#7B5BE6'], label: t('tab_results'), icon: <Award className="w-7 h-7" />, onClick: () => onOpenTab(3) },
-    { key: 'msg', grad: ['#55E0A5', '#1FB77C'], label: t('tab_messages'), icon: <MessageSquare className="w-7 h-7" />, onClick: () => onOpenTab(4), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
-    { key: 'notif', grad: ['#FF9DB3', '#F2587E'], label: t('notifications_label'), icon: <Bell className="w-7 h-7" />, onClick: onOpenNotifications, badge: unreadNotifications > 0 ? badge(unreadNotifications) : undefined },
-    { key: 'set', grad: ['#7CC4FF', '#2F80ED'], label: t('settings_title'), icon: <SettingsIcon className="w-7 h-7" />, onClick: onOpenSettings },
+  const tiles: { key: string; label: string; icon: React.ReactNode; grad: [string, string]; tint: string; onClick: () => void; badge?: React.ReactNode }[] = [
+    { key: 'att', tint: '#FFEFF1', grad: ['#FF7A7A', '#E8456B'], label: t('tab_attendance'), icon: <CalendarCheck className="w-6 h-6" />, onClick: () => onOpenTab(1) },
+    { key: 'fees', tint: '#FFF4DF', grad: ['#FFC15A', '#F28C28'], label: t('tab_fees'), icon: <Wallet className="w-6 h-6" />, onClick: () => onOpenTab(2), badge: pendingFee > 0 ? badge(formatRupees(pendingFee)) : undefined },
+    { key: 'res', tint: '#F1EBFF', grad: ['#B993FF', '#7B5BE6'], label: t('tab_results'), icon: <Award className="w-6 h-6" />, onClick: () => onOpenTab(3) },
+    { key: 'msg', tint: '#E6F8EF', grad: ['#55E0A5', '#1FB77C'], label: t('tab_messages'), icon: <MessageSquare className="w-6 h-6" />, onClick: () => onOpenTab(4), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
+    { key: 'notif', tint: '#FFEAF1', grad: ['#FF9DB3', '#F2587E'], label: t('notifications_label'), icon: <Bell className="w-6 h-6" />, onClick: onOpenNotifications, badge: unreadNotifications > 0 ? badge(unreadNotifications) : undefined },
+    { key: 'set', tint: '#E6F2FF', grad: ['#7CC4FF', '#2F80ED'], label: t('settings_title'), icon: <SettingsIcon className="w-6 h-6" />, onClick: onOpenSettings },
   ];
 
   return (
@@ -96,12 +99,13 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
         {statusByChild === null ? (
           <ShimmerPlaceholder lines={childrenList.length} />
         ) : (
-          childrenList.map((c) => (
+          childrenList.map((c, idx) => (
             <button
               key={c.id}
               type="button"
               onClick={() => onSelectChild(c.id)}
-              className={`w-full flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-start cursor-pointer transition-colors ${c.id === selectedChild.id ? 'bg-[#F28C28]/8 border border-[#F28C28]/30' : 'border border-transparent hover:bg-[#F6F8FC]'}`}
+              style={{ background: idx % 2 === 0 ? '#E8F3FD' : '#EFEDFC', borderColor: c.id === selectedChild.id ? 'rgba(30,136,229,0.55)' : 'transparent' }}
+              className="w-full flex items-center justify-between gap-2 rounded-2xl border-[1.5px] px-3.5 py-3 text-start cursor-pointer transition-colors"
             >
               <span className="text-sm font-semibold text-[#14284B] truncate">{language === 'ur' && c.nameUr ? c.nameUr : c.name}</span>
               <AttendanceStatusBadge status={statusByChild[c.id] ?? null} />
@@ -118,10 +122,11 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
             key={x.key}
             type="button"
             onClick={x.onClick}
-            className="school-card relative min-h-[104px] rounded-3xl bg-white border border-[#E4E8F0] flex flex-col items-center justify-center gap-2 text-[#14284B] active:scale-95 transition-transform cursor-pointer"
+            style={{ background: `linear-gradient(135deg, ${x.tint}, #FFFFFF 85%)` }}
+            className="school-card relative min-h-[96px] rounded-3xl border border-[#E4E8F0] flex flex-col items-start justify-between gap-2 px-3 py-3 text-[#14284B] active:scale-95 transition-transform cursor-pointer"
           >
             <span
-              className="ps-keep w-14 h-14 rounded-full flex items-center justify-center text-white"
+              className="ps-keep w-12 h-12 rounded-full flex items-center justify-center text-white"
               style={{
                 background: `radial-gradient(circle at 30% 22%, rgba(255,255,255,0.55), rgba(255,255,255,0) 46%), linear-gradient(145deg, ${x.grad[0]}, ${x.grad[1]})`,
                 boxShadow: `0 6px 14px ${x.grad[1]}55`,
@@ -129,7 +134,10 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
             >
               {x.icon}
             </span>
-            <span className="text-xs font-bold">{x.label}</span>
+            <span className="w-full flex items-center justify-between gap-1">
+              <span className="text-[13px] font-bold truncate">{x.label}</span>
+              <Chev className="w-4 h-4 shrink-0" style={{ color: x.grad[1] }} />
+            </span>
             {x.badge}
           </button>
         ))}

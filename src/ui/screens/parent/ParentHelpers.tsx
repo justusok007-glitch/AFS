@@ -257,7 +257,7 @@ export const PullToRefreshContainer: React.FC<{
           type="button"
           onClick={onRefresh}
           disabled={refreshing}
-          className="min-h-[32px] px-3 py-1 rounded-xl bg-white border border-[#E4E8F0] text-[#14284B] text-[11px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F6F8FC] active:scale-95 transition-all cursor-pointer shadow-2xs"
+          className="ps-refresh min-h-[32px] px-3 py-1 rounded-xl bg-white border border-[#E4E8F0] text-[#14284B] text-[11px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F6F8FC] active:scale-95 transition-all cursor-pointer shadow-2xs"
         >
           <RefreshCw
             className={`w-3.5 h-3.5 text-[#F28C28] ${

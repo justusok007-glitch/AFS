@@ -5,6 +5,8 @@ import {
   ArrowRight,
   Award,
   BellRing,
+  CalendarDays,
+  Megaphone,
   CalendarCheck,
   Info,
   MessageSquare,
@@ -175,7 +177,7 @@ const NoticeItem: React.FC<{ n: Notice; showExpired?: boolean; onDelete?: () => 
         </div>
       </div>
       <p className="text-xs text-[#1B2233] whitespace-pre-line">{n.body}</p>
-      <div dir="ltr" className="text-[10px] text-[#6B7385] text-start">{formatSchoolDate(n.createdAt)}</div>
+      <div dir="ltr" className="text-[11px] text-[#6B7385] text-start flex items-center gap-1.5 pt-1"><CalendarDays className="w-3.5 h-3.5" />{formatSchoolDate(n.createdAt)}</div>
     </div>
   );
 };
@@ -190,10 +192,10 @@ export const NoticesCard: React.FC<{ user: Profile }> = ({ user }) => {
   }, [user]);
   const shown = items ? (all ? items : items.slice(0, 3)) : [];
   return (
-    <SchoolCard className="space-y-2">
+    <SchoolCard className="ps-notice space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-heading text-xs font-bold text-[#14284B]">
-          <span className="w-8 h-8 rounded-xl bg-[#F28C28]/12 flex items-center justify-center"><BellRing className="w-4 h-4 text-[#F28C28]" /></span>
+          <span className="ps-notice-icon w-8 h-8 rounded-xl bg-[#F28C28]/12 flex items-center justify-center"><Megaphone className="w-4 h-4 text-[#F28C28]" /></span>
           <span>{t('nt_title')}</span>
         </div>
         {items && items.length > 3 && (
