@@ -732,7 +732,44 @@ export type StringKey =
   | 'st_bulk_err_status'
   | 'st_bulk_err_number'
   | 'st_bulk_err_cols'
-  | 'st_err_pw';
+  | 'st_err_pw'
+  | 'su_tab_school'
+  | 'su_tab_classes'
+  | 'su_tab_fees'
+  | 'su_tab_holidays'
+  | 'su_tab_grading'
+  | 'su_name_en'
+  | 'su_name_ur'
+  | 'su_phones'
+  | 'su_address'
+  | 'su_lock'
+  | 'su_off_days'
+  | 'su_save'
+  | 'su_saved'
+  | 'su_add_class'
+  | 'su_class_name_en'
+  | 'su_class_name_ur'
+  | 'su_add_section'
+  | 'su_section_name'
+  | 'su_class_teacher'
+  | 'su_no_teacher'
+  | 'su_edit'
+  | 'su_delete'
+  | 'su_students_n'
+  | 'su_fee_hint'
+  | 'su_tuition'
+  | 'su_annual_month'
+  | 'su_add_holiday'
+  | 'su_title_en'
+  | 'su_title_ur'
+  | 'su_date'
+  | 'su_date_to'
+  | 'su_campus'
+  | 'su_no_holidays'
+  | 'su_grade'
+  | 'su_min_percent'
+  | 'su_add_grade'
+  | 'su_grade_hint';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -1467,6 +1504,43 @@ export const stringsEn: Record<StringKey, string> = {
   st_bulk_err_number: 'Amount is not a number',
   st_bulk_err_cols: 'Row has too few columns',
   st_err_pw: 'Password must be at least 6 characters.',
+  su_tab_school: 'School',
+  su_tab_classes: 'Classes',
+  su_tab_fees: 'Fees',
+  su_tab_holidays: 'Holidays',
+  su_tab_grading: 'Grading',
+  su_name_en: 'School name (English)',
+  su_name_ur: 'School name (Urdu)',
+  su_phones: 'Office phones (separate with commas)',
+  su_address: 'Address',
+  su_lock: 'Attendance lock time (HH:MM)',
+  su_off_days: 'Weekly off days',
+  su_save: 'Save',
+  su_saved: 'Saved.',
+  su_add_class: 'Add class',
+  su_class_name_en: 'Class name (English)',
+  su_class_name_ur: 'Class name (Urdu)',
+  su_add_section: 'Add section',
+  su_section_name: 'Section name',
+  su_class_teacher: 'Class teacher',
+  su_no_teacher: 'No class teacher',
+  su_edit: 'Edit',
+  su_delete: 'Delete',
+  su_students_n: 'students',
+  su_fee_hint: 'Changes apply to vouchers generated from now on. Existing vouchers and individual concessions are not changed.',
+  su_tuition: 'Monthly tuition',
+  su_annual_month: 'Annual charges month (1-12)',
+  su_add_holiday: 'Add holiday',
+  su_title_en: 'Title (English)',
+  su_title_ur: 'Title (Urdu)',
+  su_date: 'Date',
+  su_date_to: 'Last day (optional, for a range)',
+  su_campus: 'Campus',
+  su_no_holidays: 'No holidays added for this year.',
+  su_grade: 'Grade',
+  su_min_percent: 'From %',
+  su_add_grade: 'Add grade',
+  su_grade_hint: 'A student gets the highest grade whose \'From %\' is at or below their percentage. The lowest grade must start at 0.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -2202,4 +2276,41 @@ export const stringsUr: Record<StringKey, string> = {
   st_bulk_err_number: 'رقم عدد نہیں ہے',
   st_bulk_err_cols: 'قطار میں کالم کم ہیں',
   st_err_pw: 'پاس ورڈ کم از کم 6 حروف کا ہو۔',
+  su_tab_school: 'اسکول',
+  su_tab_classes: 'کلاسز',
+  su_tab_fees: 'فیس',
+  su_tab_holidays: 'چھٹیاں',
+  su_tab_grading: 'گریڈنگ',
+  su_name_en: 'اسکول کا نام (انگریزی)',
+  su_name_ur: 'اسکول کا نام (اردو)',
+  su_phones: 'دفتر کے فون (کاما سے الگ کریں)',
+  su_address: 'پتہ',
+  su_lock: 'حاضری لاک ٹائم (HH:MM)',
+  su_off_days: 'ہفتہ وار چھٹی',
+  su_save: 'محفوظ کریں',
+  su_saved: 'محفوظ ہو گیا۔',
+  su_add_class: 'کلاس شامل کریں',
+  su_class_name_en: 'کلاس کا نام (انگریزی)',
+  su_class_name_ur: 'کلاس کا نام (اردو)',
+  su_add_section: 'سیکشن شامل کریں',
+  su_section_name: 'سیکشن کا نام',
+  su_class_teacher: 'کلاس ٹیچر',
+  su_no_teacher: 'کوئی کلاس ٹیچر نہیں',
+  su_edit: 'ترمیم',
+  su_delete: 'حذف کریں',
+  su_students_n: 'طلبہ',
+  su_fee_hint: 'تبدیلی صرف آئندہ بننے والے واؤچرز پر لاگو ہوگی۔ موجودہ واؤچرز اور انفرادی رعایتیں نہیں بدلیں گی۔',
+  su_tuition: 'ماہانہ ٹیوشن فیس',
+  su_annual_month: 'سالانہ چارجز کا مہینہ (1-12)',
+  su_add_holiday: 'چھٹی شامل کریں',
+  su_title_en: 'عنوان (انگریزی)',
+  su_title_ur: 'عنوان (اردو)',
+  su_date: 'تاریخ',
+  su_date_to: 'آخری دن (اختیاری، کئی دنوں کے لیے)',
+  su_campus: 'کیمپس',
+  su_no_holidays: 'اس سال کی کوئی چھٹی شامل نہیں۔',
+  su_grade: 'گریڈ',
+  su_min_percent: 'کم از کم %',
+  su_add_grade: 'گریڈ شامل کریں',
+  su_grade_hint: 'طالب علم کو وہ سب سے اونچا گریڈ ملتا ہے جس کا \'کم از کم %\' اس کے فیصد کے برابر یا کم ہو۔ سب سے نچلا گریڈ 0 سے شروع ہونا چاہیے۔',
 };

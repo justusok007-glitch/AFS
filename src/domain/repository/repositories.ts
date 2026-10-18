@@ -428,6 +428,18 @@ export interface SettingsRepository {
   getClasses(campusId: string | null): Promise<AppResult<SchoolClass[]>>;
   getSections(classId: string | null): Promise<AppResult<Section[]>>;
   getSubjects(): Promise<AppResult<Subject[]>>;
+  /** Create or rename a class (sortOrder is assigned automatically on create). Admin only. */
+  saveClass(
+    cls: Pick<SchoolClass, 'campusId' | 'nameEn' | 'nameUr'> & { id?: string },
+    actor: Profile
+  ): Promise<AppResult<SchoolClass>>;
+  /** Create or edit a section, including its class teacher. Admin only. */
+  saveSection(
+    section: Pick<Section, 'classId' | 'name' | 'classTeacherId'> & { id?: string },
+    actor: Profile
+  ): Promise<AppResult<Section>>;
+  /** Only allowed when the section has no students. */
+  deleteSection(sectionId: string, actor: Profile): Promise<AppResult<void>>;
 
   // Holidays
   getHolidays(

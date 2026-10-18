@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Sliders } from 'lucide-react';
 import { Profile } from '../../../domain/models/models';
-import { EmptyState } from '../../components/SchoolComposables';
-import { useStringResource } from '../../theme/LocaleContext';
 import { useAccountantLookups } from '../accountant/AccountantShared';
 import { AdminDashboardTab } from './AdminDashboardTab';
 import { AdminMoreTab } from './AdminMoreTab';
+import { AdminSetupTab } from './AdminSetupTab';
 import { CredentialSlip } from './AdminShared';
 import { AdminStudentsTab } from './AdminStudentsTab';
 import { AdminUsersTab } from './AdminUsersTab';
@@ -17,7 +15,6 @@ export const AdminRoot: React.FC<{
   onOpenSettings: () => void;
   onLogout: () => void;
 }> = ({ admin, tabId, onSwitchTab, onOpenSettings, onLogout }) => {
-  const { stringResource: t } = useStringResource();
   const lookups = useAccountantLookups();
   // Credentials are only known right after create/reset, so the slip queue lives in memory.
   const [slips, setSlips] = useState<CredentialSlip[]>([]);
@@ -36,7 +33,7 @@ export const AdminRoot: React.FC<{
         />
       );
     case 'setup':
-      return <EmptyState title={t('coming_soon_title')} description={t('ad_soon_setup')} icon={<Sliders className="w-6 h-6 text-[#F28C28]" />} />;
+      return <AdminSetupTab admin={admin} lookups={lookups} />;
     case 'students':
       return (
         <AdminStudentsTab

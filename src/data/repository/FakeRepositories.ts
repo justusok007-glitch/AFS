@@ -1603,10 +1603,27 @@ export class FakeFeeRepository implements FeeRepository {
 
   async saveClassFeeStructure(
     structure: ClassFeeStructure,
-    _actorId: string
+    actorId: string
   ): Promise<AppResult<ClassFeeStructure>> {
     await simulateLocalDelay();
+    if (!Number.isInteger(structure.amount) || structure.amount < 0) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Fee amount must be a whole number, zero or more.' });
+    }
     const db = getOrSeedLocalDatabase();
+    const before = db.classFeeStructures.find(
+      (c) => c.classId === structure.classId && c.feeHeadId === structure.feeHeadId
+    );
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'UPDATE_CLASS_FEE',
+      tableName: 'class_fee_structures',
+      recordId: `${structure.classId}/${structure.feeHeadId}`,
+      oldValue: before ? String(before.amount) : null,
+      newValue: String(structure.amount),
+      reason: 'Fee structure changed',
+      changedBy: actorId,
+      changedAt: new Date().toISOString(),
+    });
     const idx = db.classFeeStructures.findIndex(
       (cfs) =>
         cfs.classId === structure.classId &&
@@ -3171,16 +3188,43 @@ export class FakeSettingsRepository implements SettingsRepository {
     actor: Profile
   ): Promise<AppResult<SchoolSettings>> {
     await simulateLocalDelay();
-    if (actor.role !== Role.ADMIN && actor.role !== Role.PRINCIPAL) {
+    if (actor.role !== Role.ADMIN) {
       return AppResult.failure({
         kind: 'UnauthorizedRole',
-        message: 'Only Admin or Principal can update school settings.',
+        message: 'Only the Admin can update school settings.',
       });
     }
+    const fail = (message: string) =>
+      AppResult.failure<SchoolSettings>({ kind: 'ValidationFailed', message });
+    if (settings.nameEn.trim().length < 3) return fail('School name (English) is required.');
+    if (settings.nameUr.trim().length < 2) return fail('School name (Urdu) is required.');
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(settings.attendanceLockTime)) {
+      return fail('Attendance lock time must look like 23:59.');
+    }
+    const phones = settings.officePhones.map((x) => x.replace(/[\s-]/g, '')).filter(Boolean);
+    if (phones.some((x) => !/^\+?\d{7,13}$/.test(x))) return fail('An office phone number is not valid.');
     const db = getOrSeedLocalDatabase();
-    db.schoolSettings = settings;
+    const next: SchoolSettings = {
+      ...settings,
+      nameEn: settings.nameEn.trim(),
+      nameUr: settings.nameUr.trim(),
+      address: settings.address.trim(),
+      officePhones: phones,
+    };
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'UPDATE_SCHOOL_SETTINGS',
+      tableName: 'school_settings',
+      recordId: 'school',
+      oldValue: JSON.stringify(db.schoolSettings),
+      newValue: JSON.stringify(next),
+      reason: 'School settings changed',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    db.schoolSettings = next;
     saveLocalDatabase(db);
-    return AppResult.success(settings);
+    return AppResult.success(next);
   }
 
   async getCampuses(): Promise<AppResult<CampusModel[]>> {
@@ -3222,6 +3266,134 @@ export class FakeSettingsRepository implements SettingsRepository {
     return AppResult.success(db.subjects);
   }
 
+  async saveClass(
+    cls: { id?: string; campusId: string; nameEn: string; nameUr: string },
+    actor: Profile
+  ): Promise<AppResult<SchoolClass>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change classes.' });
+    }
+    const fail = (message: string) =>
+      AppResult.failure<SchoolClass>({ kind: 'ValidationFailed', message });
+    const nameEn = cls.nameEn.trim();
+    const nameUr = cls.nameUr.trim();
+    if (nameEn.length < 2) return fail('Class name (English) is required.');
+    if (nameUr.length < 2) return fail('Class name (Urdu) is required.');
+    const db = getOrSeedLocalDatabase();
+    if (!db.campuses.some((c) => c.id === cls.campusId)) return fail('Campus not found.');
+    if (
+      db.classes.some(
+        (c) =>
+          c.id !== cls.id &&
+          c.campusId === cls.campusId &&
+          c.nameEn.toLowerCase() === nameEn.toLowerCase()
+      )
+    ) {
+      return fail('This campus already has a class with that name.');
+    }
+    let saved: SchoolClass;
+    const idx = cls.id ? db.classes.findIndex((c) => c.id === cls.id) : -1;
+    if (idx >= 0) {
+      saved = { ...db.classes[idx], nameEn, nameUr };
+      db.classes[idx] = saved;
+    } else {
+      const sort = db.classes.filter((c) => c.campusId === cls.campusId).reduce((m, c) => Math.max(m, c.sortOrder), 0) + 1;
+      saved = { id: `cls_${Date.now().toString(36)}`, campusId: cls.campusId, nameEn, nameUr, sortOrder: sort };
+      db.classes.push(saved);
+    }
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: idx >= 0 ? 'UPDATE_CLASS' : 'CREATE_CLASS',
+      tableName: 'classes',
+      recordId: saved.id,
+      oldValue: null,
+      newValue: nameEn,
+      reason: 'Class setup',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(saved);
+  }
+
+  async saveSection(
+    section: { id?: string; classId: string; name: string; classTeacherId: string | null },
+    actor: Profile
+  ): Promise<AppResult<Section>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change sections.' });
+    }
+    const fail = (message: string) =>
+      AppResult.failure<Section>({ kind: 'ValidationFailed', message });
+    const name = section.name.trim();
+    if (!name) return fail('Section name is required.');
+    const db = getOrSeedLocalDatabase();
+    if (!db.classes.some((c) => c.id === section.classId)) return fail('Class not found.');
+    if (
+      db.sections.some(
+        (x) => x.id !== section.id && x.classId === section.classId && x.name.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      return fail('This class already has a section with that name.');
+    }
+    if (section.classTeacherId) {
+      const teacher = db.profiles.find((p) => p.id === section.classTeacherId);
+      if (!teacher || teacher.role !== Role.TEACHER) return fail('Class teacher must be a teacher account.');
+    }
+    const idx = section.id ? db.sections.findIndex((x) => x.id === section.id) : -1;
+    const saved: Section = {
+      id: idx >= 0 ? db.sections[idx].id : `sec_${Date.now().toString(36)}`,
+      classId: section.classId,
+      name,
+      classTeacherId: section.classTeacherId,
+    };
+    if (idx >= 0) db.sections[idx] = saved;
+    else db.sections.push(saved);
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: idx >= 0 ? 'UPDATE_SECTION' : 'CREATE_SECTION',
+      tableName: 'sections',
+      recordId: saved.id,
+      oldValue: idx >= 0 ? null : null,
+      newValue: `${name}${saved.classTeacherId ? ` / ${saved.classTeacherId}` : ''}`,
+      reason: 'Section setup',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(saved);
+  }
+
+  async deleteSection(sectionId: string, actor: Profile): Promise<AppResult<void>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change sections.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    if (db.students.some((s) => s.sectionId === sectionId)) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'This section still has students. Move them first.' });
+    }
+    if (db.teacherAssignments.some((a) => a.sectionId === sectionId)) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Remove teacher assignments of this section first.' });
+    }
+    db.sections = db.sections.filter((x) => x.id !== sectionId);
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'DELETE_SECTION',
+      tableName: 'sections',
+      recordId: sectionId,
+      oldValue: sectionId,
+      newValue: null,
+      reason: 'Section setup',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(undefined);
+  }
+
   async getHolidays(
     year: number,
     campusId: string | null
@@ -3239,9 +3411,18 @@ export class FakeSettingsRepository implements SettingsRepository {
 
   async saveHoliday(
     holiday: SchoolHoliday,
-    _actor: Profile
+    actor: Profile
   ): Promise<AppResult<SchoolHoliday>> {
     await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change holidays.' });
+    }
+    if (holiday.titleEn.trim().length < 2 || holiday.titleUr.trim().length < 2) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Holiday title is required in English and Urdu.' });
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(holiday.date)) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Holiday date is required.' });
+    }
     const db = getOrSeedLocalDatabase();
     const idx = db.holidays.findIndex((h) => h.id === holiday.id);
     if (idx >= 0) {
@@ -3249,17 +3430,43 @@ export class FakeSettingsRepository implements SettingsRepository {
     } else {
       db.holidays.push(holiday);
     }
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: idx >= 0 ? 'UPDATE_HOLIDAY' : 'CREATE_HOLIDAY',
+      tableName: 'holidays',
+      recordId: holiday.id,
+      oldValue: null,
+      newValue: `${holiday.date} ${holiday.titleEn}`,
+      reason: 'Holiday setup',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
     saveLocalDatabase(db);
     return AppResult.success(holiday);
   }
 
   async deleteHoliday(
     holidayId: string,
-    _actor: Profile
+    actor: Profile
   ): Promise<AppResult<void>> {
     await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change holidays.' });
+    }
     const db = getOrSeedLocalDatabase();
+    const old = db.holidays.find((h) => h.id === holidayId);
     db.holidays = db.holidays.filter((h) => h.id !== holidayId);
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'DELETE_HOLIDAY',
+      tableName: 'holidays',
+      recordId: holidayId,
+      oldValue: old ? `${old.date} ${old.titleEn}` : null,
+      newValue: null,
+      reason: 'Holiday setup',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
     saveLocalDatabase(db);
     return AppResult.success(undefined);
   }
@@ -3274,11 +3481,37 @@ export class FakeSettingsRepository implements SettingsRepository {
 
   async saveGradingScale(
     entries: GradingScaleEntry[],
-    _actor: Profile
+    actor: Profile
   ): Promise<AppResult<GradingScaleEntry[]>> {
     await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change the grading scale.' });
+    }
+    const fail = (message: string) =>
+      AppResult.failure<GradingScaleEntry[]>({ kind: 'ValidationFailed', message });
+    if (entries.length === 0) return fail('Add at least one grade.');
+    if (entries.some((e) => !e.grade.trim())) return fail('Every row needs a grade name.');
+    if (entries.some((e) => !Number.isFinite(e.minPercent) || e.minPercent < 0 || e.minPercent > 100)) {
+      return fail('Minimum percent must be between 0 and 100.');
+    }
+    if (new Set(entries.map((e) => e.minPercent)).size !== entries.length) {
+      return fail('Two grades cannot start at the same percent.');
+    }
+    if (!entries.some((e) => e.minPercent === 0)) return fail('The lowest grade must start at 0%.');
     const db = getOrSeedLocalDatabase();
-    db.gradingScale = [...entries].sort((a, b) => b.minPercent - a.minPercent);
+    const next = entries.map((e) => ({ ...e, grade: e.grade.trim() }));
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'UPDATE_GRADING_SCALE',
+      tableName: 'grading_scale',
+      recordId: 'scale',
+      oldValue: JSON.stringify(db.gradingScale),
+      newValue: JSON.stringify(next),
+      reason: 'Grading scale changed',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    db.gradingScale = [...next].sort((a, b) => b.minPercent - a.minPercent);
     saveLocalDatabase(db);
     return AppResult.success(db.gradingScale);
   }
