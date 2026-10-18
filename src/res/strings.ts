@@ -486,7 +486,13 @@ export type StringKey =
   | 'acc_concession_PERCENT_OFF'
   | 'acc_concession_OVERRIDE'
   | 'acc_concession_reason'
-  | 'acc_charged_in_month';
+  | 'acc_charged_in_month'
+  | 'acc_vtab_generate'
+  | 'acc_vtab_list'
+  | 'acc_vtab_print'
+  | 'acc_err_campus_required'
+  | 'acc_gen_failed'
+  | 'acc_showing_first';
 
 export const stringsEn: Record<StringKey, string> = {
   app_name: 'Al Furqan School Okara',
@@ -975,6 +981,12 @@ export const stringsEn: Record<StringKey, string> = {
   acc_concession_OVERRIDE: 'Override amount',
   acc_concession_reason: 'Reason',
   acc_charged_in_month: 'charged in',
+  acc_vtab_generate: 'Generate',
+  acc_vtab_list: 'List',
+  acc_vtab_print: 'Print',
+  acc_err_campus_required: 'Choose a campus.',
+  acc_gen_failed: 'Could not generate vouchers. Please try again.',
+  acc_showing_first: 'Showing the first 50. Use filters or search to narrow down.',
 };
 
 export const stringsUr: Record<StringKey, string> = {
@@ -1464,4 +1476,10 @@ export const stringsUr: Record<StringKey, string> = {
   acc_concession_OVERRIDE: 'مقررہ نئی رقم',
   acc_concession_reason: 'وجہ',
   acc_charged_in_month: 'وصولی کا مہینہ',
+  acc_vtab_generate: 'بنائیں',
+  acc_vtab_list: 'فہرست',
+  acc_vtab_print: 'پرنٹ',
+  acc_err_campus_required: 'کیمپس منتخب کریں۔',
+  acc_gen_failed: 'واؤچرز نہیں بن سکے۔ دوبارہ کوشش کریں۔',
+  acc_showing_first: 'پہلے 50 دکھائے جا رہے ہیں۔ فلٹر یا تلاش سے فہرست کم کریں۔',
 };

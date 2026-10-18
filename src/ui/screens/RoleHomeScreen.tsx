@@ -704,8 +704,8 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (
           renderTeacherTabBody()
-        ) : session.role === UserRole.ACCOUNTANT && currentTab.id === 'collect' ? (
-          <AccountantRoot accountant={session.profile} tabId="collect" />
+        ) : session.role === UserRole.ACCOUNTANT && ['collect', 'vouchers'].includes(currentTab.id) ? (
+          <AccountantRoot accountant={session.profile} tabId={currentTab.id} />
         ) : (
           <>
             {/* Campus Filter Chips on Admin & Principal Home/Dashboard (Defaults to Both Campuses) */}
