@@ -617,9 +617,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   };
 
   return (
-    <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] ${session.role === UserRole.PARENT ? 'parent-skin' : ''}`}>
+    <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] parent-skin`}>
       {/* Curved Navy Top Bar */}
-      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ${session.role === UserRole.PARENT ? 'ps-header' : ''}`}>
+      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT ? '' : 'ps-header-lite'}`}>
         <div className="flex items-center justify-between gap-2.5">
           {/* Left / Start Slot: Parent Child Switcher OR Role Header */}
           {session.role === UserRole.PARENT && selectedChild ? (
@@ -732,15 +732,13 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           </div>
         </div>
         {session.role === UserRole.PARENT && (
-          <>
-            <div className="ps-deco ps-books ps-logo-badge">
-              <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
-            </div>
-            <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
-              <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#EAF5FD" />
-            </svg>
-          </>
+          <div className="ps-deco ps-books ps-logo-badge">
+            <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
+          </div>
         )}
+        <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#EAF5FD" />
+        </svg>
       </header>
 
       {/* Main Scrollable Tab Body */}
@@ -859,7 +857,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       {/* Role Bottom Navigation Bar (5 Tabs, Orange #F28C28 Selected State) */}
       <nav
         aria-label="Role Bottom Navigation"
-        className={`sticky bottom-0 z-30 bg-white border-t border-[#E4E8F0] px-1.5 py-1 shrink-0 no-print ${session.role === UserRole.PARENT ? 'ps-nav' : ''}`}
+        className={`sticky bottom-0 z-30 bg-white border-t border-[#E4E8F0] px-1.5 py-1 shrink-0 no-print ps-nav`}
       >
         <div className="grid grid-cols-5 items-center">
           {roleTabs.map((tab, idx) => {

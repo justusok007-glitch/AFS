@@ -453,3 +453,6 @@
 .parent-skin .ps-header .ps-books { bottom: 4px; }
 .parent-skin .ps-logo-badge { width: 92px; height: 92px; }
 .parent-skin .ps-logo-badge img { width: 72px; }
+
+/* Skin for all roles: compact header (no floating logo badge) */
+.parent-skin .ps-header.ps-header-lite { padding-bottom: 52px !important; }
