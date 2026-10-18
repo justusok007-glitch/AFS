@@ -197,7 +197,7 @@ const SchoolSection: React.FC<{ admin: Profile; onSaved: () => void }> = ({ admi
 /* ------------------------------------------------------------------ classes */
 
 const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
-  const { stringResource: t, language } = useStringResource();
+  const { stringResource: t, language, isRtl } = useStringResource();
   const [campus, setCampus] = useState(lookups.campuses[0]?.id ?? '');
   const [addingClass, setAddingClass] = useState(false);
   const [cEn, setCEn] = useState('');
@@ -271,6 +271,41 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
     lookups.reload();
   };
 
+  if (addingClass) {
+    const closeForm = () => { setAddingClass(false); setEditClassId(null); setSubRows([]); setError(null); };
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={closeForm} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          {isRtl ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
+          <span>{t('back_button_label')}</span>
+        </button>
+        <h2 className="font-heading text-sm font-bold text-[#14284B]">{editClassId ? t('su_edit') : t('su_add_class')}</h2>
+        <SchoolCard className="space-y-2.5">
+          <SchoolTextField label={t('su_class_name_en')} value={cEn} onValueChange={setCEn} />
+          <div dir="rtl"><SchoolTextField label={t('su_class_name_ur')} value={cUr} onValueChange={setCUr} /></div>
+          <div className="space-y-2 border-t border-[#E4E8F0] pt-2.5">
+            <h4 className="text-xs font-bold text-[#14284B]">{t('su_subjects_heading')}</h4>
+            {subRows.map((r, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <div className="flex-1"><SchoolTextField label={t('su_subject_en')} value={r.en} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, en: v } : x)))} /></div>
+                <div className="flex-1" dir="rtl"><SchoolTextField label={t('su_subject_ur')} value={r.ur} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, ur: v } : x)))} /></div>
+                <button type="button" aria-label={t('su_delete')} className="p-2 mb-1 text-[#D64545] cursor-pointer" onClick={() => setSubRows(subRows.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></button>
+              </div>
+            ))}
+            <button type="button" className="text-xs font-semibold text-[#14284B] cursor-pointer min-h-[36px] inline-flex items-center gap-1" onClick={() => setSubRows([...subRows, { en: '', ur: '' }])}>
+              <Plus className="w-3.5 h-3.5 text-[#F28C28]" />{t('su_add_subject')}
+            </button>
+          </div>
+          {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <PrimaryButton text={t('acc_cancel_btn')} variant="outline" onClick={closeForm} />
+            <PrimaryButton text={t('su_save')} variant="orange" onClick={() => void saveClass()} />
+          </div>
+        </SchoolCard>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <TabRow
@@ -317,31 +352,7 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
         );
       })}
 
-      {addingClass ? (
-        <SchoolCard className="space-y-2.5">
-          <SchoolTextField label={t('su_class_name_en')} value={cEn} onValueChange={setCEn} />
-          <div dir="rtl"><SchoolTextField label={t('su_class_name_ur')} value={cUr} onValueChange={setCUr} /></div>
-          <div className="space-y-2 border-t border-[#E4E8F0] pt-2.5">
-            <h4 className="text-xs font-bold text-[#14284B]">{t('su_subjects_heading')}</h4>
-            {subRows.map((r, i) => (
-              <div key={i} className="flex items-end gap-2">
-                <div className="flex-1"><SchoolTextField label={t('su_subject_en')} value={r.en} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, en: v } : x)))} /></div>
-                <div className="flex-1" dir="rtl"><SchoolTextField label={t('su_subject_ur')} value={r.ur} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, ur: v } : x)))} /></div>
-                <button type="button" aria-label={t('su_delete')} className="p-2 mb-1 text-[#D64545] cursor-pointer" onClick={() => setSubRows(subRows.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
-            <button type="button" className="text-xs font-semibold text-[#14284B] cursor-pointer min-h-[36px] inline-flex items-center gap-1" onClick={() => setSubRows([...subRows, { en: '', ur: '' }])}>
-              <Plus className="w-3.5 h-3.5 text-[#F28C28]" />{t('su_add_subject')}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <PrimaryButton text={t('acc_cancel_btn')} variant="outline" onClick={() => { setAddingClass(false); setEditClassId(null); setSubRows([]); }} />
-            <PrimaryButton text={t('su_save')} variant="orange" onClick={() => void saveClass()} />
-          </div>
-        </SchoolCard>
-      ) : (
         <PrimaryButton text={t('su_add_class')} variant="outline" icon={<Plus className="w-4 h-4 text-[#F28C28]" />} onClick={() => { setAddingClass(true); setEditClassId(null); setCEn(''); setCUr(''); setSubRows([{ en: '', ur: '' }]); }} />
-      )}
     </div>
   );
 };

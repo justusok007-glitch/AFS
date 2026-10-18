@@ -4091,7 +4091,7 @@ export class FakeSettingsRepository implements SettingsRepository {
       for (const id of removed) {
         const inUse =
           db.examSubjects.some((es) => es.classId === saved.id && es.subjectId === id) ||
-          db.teacherAssignments.some((ta) => ta.subjectId === id);
+          db.teacherAssignments.some((ta) => ta.subjectId === id && db.sections.find((x) => x.id === ta.sectionId)?.classId === saved.id);
         if (inUse) {
           const nm = db.subjects.find((x) => x.id === id)?.nameEn ?? id;
           return fail(`Subject "${nm}" is already used in an exam or teacher assignment and cannot be removed.`);
