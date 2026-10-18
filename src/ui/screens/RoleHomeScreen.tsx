@@ -620,7 +620,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   return (
     <div className={`flex flex-col min-h-full h-full bg-[#F6F8FC] parent-skin`}>
       {/* Curved Navy Top Bar */}
-      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL ? '' : 'ps-header-lite'}`}>
+      <header className={`bg-[#14284B] text-white rounded-b-[28px] px-4 pt-4 pb-4 shadow-md shrink-0 no-print ps-header ${session.role === UserRole.PARENT || session.role === UserRole.PRINCIPAL ? '' : 'ps-header-lite'} ${session.role === UserRole.PRINCIPAL ? 'ps-principal' : ''}`}>
         <div className="flex items-center justify-between gap-2.5">
           {/* Left / Start Slot: Parent Child Switcher OR Role Header */}
           {session.role === UserRole.PARENT && selectedChild ? (
@@ -761,13 +761,25 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
           </div>
         )}
+        {session.role === UserRole.PRINCIPAL && (
+          <>
+            <svg className="ps-deco ps-building" viewBox="0 0 220 170" fill="none" stroke="#fff" strokeWidth="2" aria-hidden="true">
+              <rect x="30" y="70" width="160" height="100" />
+              <rect x="85" y="40" width="50" height="130" />
+              <path d="M85 40l25-22 25 22M110 18V2h16v9h-16" />
+              <circle cx="110" cy="62" r="9" />
+              <path d="M45 88h22v18H45zM45 120h22v18H45zM153 88h22v18h-22zM153 120h22v18h-22zM96 92h28M96 110h28M96 128h28M100 170v-26h20v26" />
+            </svg>
+            <img className="ps-deco ps-books-img" src={`${import.meta.env.BASE_URL}ps-books.png`} alt="" draggable={false} />
+          </>
+        )}
         <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
           <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#EAF5FD" />
         </svg>
       </header>
 
       {/* Main Scrollable Tab Body */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4">
+      <div className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role === UserRole.PRINCIPAL ? 'ps-doodle' : ''}`}>
         {session.role === UserRole.PARENT ? (
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (

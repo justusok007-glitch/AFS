@@ -456,3 +456,18 @@
 
 /* Skin for all roles: compact header (no floating logo badge) */
 .parent-skin .ps-header.ps-header-lite { padding-bottom: 52px !important; }
+
+/* Principal dashboard visuals */
+.parent-skin .ps-header.ps-principal {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(110, 160, 255, 0.35), rgba(110, 160, 255, 0) 55%),
+    linear-gradient(160deg, #2F86E8 0%, #2362C6 55%, #1B4DAE 100%) !important;
+}
+.parent-skin .ps-header .ps-building { inset-inline-end: 70px; top: 18px; width: 210px; height: auto; opacity: 0.22; }
+.parent-skin .ps-header .ps-books-img { inset-inline-start: -14px; bottom: 6px; width: 120px; height: auto; opacity: 0.6; z-index: 1 !important; }
+.parent-skin .ps-doodle {
+  background-image: url('/ps-doodle.png');
+  background-size: 420px 420px;
+  background-repeat: repeat;
+  background-attachment: local;
+}
