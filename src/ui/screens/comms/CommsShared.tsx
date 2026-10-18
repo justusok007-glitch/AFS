@@ -51,14 +51,14 @@ export function useUnreadNotifications(userId: string): { count: number; refresh
   return { count, refresh };
 }
 
-export function useUnreadMessages(userId: string, enabled: boolean): { count: number; refresh: () => void } {
+export function useUnreadMessages(userId: string, enabled: boolean, studentId?: string): { count: number; refresh: () => void } {
   const [count, setCount] = useState(0);
   const refresh = useCallback(() => {
     if (!enabled) return;
-    void AppModule.messageRepository.getUnreadMessageCount(userId).then((r) => {
+    void AppModule.messageRepository.getUnreadMessageCount(userId, studentId).then((r) => {
       if (r.ok) setCount(r.data);
     });
-  }, [userId, enabled]);
+  }, [userId, enabled, studentId]);
   useEffect(() => {
     refresh();
     const id = setInterval(refresh, 10000);

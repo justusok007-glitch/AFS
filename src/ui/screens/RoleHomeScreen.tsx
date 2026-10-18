@@ -243,7 +243,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   const { count: unreadCount, refresh: refreshUnread } = useUnreadNotifications(session.profile.id);
   const { count: unreadMessages, refresh: refreshMessages } = useUnreadMessages(
     session.profile.id,
-    session.role === UserRole.PARENT || session.role === UserRole.TEACHER
+    session.role === UserRole.PARENT || session.role === UserRole.TEACHER,
+    // Parents see the count for the selected child only.
+    session.role === UserRole.PARENT ? selectedChildId ?? childrenList[0]?.id ?? '__none__' : undefined
   );
   useEffect(() => {
     refreshMessages();

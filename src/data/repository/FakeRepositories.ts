@@ -3238,10 +3238,14 @@ export class FakeMessageRepository implements MessageRepository {
     return AppResult.success(n);
   }
 
-  async getUnreadMessageCount(userId: string): Promise<AppResult<number>> {
+  async getUnreadMessageCount(userId: string, studentId?: string): Promise<AppResult<number>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
-    const mine = new Set(db.conversations.filter((c) => c.parentId === userId || c.teacherId === userId).map((c) => c.id));
+    const mine = new Set(
+      db.conversations
+        .filter((c) => (c.parentId === userId || c.teacherId === userId) && (!studentId || c.studentId === studentId))
+        .map((c) => c.id)
+    );
     return AppResult.success(db.messages.filter((m) => mine.has(m.conversationId) && m.senderId !== userId && !m.readAt).length);
   }
 

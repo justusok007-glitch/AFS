@@ -382,7 +382,8 @@ export interface MessageRepository {
     conversationId: string,
     readerUserId: string
   ): Promise<AppResult<number>>;
-  getUnreadMessageCount(userId: string): Promise<AppResult<number>>;
+  /** Optional studentId limits the count to conversations about that child. */
+  getUnreadMessageCount(userId: string, studentId?: string): Promise<AppResult<number>>;
   /** Class teacher + teachers assigned to the student's section. */
   teachersOfStudent(studentId: string): Promise<AppResult<Profile[]>>;
   /** Students of every section the teacher is assigned to. */
