@@ -770,7 +770,6 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               <circle cx="110" cy="62" r="9" />
               <path d="M45 88h22v18H45zM45 120h22v18H45zM153 88h22v18h-22zM153 120h22v18h-22zM96 92h28M96 110h28M96 128h28M100 170v-26h20v26" />
             </svg>
-            <img className="ps-deco ps-books-img" src={`${import.meta.env.BASE_URL}ps-books.png`} alt="" draggable={false} />
           </>
         )}
         <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
