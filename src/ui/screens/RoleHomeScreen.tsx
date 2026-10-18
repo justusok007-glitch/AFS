@@ -44,6 +44,7 @@ import {
   TabRow,
 } from '../components/SchoolComposables';
 import { SchoolLogo } from '../components/SchoolLogo';
+import { StudentAvatar } from '../components/StudentAvatar';
 import { useStringResource } from '../theme/LocaleContext';
 import { AccountantRoot } from './accountant/AccountantRoot';
 import { AdminRoot } from './admin/AdminRoot';
@@ -636,13 +637,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
               }`}
             >
               {/* Child Initial / Photo Avatar */}
-              <div
-                dir="ltr"
-                className="ps-keep w-10 h-10 rounded-2xl bg-[#F28C28] text-white font-heading text-xs font-bold flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(145deg,#FFB547,#F28C28)' }}
-              >
-                {getChildInitials(selectedChild)}
-              </div>
+              <StudentAvatar gender={selectedChild.gender} size={46} />
 
               <div className="min-w-0 flex-1 py-0.5">
                 <div
@@ -738,18 +733,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
         </div>
         {session.role === UserRole.PARENT && (
           <>
-            <svg className="ps-deco ps-books" width="150" height="96" viewBox="0 0 150 96" aria-hidden="true">
-              <path d="M104 40c-2-16 4-26 10-34 2 12 1 22-3 34z" fill="#34C7B5" />
-              <path d="M96 42c-8-12-8-22-6-30 8 8 10 18 8 30z" fill="#7BE0A8" />
-              <rect x="86" y="30" width="22" height="14" rx="3" fill="#8B6CF0" />
-              <rect x="14" y="62" width="124" height="22" rx="6" fill="#6A4FE0" />
-              <rect x="22" y="68" width="116" height="9" rx="3" fill="#fff" opacity="0.92" />
-              <rect x="22" y="40" width="112" height="22" rx="6" fill="#F5A031" />
-              <rect x="30" y="46" width="104" height="9" rx="3" fill="#fff" opacity="0.92" />
-              <rect x="30" y="20" width="100" height="22" rx="6" fill="#2E9BF2" />
-              <rect x="38" y="26" width="92" height="9" rx="3" fill="#fff" opacity="0.92" />
-              <path d="M118 84c10-10 22-14 30-12-2 10-14 16-30 12z" fill="#2BB6A3" />
-            </svg>
+            <div className="ps-deco ps-books ps-logo-badge">
+              <img src={`${import.meta.env.BASE_URL}school-logo.png`} alt="" draggable={false} />
+            </div>
             <svg className="ps-deco ps-wave" viewBox="0 0 430 48" preserveAspectRatio="none" aria-hidden="true">
               <path d="M0 26C70 50 150 6 240 22c60 11 110 12 190-8V48H0Z" fill="#E4F4FD" />
             </svg>
@@ -960,16 +946,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        dir="ltr"
-                        className={`w-10 h-10 rounded-xl font-heading text-xs font-bold flex items-center justify-center shrink-0 ${
-                          isSelected
-                            ? 'bg-[#F28C28] text-white'
-                            : 'bg-[#14284B] text-white'
-                        }`}
-                      >
-                        {getChildInitials(child)}
-                      </div>
+                      <StudentAvatar gender={child.gender} size={40} />
                       <div className="min-w-0">
                         <div className="font-heading text-sm font-bold text-[#14284B] truncate">
                           {language === 'ur' ? child.nameUr : child.name}

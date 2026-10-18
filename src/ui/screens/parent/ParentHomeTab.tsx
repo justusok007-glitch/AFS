@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Award,
-  ChevronRight,
-  ChevronLeft,
   Bell,
   CalendarCheck,
   MessageSquare,
@@ -42,8 +40,7 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
   unreadNotifications,
   unreadMessages,
 }) => {
-  const { stringResource: t, language, isRtl } = useStringResource();
-  const Chev = isRtl ? ChevronLeft : ChevronRight;
+  const { stringResource: t, language } = useStringResource();
   const [todayDate, setTodayDate] = useState(() => today());
   const [statusByChild, setStatusByChild] = useState<Record<string, AttendanceStatus | null> | null>(null);
   const [pendingFee, setPendingFee] = useState(0);
@@ -123,7 +120,7 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
             type="button"
             onClick={x.onClick}
             style={{ background: `linear-gradient(135deg, ${x.tint}, #FFFFFF 85%)` }}
-            className="school-card relative min-h-[96px] rounded-3xl border border-[#E4E8F0] flex flex-col items-start justify-between gap-2 px-3 py-3 text-[#14284B] active:scale-95 transition-transform cursor-pointer"
+            className="school-card relative min-h-[96px] rounded-3xl border border-[#E4E8F0] flex flex-col items-center justify-center gap-2 px-3 py-3 text-center text-[#14284B] active:scale-95 transition-transform cursor-pointer"
           >
             <span
               className="ps-keep w-12 h-12 rounded-full flex items-center justify-center text-white"
@@ -134,10 +131,7 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
             >
               {x.icon}
             </span>
-            <span className="w-full flex items-center justify-between gap-1">
-              <span className="text-[13px] font-bold truncate">{x.label}</span>
-              <Chev className="w-4 h-4 shrink-0" style={{ color: x.grad[1] }} />
-            </span>
+            <span className="text-[13px] font-bold truncate max-w-full">{x.label}</span>
             {x.badge}
           </button>
         ))}
