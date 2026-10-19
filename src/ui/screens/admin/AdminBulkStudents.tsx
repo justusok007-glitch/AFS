@@ -173,7 +173,7 @@ export const AdminBulkStudents: React.FC<{
           onClick={() =>
             downloadCsv('students-template.csv', [
               STUDENT_FILE_HEADER,
-              ['1001', 'Ali Raza', 'علی رضا', 'Raza Ahmed', 'رضا احمد', '0300-1234567', '', 'Boys', '6', 'B', 'Active', 'asf@1001', 'Raza@1001'],
+              ['1001', 'Ali Raza', 'علی رضا', 'Raza Ahmed', 'رضا احمد', '0300-1234567', '', 'Boys', '6', 'B', 'Active', 'afs@1001', 'Raza@1001'],
             ])
           }
         />
