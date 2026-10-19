@@ -4,11 +4,14 @@ import { useAccountantLookups } from '../accountant/AccountantShared';
 import { PrincipalAttendanceTab } from './PrincipalAttendanceTab';
 import { PrincipalDashboardTab } from './PrincipalDashboardTab';
 import { PrincipalFeesTab } from './PrincipalFeesTab';
+import { VicePrincipalFeesTab } from './VicePrincipalFeesTab';
 import { MoreView, PrincipalMoreTab } from './PrincipalMoreTab';
 import { PrincipalResultsTab } from './PrincipalResultsTab';
 
 export interface PrincipalRootProps {
   principal: Profile;
+  /** Vice Principal: same views, but no overall fee collection (only individual student fee status). */
+  vice?: boolean;
   tabId: string;
   onSwitchTab: (index: number) => void;
   onOpenSettings: () => void;
@@ -17,6 +20,7 @@ export interface PrincipalRootProps {
 
 export const PrincipalRoot: React.FC<PrincipalRootProps> = ({
   principal,
+  vice = false,
   tabId,
   onSwitchTab,
   onOpenSettings,
@@ -30,11 +34,11 @@ export const PrincipalRoot: React.FC<PrincipalRootProps> = ({
   };
   switch (tabId) {
     case 'dashboard':
-      return <PrincipalDashboardTab principal={principal} onSwitchTab={onSwitchTab} onOpenMore={openMore} onOpenSettings={onOpenSettings} />;
+      return <PrincipalDashboardTab vice={vice} principal={principal} onSwitchTab={onSwitchTab} onOpenMore={openMore} onOpenSettings={onOpenSettings} />;
     case 'attendance':
       return <PrincipalAttendanceTab lookups={lookups} />;
     case 'fees':
-      return <PrincipalFeesTab lookups={lookups} />;
+      return vice ? <VicePrincipalFeesTab lookups={lookups} /> : <PrincipalFeesTab lookups={lookups} />;
     case 'results':
       return <PrincipalResultsTab principal={principal} lookups={lookups} />;
     case 'more':

@@ -41,11 +41,13 @@ export type StringKey =
   | 'role_parent'
   | 'role_teacher'
   | 'role_principal'
+  | 'role_vice_principal'
   | 'role_accountant'
   | 'role_admin'
   | 'role_parent_desc'
   | 'role_teacher_desc'
   | 'role_principal_desc'
+  | 'role_vice_principal_desc'
   | 'role_accountant_desc'
   | 'role_admin_desc'
   | 'nav_home'
@@ -751,6 +753,8 @@ export type StringKey =
   | 'su_class_name_en'
   | 'su_class_name_ur'
   | 'su_subjects_heading'
+  | 'vp_student_fees'
+  | 'vp_fees_hint'
   | 'ac_edit_btn'
   | 'ac_edit_title'
   | 'ac_username'
@@ -957,11 +961,13 @@ export const stringsEn: Record<StringKey, string> = {
   role_parent: 'Parent',
   role_teacher: 'Teacher',
   role_principal: 'Principal',
+  role_vice_principal: 'Vice Principal',
   role_accountant: 'Accountant',
   role_admin: 'Admin',
   role_parent_desc: 'Child attendance, fee vouchers & notices',
   role_teacher_desc: 'Class roll call, exam marks & parent messages',
   role_principal_desc: 'Boys & Girls campus overview & approvals',
+  role_vice_principal_desc: 'School overview without overall fee collection; individual student fee status',
   role_accountant_desc: 'Fee collection, challans & ledger in Rs',
   role_admin_desc: 'Admissions, user IDs & system configuration',
   nav_home: 'Home',
@@ -1667,6 +1673,8 @@ export const stringsEn: Record<StringKey, string> = {
   su_class_name_en: 'Class name (English)',
   su_class_name_ur: 'Class name (Urdu)',
   su_subjects_heading: 'Subjects of this class (add as many as you need)',
+  vp_student_fees: 'Student fees',
+  vp_fees_hint: 'Search a student to see their fee status.',
   ac_edit_btn: 'Edit account',
   ac_edit_title: 'Edit account',
   ac_username: 'User name (Login ID)',
@@ -1874,11 +1882,13 @@ export const stringsUr: Record<StringKey, string> = {
   role_parent: 'والدین',
   role_teacher: 'استاد',
   role_principal: 'پرنسپل',
+  role_vice_principal: 'وائس پرنسپل',
   role_accountant: 'اکاؤنٹنٹ',
   role_admin: 'ایڈمن',
   role_parent_desc: 'بچے کی حاضری، فیس واؤچر اور نوٹس بلیٹن',
   role_teacher_desc: 'کلاس حاضری، امتحانی نمبر اور والدین کے پیغامات',
   role_principal_desc: 'بوائز اور گرلز کیمپس کی نگرانی اور منظوری',
+  role_vice_principal_desc: 'اسکول کی نگرانی، مجموعی فیس وصولی کے بغیر؛ انفرادی طالب علم کی فیس کی صورتحال',
   role_accountant_desc: 'فیس وصولی، چالان اور کھاتہ (Rs)',
   role_admin_desc: 'داخلے، لاگ ان آئی ڈیز اور سسٹم سیٹنگز',
   nav_home: 'ہوم',
@@ -2584,6 +2594,8 @@ export const stringsUr: Record<StringKey, string> = {
   su_class_name_en: 'کلاس کا نام (انگریزی)',
   su_class_name_ur: 'کلاس کا نام (اردو)',
   su_subjects_heading: 'اس کلاس کے مضامین (جتنے چاہیں شامل کریں)',
+  vp_student_fees: 'طلبہ کی فیس',
+  vp_fees_hint: 'فیس کی صورتحال دیکھنے کے لیے طالب علم تلاش کریں۔',
   ac_edit_btn: 'اکاؤنٹ میں ترمیم',
   ac_edit_title: 'اکاؤنٹ میں ترمیم',
   ac_username: 'یوزر نیم (لاگ ان آئی ڈی)',

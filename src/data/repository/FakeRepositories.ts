@@ -169,6 +169,21 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
         parsed.messages ??= [];
         parsed.notices ??= [];
         parsed.notifications ??= [];
+        // Vice Principal demo account was added after the first release.
+        if (!parsed.profiles.some((p) => p.loginId.toUpperCase() === 'VP01')) {
+          parsed.profiles.push({
+            id: 'usr_vp01',
+            loginId: 'VP01',
+            role: Role.VICE_PRINCIPAL,
+            fullName: 'Sir Hafiz Imran Saeed',
+            fullNameUr: 'جناب حافظ عمران سعید',
+            phone: '0300-4411004',
+            campusId: null,
+            language: 'en',
+            isActive: true,
+          });
+          parsed.passwordsByUserId['usr_vp01'] = 'demo1234';
+        }
         return parsed;
       }
     }
@@ -192,6 +207,8 @@ function mapDomainRoleToUserRole(role: Role): UserRole {
       return UserRole.TEACHER;
     case Role.PRINCIPAL:
       return UserRole.PRINCIPAL;
+    case Role.VICE_PRINCIPAL:
+      return UserRole.VICE_PRINCIPAL;
     case Role.ACCOUNTANT:
       return UserRole.ACCOUNTANT;
     case Role.ADMIN:
@@ -323,6 +340,7 @@ function createProfileInDb(
       [Role.PARENT]: { prefix: 'P', digits: 5 },
       [Role.TEACHER]: { prefix: 'T', digits: 4 },
       [Role.PRINCIPAL]: { prefix: 'PR', digits: 2 },
+      [Role.VICE_PRINCIPAL]: { prefix: 'VP', digits: 2 },
       [Role.ACCOUNTANT]: { prefix: 'AC', digits: 2 },
       [Role.ADMIN]: { prefix: 'AD', digits: 2 },
     };
@@ -623,7 +641,7 @@ function notifyParents(
 
 /** Class-level audience rules shared by notices and notifications. */
 function userSeesNotice(db: LocalDatabaseSnapshot, user: Profile, n: Notice): boolean {
-  if (user.role === Role.ADMIN || user.role === Role.PRINCIPAL) return true;
+  if (user.role === Role.ADMIN || user.role === Role.PRINCIPAL || user.role === Role.VICE_PRINCIPAL) return true;
   const isStaff = user.role !== Role.PARENT;
   switch (n.audience) {
     case NoticeAudience.ALL:
@@ -3116,7 +3134,7 @@ export class FakeMessageRepository implements MessageRepository {
   ): Promise<AppResult<Conversation[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
-    const all = role === Role.ADMIN || role === Role.PRINCIPAL;
+    const all = role === Role.ADMIN || role === Role.PRINCIPAL || role === Role.VICE_PRINCIPAL;
     const list = db.conversations.filter((c) => all || c.parentId === userId || c.teacherId === userId);
     return AppResult.success([...list].sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt)));
   }
@@ -3157,7 +3175,7 @@ export class FakeMessageRepository implements MessageRepository {
     if (!conv) {
       return AppResult.failure({ kind: 'NotFound', entity: 'Conversation', id: conversationId, message: 'Conversation not found.' });
     }
-    const allowed = viewer.role === Role.ADMIN || viewer.role === Role.PRINCIPAL || viewer.id === conv.parentId || viewer.id === conv.teacherId;
+    const allowed = viewer.role === Role.ADMIN || viewer.role === Role.PRINCIPAL || viewer.role === Role.VICE_PRINCIPAL || viewer.id === conv.parentId || viewer.id === conv.teacherId;
     if (!allowed) return AppResult.failure({ kind: 'UnauthorizedRole', message: 'You cannot open this conversation.' });
     return AppResult.success(
       db.messages.filter((m) => m.conversationId === conversationId).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -3231,7 +3249,7 @@ export class FakeMessageRepository implements MessageRepository {
     });
     const reader = db.profiles.find((p) => p.id === readerUserId);
     // Principal/Admin only look; they must not mark messages as read for the real participants.
-    if (reader && (reader.role === Role.ADMIN || reader.role === Role.PRINCIPAL)) {
+    if (reader && (reader.role === Role.ADMIN || reader.role === Role.PRINCIPAL || reader.role === Role.VICE_PRINCIPAL)) {
       return AppResult.success(0);
     }
     if (n > 0) saveLocalDatabase(db);
@@ -3296,7 +3314,7 @@ export class FakeNoticeRepository implements NoticeRepository {
 
   async getAllNotices(actor: Profile): Promise<AppResult<Notice[]>> {
     await simulateLocalDelay();
-    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN) {
+    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN && actor.role !== Role.VICE_PRINCIPAL) {
       return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only Principal or Admin can manage notices.' });
     }
     const db = getOrSeedLocalDatabase();
@@ -3308,7 +3326,7 @@ export class FakeNoticeRepository implements NoticeRepository {
     actor: Profile
   ): Promise<AppResult<Notice>> {
     await simulateLocalDelay();
-    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN) {
+    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN && actor.role !== Role.VICE_PRINCIPAL) {
       return AppResult.failure({
         kind: 'UnauthorizedRole',
         message: 'Only Principal or Admin can publish school notices.',
@@ -3342,7 +3360,7 @@ export class FakeNoticeRepository implements NoticeRepository {
     db.notices.push(created);
     db.profiles
       .filter((p) => p.isActive && p.id !== actor.id && userSeesNotice(db, p, created))
-      .filter((p) => p.role !== Role.ADMIN && p.role !== Role.PRINCIPAL)
+      .filter((p) => p.role !== Role.ADMIN && p.role !== Role.PRINCIPAL && p.role !== Role.VICE_PRINCIPAL)
       .forEach((p) =>
         pushNotification(db, p.id, NotificationType.NOTICE, `Notice: ${title}`, `نوٹس: ${title}`, body.slice(0, 100), body.slice(0, 100))
       );
@@ -3366,7 +3384,7 @@ export class FakeNoticeRepository implements NoticeRepository {
     actor: Profile
   ): Promise<AppResult<void>> {
     await simulateLocalDelay();
-    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN) {
+    if (actor.role !== Role.PRINCIPAL && actor.role !== Role.ADMIN && actor.role !== Role.VICE_PRINCIPAL) {
       return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only Principal or Admin can delete notices.' });
     }
     const db = getOrSeedLocalDatabase();

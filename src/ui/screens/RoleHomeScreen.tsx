@@ -127,6 +127,7 @@ export function getRoleTabs(role: UserRole): RoleTabSpec[] {
         },
       ];
     case UserRole.PRINCIPAL:
+    case UserRole.VICE_PRINCIPAL:
       return [
         {
           id: 'dashboard',
@@ -424,7 +425,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   ];
 
   const showCampusChips =
-    (session.role === UserRole.ADMIN || session.role === UserRole.PRINCIPAL) &&
+    (session.role === UserRole.ADMIN || session.role === UserRole.PRINCIPAL || session.role === UserRole.VICE_PRINCIPAL) &&
     activeTabIndex === 0;
 
   const renderParentTabBody = () => {
@@ -677,7 +678,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             <div className="flex items-center gap-2.5 min-w-0">
               {(currentTab.id === 'dashboard' || currentTab.id === 'home') ? (
                 <>
-                  {session.role === UserRole.PRINCIPAL ? <PrincipalAvatar size={62} /> : <RoleAvatar role={session.role} size={62} />}
+                  {session.role === UserRole.PRINCIPAL || session.role === UserRole.VICE_PRINCIPAL ? <PrincipalAvatar size={62} /> : <RoleAvatar role={session.role} size={62} />}
                   <div className="min-w-0 py-0.5">
                     <h1
                       className={`font-heading text-[18px] font-bold text-white ${
@@ -787,8 +788,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             onOpenSettings={handleGuardedOpenSettings}
             onLogout={handleGuardedLogout}
           />
-        ) : session.role === UserRole.PRINCIPAL ? (
+        ) : session.role === UserRole.PRINCIPAL || session.role === UserRole.VICE_PRINCIPAL ? (
           <PrincipalRoot
+            vice={session.role === UserRole.VICE_PRINCIPAL}
             principal={session.profile}
             tabId={currentTab.id}
             onSwitchTab={onTabChange}

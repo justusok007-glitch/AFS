@@ -14,7 +14,7 @@ import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { PrincipalSummaryDashboard } from '../principal/PrincipalSummaryDashboard';
 
-const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
+const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
 
 /** Admin dashboard = the principal dashboard plus a small system overview. */
 export const AdminOverviewTab: React.FC<{
@@ -51,7 +51,7 @@ export const AdminOverviewTab: React.FC<{
           <>
             <div>
               <div className="text-[11px] font-semibold text-[#6B7385] mb-1">{t('ad_sys_users_by_role')}</div>
-              <div className="grid grid-cols-5 gap-1.5 text-center">
+              <div className="grid grid-cols-6 gap-1.5 text-center">
                 {ROLES.map((r) => (
                   <div key={r} className="rounded-xl bg-[#F6F8FC] py-1.5">
                     <div dir="ltr" className="font-mono text-sm font-bold text-[#14284B]">{users.filter((u) => u.role === r).length}</div>

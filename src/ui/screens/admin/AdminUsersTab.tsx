@@ -41,7 +41,7 @@ import {
 import { selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
 
-const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
+const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
 const roleKey = (r: Role) => `role_${r.toLowerCase()}` as StringKey;
 
 export const AdminUsersTab: React.FC<{

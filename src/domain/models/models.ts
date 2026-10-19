@@ -8,6 +8,7 @@ export enum Role {
   PARENT = 'PARENT',
   TEACHER = 'TEACHER',
   PRINCIPAL = 'PRINCIPAL',
+  VICE_PRINCIPAL = 'VICE_PRINCIPAL',
   ACCOUNTANT = 'ACCOUNTANT',
   ADMIN = 'ADMIN',
 }
@@ -16,6 +17,7 @@ export enum UserRole {
   PARENT = 'parent',
   TEACHER = 'teacher',
   PRINCIPAL = 'principal',
+  VICE_PRINCIPAL = 'vice_principal',
   ACCOUNTANT = 'accountant',
   ADMIN = 'admin',
 }
@@ -875,6 +877,15 @@ export const ROLE_PRESETS: RolePreset[] = [
     campus: Campus.BOTH,
     titleKey: 'role_principal',
     descKey: 'role_principal_desc',
+  },
+  {
+    role: UserRole.VICE_PRINCIPAL,
+    domainRole: Role.VICE_PRINCIPAL,
+    loginId: 'VP01',
+    defaultPassword: 'demo1234',
+    campus: Campus.BOTH,
+    titleKey: 'role_vice_principal',
+    descKey: 'role_vice_principal_desc',
   },
   {
     role: UserRole.ACCOUNTANT,

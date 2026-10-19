@@ -22,7 +22,7 @@ import { NoticesCard } from '../comms/CommsShared';
 import { MoreView } from './PrincipalMoreTab';
 
 /** Today's school-wide attendance and fee collection, shown above the shortcut tiles. */
-const TodayCards: React.FC = () => {
+const TodayCards: React.FC<{ showCollection: boolean }> = ({ showCollection }) => {
   const { stringResource: t } = useStringResource();
   const [d, setD] = useState<PrincipalDashboard | null>(null);
   useEffect(() => {
@@ -70,7 +70,7 @@ const TodayCards: React.FC = () => {
           <AttendanceProgressRing percentage={d.attendancePercent} size={104} strokeWidth={9} subtitle={`${d.totalStudents}`} />
         </div>
       </SchoolCard>
-      <SchoolCard className="flex items-center justify-between gap-3">
+      {showCollection && <SchoolCard className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-heading text-xs font-bold text-[#14284B]">
             <Wallet className="w-4 h-4 text-[#F28C28] shrink-0" />
@@ -82,7 +82,7 @@ const TodayCards: React.FC = () => {
           <div className="text-[11px] text-[#6B7385]">{t('pr_kpi_collected_month')}</div>
           <div dir="ltr" className="font-mono text-sm font-bold text-[#2E9E5B]">{formatRupees(d.feeCollectedMonthRupees)}</div>
         </div>
-      </SchoolCard>
+      </SchoolCard>}
     </>
   );
 };
@@ -90,19 +90,20 @@ const TodayCards: React.FC = () => {
 /** Principal home: shortcut tiles for every option. Summaries now live inside their own tabs. */
 export const PrincipalDashboardTab: React.FC<{
   principal: Profile;
+  vice?: boolean;
   onSwitchTab: (index: number) => void;
   onOpenMore: (view: MoreView) => void;
   onOpenSettings: () => void;
-}> = ({ principal, onSwitchTab, onOpenMore, onOpenSettings }) => {
+}> = ({ principal, vice = false, onSwitchTab, onOpenMore, onOpenSettings }) => {
   const { stringResource: t } = useStringResource();
   const ic = 'w-6 h-6';
   return (
     <div className="space-y-3">
-      <TodayCards />
+      <TodayCards showCollection={!vice} />
       <NoticesCard user={principal} />
       <div className="grid grid-cols-3 gap-3">
         <HomeTile tone="red" label={t('tab_attendance')} icon={<CalendarCheck className={ic} />} onClick={() => onSwitchTab(1)} />
-        <HomeTile tone="orange" label={t('tab_fees')} icon={<Wallet className={ic} />} onClick={() => onSwitchTab(2)} />
+        <HomeTile tone="orange" label={vice ? t('vp_student_fees') : t('tab_fees')} icon={<Wallet className={ic} />} onClick={() => onSwitchTab(2)} />
         <HomeTile tone="purple" label={t('tab_results')} icon={<Award className={ic} />} onClick={() => onSwitchTab(3)} />
         <HomeTile tone="teal" label={t('pr_more_students')} icon={<GraduationCap className={ic} />} onClick={() => onOpenMore('students')} />
         <HomeTile tone="indigo" label={t('pr_more_compliance')} icon={<ClipboardCheck className={ic} />} onClick={() => onOpenMore('compliance')} />

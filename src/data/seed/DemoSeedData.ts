@@ -480,6 +480,17 @@ export function buildInitialDemoDatabase(
       isActive: true,
     },
     {
+      id: 'usr_vp01',
+      loginId: 'VP01',
+      role: Role.VICE_PRINCIPAL,
+      fullName: 'Sir Hafiz Imran Saeed',
+      fullNameUr: 'جناب حافظ عمران سعید',
+      phone: '0300-4411004',
+      campusId: null,
+      language: 'en',
+      isActive: true,
+    },
+    {
       id: 'usr_ac01',
       loginId: 'AC01',
       role: Role.ACCOUNTANT,
