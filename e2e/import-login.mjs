@@ -53,7 +53,7 @@ try {
   await dump('db after reload');
   await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (/session/i.test(k)) localStorage.removeItem(k); });
   await page.reload();
-  await login('asf@1001', '1001');
+  await login('afs@1001', '1001');
   const t = await text();
   log('parent login result:', t);
   log(/Incorrect/i.test(t) ? 'RESULT: LOGIN FAILED' : 'RESULT: LOGIN OK');
