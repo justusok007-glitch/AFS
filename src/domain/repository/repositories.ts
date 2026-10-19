@@ -111,8 +111,6 @@ export interface StudentRepository {
     actor: Profile,
     dryRun: boolean
   ): Promise<AppResult<ImportStudentResult[]>>;
-  /** Parent accounts linked to a student. */
-  parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>>;
   /** Moves a student to another section (and campus when the section belongs to the other campus). */
   transferStudent(
     studentId: string,

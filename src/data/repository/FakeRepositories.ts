@@ -1187,13 +1187,6 @@ export class FakeStudentRepository implements StudentRepository {
     return AppResult.success(undefined);
   }
 
-  async parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>> {
-    await simulateLocalDelay();
-    const db = getOrSeedLocalDatabase();
-    const ids = new Set(db.parentStudents.filter((ps) => ps.studentId === studentId).map((ps) => ps.parentId));
-    return AppResult.success(db.profiles.filter((p) => ids.has(p.id)));
-  }
-
   async childrenOfParent(parentId: string): Promise<AppResult<Student[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
