@@ -17,3 +17,4 @@ jobs:
           npx vite preview --port 4173 &
           sleep 5
           node e2e/import-login.mjs
+          OLD_DB=1 node e2e/import-login.mjs

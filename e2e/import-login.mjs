@@ -2,7 +2,12 @@ import { chromium } from 'playwright';
 const BASE = 'http://localhost:4173/';
 const log = (...a) => { const m = a.join(' ').replace(/[\r\n%]/g, ' ').slice(0, 900); console.log('[e2e]', m); console.log(`::notice title=e2e::${m}`); };
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 400, height: 850 } });
+import { readFileSync } from 'node:fs';
+const oldDb = process.env.OLD_DB ? readFileSync('e2e/old-db.json', 'utf8') : null;
+const context = await browser.newContext({ viewport: { width: 400, height: 850 } });
+if (oldDb) await context.addInitScript((db) => { if (!localStorage.getItem('afs_okara_local_db_v2')) localStorage.setItem('afs_okara_local_db_v2', db); }, oldDb);
+const page = await context.newPage();
+log('scenario:', oldDb ? 'OLD DATA PRESENT' : 'CLEAN');
 page.on('pageerror', (e) => log('PAGEERROR', e.message));
 const text = async () => (await page.locator('body').innerText()).replace(/\s+/g, ' ').slice(0, 600);
 async function login(id, pw) {
