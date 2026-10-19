@@ -59,7 +59,7 @@ import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
-import { TeacherDashboardTab } from './teacher/TeacherDashboardTab';
+import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
 export interface RoleTabSpec {
@@ -544,15 +544,13 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
     if (currentTab.id === 'home') {
       return (
-        <TeacherDashboardTab
+        <TeacherHomeTab
           teacherProfile={session.profile}
           classesMap={classesMap}
           onOpenSectionAttendance={(secId) => {
             setTeacherSelectedSectionId(secId);
             onTabChange(1); // Open Attendance tab
           }}
-          onSwitchTab={onTabChange}
-          onOpenSettings={handleGuardedOpenSettings}
         />
       );
     }
