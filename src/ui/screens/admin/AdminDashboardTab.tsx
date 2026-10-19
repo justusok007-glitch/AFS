@@ -6,6 +6,8 @@ import { NoticesManager } from '../comms/CommsShared';
 import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
 import { AdminAuditCard } from './AdminMoreTab';
 import { useSectionOptions } from './AdminStudentsTab';
+import { StudentSearchPanel } from '../principal/StudentSearchPanel';
+import { Search } from 'lucide-react';
 import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { Profile, Role, StudentStatus } from '../../../domain/models/models';
@@ -85,7 +87,7 @@ export const AdminOverviewTab: React.FC<{
 };
 
 /** Admin home: shortcut tiles. Overview, corrections, notices, conversations and audit log open from their own tile. */
-type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters';
+type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters' | 'search';
 
 export const AdminDashboardTab: React.FC<{
   admin: Profile;
@@ -105,14 +107,14 @@ export const AdminDashboardTab: React.FC<{
   }
   if (view === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={back} />;
   if (view === 'messages') return <MessagesTab user={admin} readOnly onBack={back} />;
-  if (view === 'overview' || view === 'audit' || view === 'defaulters') {
+  if (view === 'overview' || view === 'audit' || view === 'defaulters' || view === 'search') {
     return (
       <div className="space-y-3">
         <button type="button" onClick={back} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
           <BackIcon className="w-4 h-4" />
           <span>{t('back_button_label')}</span>
         </button>
-        {view === 'overview' ? <AdminOverviewTab lookups={lookups} onSwitchTab={onSwitchTab} /> : view === 'defaulters' ? <AccountantDefaultersTab lookups={lookups} /> : <AdminAuditCard />}
+        {view === 'overview' ? <AdminOverviewTab lookups={lookups} onSwitchTab={onSwitchTab} /> : view === 'defaulters' ? <AccountantDefaultersTab lookups={lookups} /> : view === 'search' ? <StudentSearchPanel user={admin} lookups={lookups} /> : <AdminAuditCard />}
       </div>
     );
   }
@@ -122,6 +124,7 @@ export const AdminDashboardTab: React.FC<{
       <HomeTile tone="orange" label={t('tab_setup')} icon={<Sliders className={ic} />} onClick={() => onSwitchTab(1)} />
       <HomeTile tone="purple" label={t('tab_users')} icon={<Users className={ic} />} onClick={() => onSwitchTab(2)} />
       <HomeTile tone="green" label={t('tab_students')} icon={<GraduationCap className={ic} />} onClick={() => onSwitchTab(3)} />
+      <HomeTile tone="blue" label={t('pr_more_students')} icon={<Search className={ic} />} onClick={() => setView('search')} />
       <HomeTile tone="orange" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => setView('defaulters')} />
       <HomeTile tone="red" label={t('ad_att_btn')} icon={<CalendarCheck className={ic} />} onClick={() => setView('attendance')} />
       <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => setView('notices')} />
