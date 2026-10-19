@@ -5,6 +5,8 @@ import {
   ChevronUp,
   Clock,
   Eraser,
+  Eye,
+  EyeOff,
   KeyRound,
   RotateCcw,
   ShieldCheck,
@@ -220,6 +222,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [password, setPassword] = useState<string>('demo1234');
   const [errorKey, setErrorKey] = useState<StringKey | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [demoExpanded, setDemoExpanded] = useState<boolean>(false);
 
   // Hidden developer action: tap school logo 5 times to open Developer Menu
@@ -588,8 +591,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 setPassword(val);
                 if (errorKey) setErrorKey(null);
               }}
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               placeholder={stringResource('login_password_placeholder')}
+              trailingIcon={
+                <button type="button" aria-label="Show password" className="p-1 cursor-pointer" onClick={() => setShowPassword((v) => !v)}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
               forceLtrValue
               leadingIcon={<KeyRound className="w-4 h-4" />}
             />

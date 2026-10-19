@@ -198,6 +198,9 @@ export const SchoolTextField: React.FC<SchoolTextFieldProps> = ({
           onChange={(e) => onValueChange(e.target.value)}
           placeholder={placeholder}
           dir={urdu ? 'rtl' : forceLtrValue ? 'ltr' : undefined}
+          {...(forceLtrValue
+            ? { autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false, autoComplete: type === 'password' ? 'new-password' : 'off' }
+            : {})}
           className={`w-full bg-transparent text-[#1B2233] placeholder:text-[#6B7385]/70 focus:outline-none ${urdu ? 'font-urdu text-base leading-[2.4] py-1.5' : 'text-sm'}`}
         />
         {trailingIcon && (
