@@ -175,6 +175,15 @@ export async function upsertRows(table: string, rows: Record<string, unknown>[],
   }
 }
 
+/** Plain inserts (no "on conflict"): works for rows the writer may not be allowed to read back. */
+export async function insertRows(table: string, rows: Record<string, unknown>[]): Promise<void> {
+  const keys = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+  const uniform = rows.map((r) => Object.fromEntries(keys.map((k) => [k, r[k] === undefined ? null : r[k]])));
+  for (let i = 0; i < uniform.length; i += 400) {
+    await authed('POST', `/rest/v1/${table}`, uniform.slice(i, i + 400), { Prefer: 'return=minimal' });
+  }
+}
+
 export async function patchRows(table: string, filter: string, values: Record<string, unknown>): Promise<void> {
   await authed('PATCH', `/rest/v1/${table}?${filter}`, values, { Prefer: 'return=minimal' });
 }

@@ -12,6 +12,7 @@ import {
   rpc,
   selectAll,
   SupabaseError,
+  insertRows,
   upsertRows,
 } from './client';
 import { cloudHooks } from './mode';
@@ -39,6 +40,8 @@ interface TableSpec {
   emptyToNull?: string[];
   /** only the newest N rows are pulled (older rows are simply not held locally) */
   windowed?: 'attendance';
+  /** new rows are inserted (not upserted): the writer may not be allowed to read them back */
+  insertOnly?: boolean;
 }
 
 /** Parents first, children after: the order rows must be written in. */
@@ -74,10 +77,10 @@ const SPECS: TableSpec[] = [
   { snap: 'messages', table: 'messages', pk: ['id'], query: 'order=created_at' },
   { snap: 'notices', table: 'notices', pk: ['id'], query: 'order=created_at.desc' },
   {
-    snap: 'notifications', table: 'notifications', pk: ['id'], query: 'order=created_at.desc&limit=300',
+    snap: 'notifications', table: 'notifications', pk: ['id'], query: 'order=created_at.desc&limit=300', insertOnly: true,
     nullToMissing: ['titleUr', 'bodyUr'],
   },
-  { snap: 'auditLogs', table: 'audit_logs', pk: ['id'], query: 'order=changed_at.desc&limit=400' },
+  { snap: 'auditLogs', table: 'audit_logs', pk: ['id'], query: 'order=changed_at.desc&limit=400', insertOnly: true },
 ];
 
 const ATTENDANCE_WINDOW_DAYS = 45;
@@ -368,7 +371,19 @@ async function pushOnce(): Promise<boolean> {
   for (const d of diffs) {
     if (!d.upserts.length) continue;
     changed = true;
-    await upsertRows(d.spec.table, d.upserts.map((r) => toDbRow(d.spec, r)), d.spec.pk.map(snake).join(','));
+    if (d.spec.insertOnly) {
+      const known = new Set((base[d.spec.snap] as unknown as Row[]).map((r) => keyOf(d.spec, r)));
+      const fresh = d.upserts.filter((r) => !known.has(keyOf(d.spec, r)));
+      const edited = d.upserts.filter((r) => known.has(keyOf(d.spec, r)));
+      if (fresh.length) await insertRows(d.spec.table, fresh.map((r) => toDbRow(d.spec, r)));
+      for (const r of edited) {
+        const body = toDbRow(d.spec, r);
+        d.spec.pk.forEach((k) => delete body[snake(k)]);
+        await patchRows(d.spec.table, d.spec.pk.map((k) => `${snake(k)}=${eq(r[k])}`).join('&'), body);
+      }
+    } else {
+      await upsertRows(d.spec.table, d.upserts.map((r) => toDbRow(d.spec, r)), d.spec.pk.map(snake).join(','));
+    }
     const prevRows = base[d.spec.snap] as unknown as Row[];
     const map = new Map(prevRows.map((r) => [keyOf(d.spec, r), r]));
     d.upserts.forEach((r) => map.set(keyOf(d.spec, r), structuredClone(r)));
