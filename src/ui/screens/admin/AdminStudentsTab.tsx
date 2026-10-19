@@ -48,6 +48,7 @@ import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { percentColor, selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
 import { AdminBulkStudents } from './AdminBulkStudents';
+import { AdminFeeImport } from './AdminFeeImport';
 import { AccountEditor, SlipSheet } from './AdminUsersTab';
 
 type View =
@@ -55,6 +56,7 @@ type View =
   | { kind: 'admit' }
   | { kind: 'promote' }
   | { kind: 'bulk' }
+  | { kind: 'fees' }
   | { kind: 'profile'; studentId: string };
 
 const PAGE = 50;
@@ -162,6 +164,9 @@ export const AdminStudentsTab: React.FC<{
       </>
     );
   }
+  if (view.kind === 'fees') {
+    return <AdminFeeImport admin={admin} onClose={() => { setTick((n) => n + 1); setView({ kind: 'list' }); }} />;
+  }
   if (view.kind === 'bulk') {
     return (
       <>
@@ -225,6 +230,7 @@ export const AdminStudentsTab: React.FC<{
         <PrimaryButton text={t('st_new_btn')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setView({ kind: 'admit' })} />
         <PrimaryButton text={t('st_bulk_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'bulk' })} />
       </div>
+      <PrimaryButton text={t('fee_imp_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'fees' })} />
       <PrimaryButton text={t('st_promote_btn')} variant="outline" icon={<Users className="w-4 h-4 text-[#F28C28]" />} onClick={() => setView({ kind: 'promote' })} />
 
       <SchoolCard className="space-y-2.5">

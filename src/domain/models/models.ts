@@ -318,6 +318,36 @@ export interface ImportClassRow {
   subjects: string[];
 }
 
+/** One student line of the accountant's fee file (whole rupees). */
+export interface ImportFeeRow {
+  line: number;
+  admissionNo: string;
+  name: string;
+  campus: string;
+  monthlyFee?: number;
+  prevArrears: number;
+  admissionFee: number;
+  annualCharges: number;
+  /** Month the previous arrears are booked to (the month before the first column). */
+  arrearsMonth: string;
+  /** Billed amount per month, "YYYY-MM"; blank months are left out. */
+  months: { month: string; amount: number }[];
+  totalDue?: number;
+  totalPaid: number;
+  arrears?: number;
+}
+
+export interface ImportFeeResult {
+  line: number;
+  ok: boolean;
+  error: string | null;
+  warnings: string[];
+  studentName: string;
+  admissionNo: string;
+  due: number;
+  paid: number;
+}
+
 export interface ImportClassResult {
   line: number;
   ok: boolean;

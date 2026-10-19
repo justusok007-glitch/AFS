@@ -12,6 +12,8 @@ import {
   Gender,
   ImportStudentResult,
   ImportStudentRow,
+  ImportFeeResult,
+  ImportFeeRow,
   ImportFileRow,
   ImportClassRow,
   ImportClassResult,
@@ -1967,6 +1969,149 @@ export class FakeAttendanceRepository implements AttendanceRepository {
 // ============================================================================
 
 export class FakeFeeRepository implements FeeRepository {
+  async importFeeFile(
+    rows: ImportFeeRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportFeeResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can import fees.' });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const priority: Record<string, number> = {};
+    db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
+
+    // 1. match every line to a student
+    const seen = new Set<string>();
+    const fail = (row: ImportFeeRow, error: string): ImportFeeResult => ({
+      line: row.line, ok: false, error, warnings: [], studentName: row.name, admissionNo: row.admissionNo, due: 0, paid: 0,
+    });
+    const plan: { row: ImportFeeRow; student: Student; warnings: string[]; due: number }[] = [];
+    const results: ImportFeeResult[] = [];
+    const byLine = new Map<number, ImportFeeResult>();
+    for (const row of rows) {
+      const no = row.admissionNo.trim().toLowerCase();
+      if (!no) { byLine.set(row.line, fail(row, 'Adm No is empty.')); continue; }
+      const campus = row.campus.trim() ? findCampusByText(db, row.campus) : undefined;
+      if (row.campus.trim() && !campus) { byLine.set(row.line, fail(row, `Campus "${row.campus}" not found (use Boys or Girls).`)); continue; }
+      const matches = db.students.filter(
+        (s) => s.admissionNo.toLowerCase() === no && (!campus || s.campusId === campus.id)
+      );
+      if (matches.length === 0) { byLine.set(row.line, fail(row, `No student with Adm No ${row.admissionNo}${campus ? ` in ${campus.nameEn}` : ''}. Import students first.`)); continue; }
+      if (matches.length > 1) { byLine.set(row.line, fail(row, `Adm No ${row.admissionNo} exists in both campuses - add the Campus column.`)); continue; }
+      const student = matches[0];
+      if (seen.has(student.id)) { byLine.set(row.line, fail(row, `Adm No ${row.admissionNo} appears twice in the file.`)); continue; }
+      seen.add(student.id);
+      const warnings: string[] = [];
+      const billed = row.months.reduce((s, m) => s + m.amount, 0);
+      const due = row.prevArrears + row.admissionFee + row.annualCharges + billed;
+      if (row.totalDue !== undefined && row.totalDue !== due) {
+        warnings.push(`Total Due in file is ${row.totalDue}, but the columns add up to ${due}. Using ${due}.`);
+      }
+      let paid = row.totalPaid;
+      if (paid > due) { warnings.push(`Total Paid ${paid} is more than Total Due ${due}; only ${due} is recorded.`); paid = due; }
+      if (row.arrears !== undefined && row.arrears !== due - paid) {
+        warnings.push(`Arrears in file is ${row.arrears}, calculated ${due - paid}.`);
+      }
+      plan.push({ row, student, warnings, due });
+    }
+
+    // 2. remove the old records of these students (the file is the master record)
+    const ids = new Set(plan.map((p) => p.student.id));
+    const oldPayments = new Set(db.feePayments.filter((p) => ids.has(p.studentId)).map((p) => p.id));
+    const oldVouchers = new Set(db.feeVouchers.filter((v) => ids.has(v.studentId)).map((v) => v.id));
+    db.paymentAllocations = db.paymentAllocations.filter((a) => !oldPayments.has(a.paymentId) && !oldVouchers.has(a.voucherId));
+    db.feePayments = db.feePayments.filter((p) => !oldPayments.has(p.id));
+    db.feeVouchers = db.feeVouchers.filter((v) => !oldVouchers.has(v.id));
+    db.studentConcessions = db.studentConcessions.filter((c) => !(ids.has(c.studentId) && c.feeHeadId === 'fh_tuition'));
+
+    const nextVoucher: Record<string, number> = {};
+    const nextReceipt: Record<string, number> = {};
+    const seqFrom = (list: { no: string }[], prefix: string, cut: number) =>
+      list.filter((x) => x.no.startsWith(prefix)).reduce((m, x) => Math.max(m, Number(x.no.slice(cut)) || 0), 0);
+    ['B-', 'G-'].forEach((pre) => {
+      nextVoucher[pre] = seqFrom(db.feeVouchers.map((v) => ({ no: v.voucherNo })), pre, 2);
+      nextReceipt[pre] = seqFrom(db.feePayments.map((p) => ({ no: p.receiptNo })), `${pre}R-`, 4);
+    });
+    let allocSeq = db.paymentAllocations.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0);
+
+    // 3. write the new records
+    for (const { row, student, warnings, due } of plan) {
+      const pre = student.campusId === 'campus_g' ? 'G-' : 'B-';
+      const items = new Map<string, FeeVoucherItem[]>(); // month -> items
+      const add = (month: string, item: FeeVoucherItem) => items.set(month, [...(items.get(month) ?? []), item]);
+      const billedMonths = row.months.filter((m) => m.amount > 0).sort((a, b) => a.month.localeCompare(b.month));
+      if (row.prevArrears > 0) {
+        add(row.arrearsMonth, { feeHeadId: 'fh_arrears', description: 'Previous Arrears', amount: row.prevArrears, waivedAmount: 0, paidAmount: 0 });
+      }
+      billedMonths.forEach((m) =>
+        add(m.month, { feeHeadId: 'fh_tuition', description: `Monthly Tuition Fee (${m.month})`, amount: m.amount, waivedAmount: 0, paidAmount: 0 })
+      );
+      const extraMonth = billedMonths[0]?.month ?? `${row.arrearsMonth.slice(0, 4)}-${String(Number(row.arrearsMonth.slice(5)) % 12 + 1).padStart(2, '0')}`;
+      if (row.admissionFee > 0) add(extraMonth, { feeHeadId: 'fh_admission', description: 'Admission Fee', amount: row.admissionFee, waivedAmount: 0, paidAmount: 0 });
+      if (row.annualCharges > 0) add(extraMonth, { feeHeadId: 'fh_annual', description: 'Annual Charges', amount: row.annualCharges, waivedAmount: 0, paidAmount: 0 });
+
+      const vouchers: FeeVoucher[] = [...items.keys()].sort().map((month) => {
+        nextVoucher[pre] += 1;
+        const voucherNo = `${pre}${String(nextVoucher[pre]).padStart(4, '0')}`;
+        return {
+          id: `vch_${voucherNo.toLowerCase()}`, voucherNo, studentId: student.id, campusId: student.campusId,
+          billingMonth: month, issueDate: `${month}-01`, dueDate: `${month}-10`, items: items.get(month)!, status: VoucherStatus.UNPAID,
+        };
+      });
+
+      let remaining = Math.min(row.totalPaid, due);
+      if (remaining > 0) {
+        nextReceipt[pre] += 1;
+        const receiptNo = `${pre}R-${String(nextReceipt[pre]).padStart(4, '0')}`;
+        const paymentId = `pay_${receiptNo.toLowerCase()}`;
+        db.feePayments.push({
+          id: paymentId, receiptNo, studentId: student.id, amount: remaining, paidOn: today(),
+          method: PaymentMethod.CASH, receivedBy: actor.id, isVoid: false, reference: null,
+          remarks: 'Imported from the accountant\'s fee file (total paid)',
+        });
+        for (const v of vouchers) {
+          for (const item of [...v.items].sort((a, b) => (priority[a.feeHeadId] ?? 99) - (priority[b.feeHeadId] ?? 99))) {
+            if (remaining <= 0) break;
+            const take = Math.min(remaining, item.amount);
+            item.paidAmount = take;
+            remaining -= take;
+            allocSeq += 1;
+            db.paymentAllocations.push({ id: `alloc_imp_${allocSeq}`, paymentId, voucherId: v.id, feeHeadId: item.feeHeadId, allocatedAmount: take });
+          }
+        }
+      }
+      vouchers.forEach((v) => {
+        const total = v.items.reduce((s, i) => s + i.amount, 0);
+        const paid = v.items.reduce((s, i) => s + (i.paidAmount ?? 0), 0);
+        v.status = paid >= total ? VoucherStatus.PAID : paid > 0 ? VoucherStatus.PARTIAL : VoucherStatus.UNPAID;
+        db.feeVouchers.push(v);
+      });
+      if (row.monthlyFee && row.monthlyFee > 0) {
+        db.studentConcessions.push({
+          studentId: student.id, feeHeadId: 'fh_tuition', type: ConcessionType.OVERRIDE, value: row.monthlyFee,
+          reason: 'Monthly fee from the accountant\'s fee file',
+        });
+      }
+      byLine.set(row.line, {
+        line: row.line, ok: true, error: null, warnings, studentName: student.name, admissionNo: student.admissionNo,
+        due, paid: Math.min(row.totalPaid, due),
+      });
+    }
+    if (!dryRun) {
+      db.auditLogs.unshift({
+        id: `aud_${Date.now()}`, action: 'IMPORT_FEES', tableName: 'fee_vouchers', recordId: 'bulk',
+        oldValue: null, newValue: `${plan.length} students`, reason: 'Fee file imported by Admin',
+        changedBy: actor.id, changedAt: new Date().toISOString(),
+      });
+      saveLocalDatabase(db);
+    }
+    rows.forEach((r) => { const x = byLine.get(r.line); if (x) results.push(x); });
+    return AppResult.success(results);
+  }
+
   async getFeeHeads(): Promise<AppResult<FeeHead[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();

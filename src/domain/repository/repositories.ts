@@ -28,6 +28,8 @@ import {
   ImportFileRow,
   ImportClassRow,
   ImportClassResult,
+  ImportFeeResult,
+  ImportFeeRow,
   ImportStudentResult,
   AttendanceReportFilter,
   FeeCollectionReport,
@@ -206,6 +208,16 @@ export interface AttendanceRepository {
 // ============================================================================
 
 export interface FeeRepository {
+  /**
+   * Replaces each listed student's fee records (vouchers, payments, monthly fee) with the accountant's file.
+   * Students are matched by admission no. + campus. Admin only. dryRun only checks.
+   */
+  importFeeFile(
+    rows: ImportFeeRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportFeeResult[]>>;
+
   getFeeHeads(): Promise<AppResult<FeeHead[]>>;
   saveFeeHead(feeHead: FeeHead, actorId: string): Promise<AppResult<FeeHead>>;
   getClassFeeStructures(

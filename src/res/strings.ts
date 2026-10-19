@@ -728,6 +728,11 @@ export type StringKey =
   | 'st_unpaid'
   | 'st_err_fee'
   | 'st_err_net_gt'
+  | 'fee_imp_title'
+  | 'fee_imp_hint'
+  | 'fee_imp_btn'
+  | 'fee_imp_err_cols'
+  | 'fee_imp_done'
   | 'cl_import_title'
   | 'cl_import_hint'
   | 'cl_import_btn'
@@ -1672,6 +1677,11 @@ export const stringsEn: Record<StringKey, string> = {
   st_bulk_err_status: 'Status must be Paid or Unpaid',
   st_bulk_err_number: 'Amount is not a number',
   st_bulk_err_cols: 'The file headings were not recognised. Download the template and use its headings.',
+  fee_imp_title: 'Import fee records (CSV)',
+  fee_imp_hint: 'Use the accountant\'s fee sheet: Adm No, Campus, Monthly Fee, Prev. Arrears, Admission Fee, Annual Charges, one column per month (e.g. 26-Apr), Total Due, Total Paid. Each student listed here gets their fee records replaced by the file; students not in the file are not touched.',
+  fee_imp_btn: 'Import fee records (CSV)',
+  fee_imp_err_cols: 'The file headings were not recognised. Download the template and use its headings (Adm No, month columns, Total Paid).',
+  fee_imp_done: 'Fee records imported.',
   cl_import_title: 'Import classes (CSV)',
   cl_import_hint: 'Columns: Campus (Boys/Girls), Class (en), Class (ur), Sections (separate with ;), Subjects (separate with ;, optional Urdu after |, e.g. English|انگریزی). Existing classes are kept; only new sections and subjects are added.',
   cl_import_btn: 'Import classes (CSV)',
@@ -2604,6 +2614,11 @@ export const stringsUr: Record<StringKey, string> = {
   st_bulk_err_status: 'اسٹیٹس Paid یا Unpaid ہونا چاہیے',
   st_bulk_err_number: 'رقم عدد نہیں ہے',
   st_bulk_err_cols: 'فائل کے عنوان پہچانے نہیں گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اسی کے عنوان استعمال کریں۔',
+  fee_imp_title: 'فیس ریکارڈ اپ لوڈ (CSV)',
+  fee_imp_hint: 'اکاؤنٹنٹ کی فیس شیٹ استعمال کریں۔ فائل میں موجود ہر طالب علم کا فیس ریکارڈ فائل کے مطابق بدل جائے گا، باقی طلبہ کو چھوا نہیں جائے گا۔',
+  fee_imp_btn: 'فیس ریکارڈ اپ لوڈ (CSV)',
+  fee_imp_err_cols: 'فائل کے عنوانات نہیں پہچانے گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اس کے عنوانات استعمال کریں۔',
+  fee_imp_done: 'فیس ریکارڈ اپ لوڈ ہو گیا۔',
   cl_import_title: 'کلاسیں درآمد کریں (CSV)',
   cl_import_hint: 'کالم: Campus (Boys/Girls)، Class (en)، Class (ur)، Sections (؛ سے الگ کریں)، Subjects (؛ سے الگ کریں، اردو نام | کے بعد، مثلاً English|انگریزی)۔ موجود کلاسیں برقرار رہتی ہیں، صرف نئے سیکشن اور مضامین شامل ہوتے ہیں۔',
   cl_import_btn: 'کلاسیں درآمد کریں (CSV)',
