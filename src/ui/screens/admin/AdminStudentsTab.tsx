@@ -43,6 +43,7 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { StudentFeeAccount } from '../accountant/StudentFeeAccount';
+import { ParentAttendanceTab } from '../parent/ParentAttendanceTab';
 import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { percentColor, selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
@@ -748,25 +749,7 @@ const StudentProfile: React.FC<{
         </>
       )}
 
-      {tab === 'attendance' && (
-        <SchoolCard className="space-y-2">
-          {!att ? (
-            <ShimmerPlaceholder lines={3} />
-          ) : (
-            <>
-              <div dir="ltr" className="font-mono text-xl font-bold text-start" style={{ color: percentColor(att.allTimePercentage) }}>{att.allTimePercentage}%</div>
-              <div dir="ltr" className="text-xs text-[#6B7385]">{att.allTimePresentDays + att.allTimeLateDays}P · {att.allTimeAbsentDays}A · {att.allTimeLeaveDays}L</div>
-              <h4 className="text-xs font-bold text-[#14284B] pt-1">{t('st_att_monthly')}</h4>
-              {att.monthlyPercentages.map((m) => (
-                <div key={m.month} dir="ltr" className="flex justify-between text-xs border-t border-[#E4E8F0] pt-1">
-                  <span>{m.month}</span>
-                  <b style={{ color: percentColor(m.percentage) }}>{m.percentage}%</b>
-                </div>
-              ))}
-            </>
-          )}
-        </SchoolCard>
-      )}
+      {tab === 'attendance' && <ParentAttendanceTab selectedChild={student} />}
 
       {tab === 'results' && (
         <ParentResultsTab parent={admin} child={student} allowPrint />

@@ -27,6 +27,7 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { percentColor } from './PrincipalShared';
+import { ParentAttendanceTab } from '../parent/ParentAttendanceTab';
 import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesCard, NoticesManager } from '../comms/CommsShared';
 
@@ -141,15 +142,7 @@ export const PrincipalMoreTab: React.FC<{
           <ShimmerPlaceholder lines={3} showHeader />
         ) : (
           <>
-            {att && (
-              <SchoolCard className="space-y-1.5">
-                <h3 className="text-xs font-bold text-[#14284B]">{t('pr_profile_attendance')}</h3>
-                <div dir="ltr" className="font-mono text-lg font-bold text-start" style={{ color: percentColor(att.allTimePercentage) }}>{att.allTimePercentage}%</div>
-                <div dir="ltr" className="text-[11px] text-[#6B7385]">
-                  {att.allTimePresentDays + att.allTimeLateDays}P · {att.allTimeAbsentDays}A · {att.allTimeLeaveDays}L
-                </div>
-              </SchoolCard>
-            )}
+            <ParentAttendanceTab selectedChild={profile} />
             {fees && (
               <>
                 <h3 className="text-xs font-bold text-[#14284B]">{t('pr_profile_fees')}</h3>

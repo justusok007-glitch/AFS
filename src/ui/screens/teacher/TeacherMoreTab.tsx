@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
+  ArrowLeft,
+  ArrowRight,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   LogOut,
   Search,
@@ -23,6 +27,7 @@ import {
   ShimmerPlaceholder,
 } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
+import { ParentAttendanceTab } from '../parent/ParentAttendanceTab';
 import {
   formatClassSectionTitle,
   formatDomainErrorMessage,
@@ -48,7 +53,8 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
   onOpenSettings,
   onLogout,
 }) => {
-  const { stringResource, language } = useStringResource();
+  const { stringResource, language, isRtl } = useStringResource();
+  const [viewStudent, setViewStudent] = useState<Student | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,7 +140,27 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
     );
   }
 
+  if (viewStudent) {
+    const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => setViewStudent(null)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          <BackIcon className="w-4 h-4" />
+          <span>{stringResource('back_button_label')}</span>
+        </button>
+        <SchoolCard className="py-3">
+          <div className={`font-heading text-sm font-bold text-[#14284B] ${language === 'ur' ? 'font-urdu leading-[2.1]' : ''}`}>
+            {language === 'ur' ? viewStudent.nameUr : viewStudent.name}
+          </div>
+          <div dir="ltr" className="text-[11px] font-mono text-[#6B7385] text-start">{viewStudent.admissionNo}</div>
+        </SchoolCard>
+        <ParentAttendanceTab selectedChild={viewStudent} />
+      </div>
+    );
+  }
+
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const RowChevron = isRtl ? ChevronLeft : ChevronRight;
 
   const filteredGroups = sectionGroups
     .map((group) => {
@@ -234,7 +260,11 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
                   {students.map((stu) => (
                     <div
                       key={stu.id}
-                      className="p-3 rounded-xl bg-[#F6F8FC] border border-[#E4E8F0] flex items-center justify-between gap-2.5"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setViewStudent(stu)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setViewStudent(stu); }}
+                      className="p-3 rounded-xl bg-[#F6F8FC] border border-[#E4E8F0] flex items-center justify-between gap-2.5 cursor-pointer active:scale-[0.99]"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span
@@ -267,7 +297,7 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
                           </div>
                         </div>
                       </div>
-
+                      <RowChevron className="w-4 h-4 text-[#6B7385] shrink-0" />
                     </div>
                   ))}
                 </div>
