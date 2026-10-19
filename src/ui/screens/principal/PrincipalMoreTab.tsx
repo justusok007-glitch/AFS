@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, Bell, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Phone, Search, Settings } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, Bell, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Phone, Search, Settings } from 'lucide-react';
 import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
@@ -28,11 +28,12 @@ import {
 } from '../accountant/AccountantShared';
 import { percentColor } from './PrincipalShared';
 import { ParentAttendanceTab } from '../parent/ParentAttendanceTab';
+import { AccountantDefaultersTab } from '../accountant/AccountantDefaultersTab';
 import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesCard, NoticesManager } from '../comms/CommsShared';
 
 type Range = 'week' | 'month';
-export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages';
+export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages' | 'defaulters';
 
 export const PrincipalMoreTab: React.FC<{
   principal: Profile;
@@ -164,6 +165,18 @@ export const PrincipalMoreTab: React.FC<{
       </div>
     );
 
+  if (view === 'defaulters') {
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => onViewChange('menu')} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          <BackIcon className="w-4 h-4" />
+          <span>{t('back_button_label')}</span>
+        </button>
+        <AccountantDefaultersTab lookups={lookups} allowExport={false} />
+      </div>
+    );
+  }
+
   const backBtn = (
     <button type="button" onClick={() => onViewChange('menu')} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
       <BackIcon className="w-4 h-4" />
@@ -176,6 +189,7 @@ export const PrincipalMoreTab: React.FC<{
     return (
       <div className="grid grid-cols-3 gap-3">
         <HomeTile tone="teal" label={t('pr_more_students')} icon={<GraduationCap className={ic} />} onClick={() => onViewChange('students')} />
+        <HomeTile tone="red" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => onViewChange('defaulters')} />
         <HomeTile tone="indigo" label={t('pr_more_compliance')} icon={<ClipboardCheck className={ic} />} onClick={() => onViewChange('compliance')} />
         <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => onViewChange('notices')} />
         <HomeTile tone="green" label={t('ms_audit_btn')} icon={<MessageSquare className={ic} />} onClick={() => onViewChange('messages')} />

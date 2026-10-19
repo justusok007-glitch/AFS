@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   Award,
   Bell,
   CalendarCheck,
@@ -105,6 +106,7 @@ export const PrincipalDashboardTab: React.FC<{
         <HomeTile tone="red" label={t('tab_attendance')} icon={<CalendarCheck className={ic} />} onClick={() => onSwitchTab(1)} />
         <HomeTile tone="orange" label={vice ? t('vp_student_fees') : t('tab_fees')} icon={<Wallet className={ic} />} onClick={() => onSwitchTab(2)} />
         <HomeTile tone="purple" label={t('tab_results')} icon={<Award className={ic} />} onClick={() => onSwitchTab(3)} />
+        <HomeTile tone="red" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => onOpenMore('defaulters')} />
         <HomeTile tone="teal" label={t('pr_more_students')} icon={<GraduationCap className={ic} />} onClick={() => onOpenMore('students')} />
         <HomeTile tone="indigo" label={t('pr_more_compliance')} icon={<ClipboardCheck className={ic} />} onClick={() => onOpenMore('compliance')} />
         <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => onOpenMore('notices')} />
