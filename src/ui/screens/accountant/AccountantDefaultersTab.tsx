@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Download, MessageCircle, Phone, Users, Wallet } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { formatRupees } from '../../../domain/formatters/SchoolFormatters';
+import { currentMonth } from '../../../domain/clock';
 import { FeeDefaulterSummary } from '../../../domain/models/models';
 import { stringsUr } from '../../../res/strings';
 import {
@@ -36,6 +37,9 @@ export const AccountantDefaultersTab: React.FC<{
   const [campus, setCampus] = useState('ALL');
   const [cls, setCls] = useState('ALL');
   const [minMonths, setMinMonths] = useState(1);
+  const [thisMonthOnly, setThisMonthOnly] = useState(false);
+  const [monthDue, setMonthDue] = useState<Record<string, number>>({});
+  const curMonth = currentMonth();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,20 +47,32 @@ export const AccountantDefaultersTab: React.FC<{
     const r = await AppModule.feeRepository.getDefaulters(campus === 'ALL' ? null : campus);
     if (!r.ok) { setFailed(true); setLoading(false); return; }
     setRows(r.data);
+    const v = await AppModule.feeRepository.getAllVouchers();
+    const map: Record<string, number> = {};
+    if (v.ok) {
+      for (const x of v.data) {
+        if (x.billingMonth !== curMonth || x.status === 'PAID') continue;
+        const due = x.items.reduce((s, it) => s + Math.max(0, Math.max(0, it.amount - it.waivedAmount) - (it.paidAmount ?? 0)), 0);
+        if (due > 0) map[x.studentId] = (map[x.studentId] ?? 0) + due;
+      }
+    }
+    setMonthDue(map);
     setLoading(false);
-  }, [campus]);
+  }, [campus, curMonth]);
   useEffect(() => { void load(); }, [load]);
 
   const filtered = useMemo(
     () =>
       rows
         .filter((r) => {
+          if (thisMonthOnly && !monthDue[r.student.id]) return false;
           if (r.monthsUnpaid.length < minMonths) return false;
           if (cls !== 'ALL' && lookups.sectionsMap[r.student.sectionId]?.classId !== cls) return false;
           return true;
         })
+        .map((r) => (thisMonthOnly ? { ...r, amountDue: monthDue[r.student.id] ?? 0 } : r))
         .sort((a, b) => b.amountDue - a.amountDue),
-    [rows, cls, minMonths, lookups.sectionsMap]
+    [rows, cls, minMonths, thisMonthOnly, monthDue, lookups.sectionsMap]
   );
   const total = filtered.reduce((s, r) => s + r.amountDue, 0);
 
@@ -98,6 +114,13 @@ export const AccountantDefaultersTab: React.FC<{
               <option key={c.id} value={c.id}>{language === 'ur' ? c.nameUr : c.nameEn}</option>
             ))}
           </select>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold">{t('acc_def_this_month')}</span>
+          <button type="button" role="switch" aria-checked={thisMonthOnly} onClick={() => setThisMonthOnly((v) => !v)}
+            className={`w-12 h-7 rounded-full p-0.5 transition-colors cursor-pointer ${thisMonthOnly ? 'bg-[#F28C28]' : 'bg-[#D5DAE5]'}`}>
+            <span className={`block w-6 h-6 rounded-full bg-white shadow transition-transform ${thisMonthOnly ? 'translate-x-5 rtl:-translate-x-5' : ''}`} />
+          </button>
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs font-semibold">{t('acc_def_min_months')}</span>

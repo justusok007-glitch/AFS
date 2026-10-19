@@ -472,6 +472,7 @@ export type StringKey =
   | 'acc_def_total_due'
   | 'acc_def_students'
   | 'acc_def_min_months'
+  | 'acc_def_this_month'
   | 'acc_def_months'
   | 'acc_def_call'
   | 'acc_def_whatsapp'
@@ -1392,6 +1393,7 @@ export const stringsEn: Record<StringKey, string> = {
   acc_def_total_due: 'Total due',
   acc_def_students: 'students',
   acc_def_min_months: 'Minimum months unpaid',
+  acc_def_this_month: 'Current month only (unpaid this month)',
   acc_def_months: 'months unpaid',
   acc_def_call: 'Call',
   acc_def_whatsapp: 'WhatsApp',
@@ -2313,6 +2315,7 @@ export const stringsUr: Record<StringKey, string> = {
   acc_def_total_due: 'کل بقایا',
   acc_def_students: 'طلبہ',
   acc_def_min_months: 'کم از کم بقایا مہینے',
+  acc_def_this_month: 'صرف موجودہ مہینہ (اس مہینے کی بقایا فیس)',
   acc_def_months: 'مہینے بقایا',
   acc_def_call: 'کال',
   acc_def_whatsapp: 'واٹس ایپ',
