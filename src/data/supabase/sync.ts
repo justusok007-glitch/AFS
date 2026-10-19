@@ -206,10 +206,34 @@ export async function pullAll(userId: string): Promise<LocalDatabaseSnapshot> {
   (snap as unknown as { cleanStart: boolean }).cleanStart = true;
 
   if (versionAtStart !== editVersion) return currentLocal(); // user edited while loading: keep their edit
-  replaceLocalDatabase(snap);
   lastSynced = structuredClone(snap);
+  if (dropJunkSubjects(snap)) {
+    replaceLocalDatabase(snap);
+    schedulePush(); // removes the junk subjects on the server too
+    return snap;
+  }
+  replaceLocalDatabase(snap);
   setStatus({ state: 'idle', message: '' });
   return snap;
+}
+
+/** Older imports turned file columns such as "Adm No" into subjects; remove them. */
+const JUNK_SUBJECT_NAMES = new Set([
+  'admno', 'admissionno', 'actualfee', 'netfee', 'previousarrears', 'prevarrears', 'admissionfee',
+  'annualcharges', 'totaldue', 'totalpaid', 'arrears', 'monthlyfee', 'userid', 'password',
+  'studentname', 'fathername', 'contact1', 'contact2', 'campus', 'class', 'section', 'status',
+]);
+function dropJunkSubjects(snap: LocalDatabaseSnapshot): boolean {
+  const bad = new Set(
+    snap.subjects
+      .filter((s) => JUNK_SUBJECT_NAMES.has(s.nameEn.toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '')))
+      .map((s) => s.id)
+  );
+  if (!bad.size) return false;
+  snap.subjects = snap.subjects.filter((s) => !bad.has(s.id));
+  snap.classSubjects = snap.classSubjects.filter((c) => !bad.has(c.subjectId));
+  snap.teacherAssignments = snap.teacherAssignments.filter((a) => !a.subjectId || !bad.has(a.subjectId));
+  return true;
 }
 
 export function forgetCloudData() {

@@ -300,6 +300,12 @@ export interface ImportFileRow {
   password: string;
   /** Subject columns found in the file header; used only when a new class is created. */
   subjects: string[];
+  /** Fee columns of the student file (whole rupees); undefined when blank. */
+  actualFee?: number;
+  netFee?: number;
+  prevArrears?: number;
+  admissionFee?: number;
+  annualCharges?: number;
 }
 
 export interface ImportClassRow {

@@ -45,7 +45,12 @@ export function parseStudentFile(text: string, colsMsg: string): { rows: Parsed[
   if (lines.length < 2) return { rows: [], fatal: colsMsg };
   const head = splitCsvLine(lines[0]).map(norm);
   const find = (...names: string[]) => head.findIndex((h) => names.includes(h));
-  const iNo = find('admissionno', 'admissionnumber');
+  const iNo = find('admissionno', 'admissionnumber', 'admno', 'admnumber');
+  const iActual = find('actualfee');
+  const iNet = find('netfee');
+  const iPrev = find('previousarrears', 'prevarrears');
+  const iAdmFee = find('admissionfee');
+  const iAnnual = find('annualcharges', 'annualfee');
   const iName = find('studentnameen', 'studentname', 'nameen', 'name');
   const iNameUr = find('studentnameur', 'nameur');
   const iFather = find('fathername', 'fathernameen', 'fathernameeng');
@@ -66,7 +71,7 @@ export function parseStudentFile(text: string, colsMsg: string): { rows: Parsed[
   if (iName < 0 || iNameUr < 0 || iFather < 0 || iFatherUr < 0 || iP1 < 0 || iClass < 0 || iSection < 0 || iCampus < 0) {
     return { rows: [], fatal: colsMsg };
   }
-  const known = new Set([iNo, iName, iNameUr, iFather, iFatherUr, iP1, iP2, iClass, iStatus, iUser, iPass, iCampus, iSection]);
+  const known = new Set([iNo, iName, iNameUr, iFather, iFatherUr, iP1, iP2, iClass, iStatus, iUser, iPass, iCampus, iSection, iActual, iNet, iPrev, iAdmFee, iAnnual]);
   const rawHead = splitCsvLine(lines[0]);
   const subjectCols = rawHead.map((h, i) => (known.has(i) || !h.trim() ? -1 : i)).filter((i) => i >= 0);
   const out: Parsed[] = [];
@@ -74,6 +79,10 @@ export function parseStudentFile(text: string, colsMsg: string): { rows: Parsed[
     const c = splitCsvLine(raw);
     const line = k + 2;
     const g = (i: number) => (i >= 0 ? (c[i] ?? '').trim() : '');
+    const money = (i: number): number | undefined => {
+      const v = g(i).replace(/,/g, '').replace(/[^\d.]/g, '');
+      return v === '' ? undefined : Math.round(Number(v));
+    };
     const row: ImportFileRow = {
       line,
       admissionNo: g(iNo),
@@ -90,6 +99,11 @@ export function parseStudentFile(text: string, colsMsg: string): { rows: Parsed[
       username: g(iUser),
       password: g(iPass),
       subjects: subjectCols.map((i) => rawHead[i].trim()),
+      actualFee: money(iActual),
+      netFee: money(iNet),
+      prevArrears: money(iPrev),
+      admissionFee: money(iAdmFee),
+      annualCharges: money(iAnnual),
     };
     out.push({ row, line, name: row.name, error: null });
   });

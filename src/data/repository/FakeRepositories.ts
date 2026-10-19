@@ -1221,6 +1221,16 @@ export class FakeStudentRepository implements StudentRepository {
         actor
       );
       if (!r.ok) return blank(row, r.message);
+      // The student's own monthly fee (net fee) is kept as a fee override; billed months come from the fee file.
+      if (row.netFee !== undefined && row.netFee > 0) {
+        db.studentConcessions.push({
+          studentId: r.data.student.id,
+          feeHeadId: 'fh_tuition',
+          type: ConcessionType.OVERRIDE,
+          value: row.netFee,
+          reason: `From student file (actual fee ${row.actualFee ?? row.netFee}, net fee ${row.netFee})`,
+        });
+      }
       const warnings = [...r.warnings];
       if (classCreated) warnings.push(`New class created: ${cls.nameEn}`);
       else if (sectionCreated) warnings.push(`New section created: ${cls.nameEn} - ${section.name}`);
