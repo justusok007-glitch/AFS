@@ -665,9 +665,23 @@ function admitStudentInDb(
     const spec = input.parent;
     if (spec.fatherNameUr.trim().length < 2) return fail("Father's name (Urdu) is required.");
     const wanted = spec.loginId?.trim().toUpperCase();
-    const existing = wanted
-      ? db.profiles.find((p) => p.loginId.toUpperCase() === wanted)
-      : undefined;
+    // Same father (name + contact number) = same account, whatever user name the file gives.
+    const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+    const myPhones = [phone, phone2].filter(Boolean).map((x) => normalizePkPhone(String(x)));
+    const sameFather = db.profiles.find((p) => {
+      if (p.role !== Role.PARENT || !sameName(p.fullName, fatherName)) return false;
+      const theirs = [p.phone, ...db.parentStudents
+        .filter((l) => l.parentId === p.id)
+        .flatMap((l) => {
+          const st = db.students.find((x) => x.id === l.studentId);
+          return st ? [st.guardianPhone, st.guardianPhone2 ?? ''] : [];
+        })].filter(Boolean).map((x) => normalizePkPhone(String(x)));
+      return myPhones.some((m) => theirs.includes(m));
+    });
+    const existing = sameFather ?? (wanted ? db.profiles.find((p) => p.loginId.toUpperCase() === wanted) : undefined);
+    if (sameFather && wanted && sameFather.loginId.toUpperCase() !== wanted) {
+      warnings.push(`Same father and phone as ${sameFather.loginId}: linked to that account (user name ${spec.loginId} not created).`);
+    }
     if (existing) {
       if (existing.role !== Role.PARENT) {
         return fail(`User name ${wanted} belongs to a non-parent account.`);
