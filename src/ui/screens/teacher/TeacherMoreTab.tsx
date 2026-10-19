@@ -4,7 +4,6 @@ import {
   Building2,
   GraduationCap,
   LogOut,
-  Phone,
   Search,
   Settings,
   Users,
@@ -269,16 +268,6 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
                         </div>
                       </div>
 
-                      {/* Tappable Guardian Phone Call Link */}
-                      <a
-                        href={`tel:${stu.guardianPhone.replace(/[^0-9+]/g, '')}`}
-                        dir="ltr"
-                        title={stringResource('teacher_more_call_guardian')}
-                        className="min-h-[36px] px-2.5 py-1 rounded-xl bg-white border border-[#E4E8F0] hover:border-[#2E9E5B] hover:bg-[#2E9E5B]/8 text-[#14284B] text-xs font-mono font-semibold inline-flex items-center gap-1.5 shrink-0 transition-colors"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-[#2E9E5B] shrink-0" />
-                        <span>{stu.guardianPhone}</span>
-                      </a>
                     </div>
                   ))}
                 </div>
