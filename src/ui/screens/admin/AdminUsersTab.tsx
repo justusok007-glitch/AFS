@@ -270,7 +270,7 @@ const CreateUserForm: React.FC<{
       </div>
       <SchoolTextField label={t('ad_form_name_en')} value={nameEn} onValueChange={setNameEn} errorText={errors.nameEn} />
       <div dir="rtl">
-        <SchoolTextField label={t('ad_form_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} />
+        <SchoolTextField urdu label={t('ad_form_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} />
       </div>
       <SchoolTextField label={t('ad_form_phone')} value={phone} onValueChange={setPhone} errorText={errors.phone} forceLtrValue />
       <div className="space-y-1.5">

@@ -750,6 +750,7 @@ export type StringKey =
   | 'su_class_name_en'
   | 'su_class_name_ur'
   | 'su_subjects_heading'
+  | 'su_sections_heading'
   | 'su_subject_en'
   | 'su_subject_ur'
   | 'su_add_subject'
@@ -1655,6 +1656,7 @@ export const stringsEn: Record<StringKey, string> = {
   su_class_name_en: 'Class name (English)',
   su_class_name_ur: 'Class name (Urdu)',
   su_subjects_heading: 'Subjects of this class (add as many as you need)',
+  su_sections_heading: 'Section names (rename here)',
   su_subject_en: 'Subject name (English)',
   su_subject_ur: 'Subject name (Urdu, optional)',
   su_add_subject: 'Add subject',
@@ -2561,6 +2563,7 @@ export const stringsUr: Record<StringKey, string> = {
   su_class_name_en: 'کلاس کا نام (انگریزی)',
   su_class_name_ur: 'کلاس کا نام (اردو)',
   su_subjects_heading: 'اس کلاس کے مضامین (جتنے چاہیں شامل کریں)',
+  su_sections_heading: 'سیکشن کے نام (یہاں تبدیل کریں)',
   su_subject_en: 'مضمون کا نام (انگریزی)',
   su_subject_ur: 'مضمون کا نام (اردو، اختیاری)',
   su_add_subject: 'مضمون شامل کریں',

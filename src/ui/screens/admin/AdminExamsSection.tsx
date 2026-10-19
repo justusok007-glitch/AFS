@@ -121,7 +121,7 @@ const CreateExam: React.FC<{
     <SchoolCard className="space-y-3">
       <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('ex_new')}</h3>
       <SchoolTextField label={t('ex_name_en')} value={nameEn} onValueChange={setNameEn} />
-      <div dir="rtl"><SchoolTextField label={t('ex_name_ur')} value={nameUr} onValueChange={setNameUr} /></div>
+      <div><SchoolTextField urdu label={t('ex_name_ur')} value={nameUr} onValueChange={setNameUr} /></div>
       <TabRow
         tabs={[ExamType.MONTHLY_TEST, ExamType.MID_TERM, ExamType.FINAL_TERM].map((x) => ({ id: x, label: t(`ex_type_${x}` as StringKey) }))}
         selected={type}

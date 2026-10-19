@@ -167,7 +167,7 @@ const SchoolSection: React.FC<{ admin: Profile; onSaved: () => void }> = ({ admi
   return (
     <SchoolCard className="space-y-3">
       <SchoolTextField label={t('su_name_en')} value={form.nameEn} onValueChange={(v) => setForm({ ...form, nameEn: v })} />
-      <div dir="rtl"><SchoolTextField label={t('su_name_ur')} value={form.nameUr} onValueChange={(v) => setForm({ ...form, nameUr: v })} /></div>
+      <div><SchoolTextField urdu label={t('su_name_ur')} value={form.nameUr} onValueChange={(v) => setForm({ ...form, nameUr: v })} /></div>
       <SchoolTextField label={t('su_phones')} value={phones} onValueChange={setPhones} forceLtrValue />
       <SchoolTextField label={t('su_address')} value={form.address} onValueChange={(v) => setForm({ ...form, address: v })} />
       <SchoolTextField label={t('su_lock')} value={form.attendanceLockTime} onValueChange={(v) => setForm({ ...form, attendanceLockTime: v })} forceLtrValue />
@@ -203,6 +203,7 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
   const [cEn, setCEn] = useState('');
   const [cUr, setCUr] = useState('');
   const [subRows, setSubRows] = useState<{ en: string; ur: string }[]>([]);
+  const [secEdits, setSecEdits] = useState<Record<string, string>>({});
   const [addingSectionFor, setAddingSectionFor] = useState<string | null>(null);
   const [secName, setSecName] = useState('');
   const [editClassId, setEditClassId] = useState<string | null>(null);
@@ -232,6 +233,9 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
     setEditClassId(c.id);
     setCEn(c.nameEn);
     setCUr(c.nameUr);
+    const edits: Record<string, string> = {};
+    Object.values(lookups.sectionsMap).filter((x) => x.classId === c.id).forEach((x) => (edits[x.id] = x.name));
+    setSecEdits(edits);
     const r = await AppModule.settingsRepository.getClassSubjects(c.id);
     setSubRows(r.ok ? r.data.map((x) => ({ en: x.nameEn, ur: x.nameUr })) : []);
     setAddingClass(true);
@@ -241,6 +245,16 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
     const subjects = subRows.map((x) => ({ nameEn: x.en, nameUr: x.ur }));
     const r = await AppModule.settingsRepository.saveClass({ id: editClassId ?? undefined, campusId: activeCampus, nameEn: cEn, nameUr: cUr, subjects }, admin);
     if (!r.ok) return setError(r.error.message);
+    for (const [secId, name] of Object.entries(secEdits)) {
+      const sec = lookups.sectionsMap[secId];
+      if (!sec || sec.name === name) continue;
+      const sr = await AppModule.settingsRepository.saveSection({ id: secId, classId: sec.classId, name, classTeacherId: sec.classTeacherId }, admin);
+      if (!sr.ok) {
+        lookups.reload();
+        return setError(sr.error.message);
+      }
+    }
+    setSecEdits({});
     setAddingClass(false);
     setEditClassId(null);
     setCEn('');
@@ -272,7 +286,7 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
   };
 
   if (addingClass) {
-    const closeForm = () => { setAddingClass(false); setEditClassId(null); setSubRows([]); setError(null); };
+    const closeForm = () => { setAddingClass(false); setEditClassId(null); setSubRows([]); setSecEdits({}); setError(null); };
     return (
       <div className="space-y-3">
         <button type="button" onClick={closeForm} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
@@ -282,13 +296,21 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
         <h2 className="font-heading text-sm font-bold text-[#14284B]">{editClassId ? t('su_edit') : t('su_add_class')}</h2>
         <SchoolCard className="space-y-2.5">
           <SchoolTextField label={t('su_class_name_en')} value={cEn} onValueChange={setCEn} />
-          <div dir="rtl"><SchoolTextField label={t('su_class_name_ur')} value={cUr} onValueChange={setCUr} /></div>
+          <div><SchoolTextField urdu label={t('su_class_name_ur')} value={cUr} onValueChange={setCUr} /></div>
+          {editClassId && Object.keys(secEdits).length > 0 && (
+            <div className="space-y-2 border-t border-[#E4E8F0] pt-2.5">
+              <h4 className="text-xs font-bold text-[#14284B]">{t('su_sections_heading')}</h4>
+              {Object.entries(secEdits).sort((a, b) => a[1].localeCompare(b[1])).map(([id, name]) => (
+                <SchoolTextField key={id} label={t('su_section_name')} value={name} onValueChange={(v) => setSecEdits({ ...secEdits, [id]: v })} />
+              ))}
+            </div>
+          )}
           <div className="space-y-2 border-t border-[#E4E8F0] pt-2.5">
             <h4 className="text-xs font-bold text-[#14284B]">{t('su_subjects_heading')}</h4>
             {subRows.map((r, i) => (
               <div key={i} className="flex items-end gap-2">
                 <div className="flex-1"><SchoolTextField label={t('su_subject_en')} value={r.en} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, en: v } : x)))} /></div>
-                <div className="flex-1" dir="rtl"><SchoolTextField label={t('su_subject_ur')} value={r.ur} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, ur: v } : x)))} /></div>
+                <div className="flex-1"><SchoolTextField urdu label={t('su_subject_ur')} value={r.ur} onValueChange={(v) => setSubRows(subRows.map((x, j) => (j === i ? { ...x, ur: v } : x)))} /></div>
                 <button type="button" aria-label={t('su_delete')} className="p-2 mb-1 text-[#D64545] cursor-pointer" onClick={() => setSubRows(subRows.filter((_, j) => j !== i))}><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
@@ -484,7 +506,7 @@ const HolidaysSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> 
       {adding ? (
         <SchoolCard className="space-y-2.5">
           <SchoolTextField label={t('su_title_en')} value={tEn} onValueChange={setTEn} />
-          <div dir="rtl"><SchoolTextField label={t('su_title_ur')} value={tUr} onValueChange={setTUr} /></div>
+          <div><SchoolTextField urdu label={t('su_title_ur')} value={tUr} onValueChange={setTUr} /></div>
           <div className="grid grid-cols-2 gap-2.5">
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold">{t('su_date')}</label>

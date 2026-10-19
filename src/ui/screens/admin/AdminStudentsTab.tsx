@@ -425,7 +425,7 @@ const StudentForm: React.FC<{
     <SchoolCard className="space-y-3">
       <h3 className="font-heading text-sm font-bold text-[#14284B]">{existing ? t('st_form_edit_title') : t('st_form_admit_title')}</h3>
       <SchoolTextField label={t('st_name_en')} value={name} onValueChange={setName} errorText={errors.name} />
-      <div dir="rtl"><SchoolTextField label={t('st_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} /></div>
+      <div><SchoolTextField urdu label={t('st_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} /></div>
       <SchoolTextField label={t('st_father')} value={father} onValueChange={setFather} errorText={errors.father} />
       <div className="space-y-1.5">
         <label className="block text-xs font-semibold">{t('st_gender')}</label>
@@ -494,7 +494,7 @@ const StudentForm: React.FC<{
           />
           {parentMode === 'create' && (
             <div className="space-y-2">
-              <div dir="rtl"><SchoolTextField label={t('st_father_ur')} value={fatherUr} onValueChange={setFatherUr} errorText={errors.fatherUr} /></div>
+              <div><SchoolTextField urdu label={t('st_father_ur')} value={fatherUr} onValueChange={setFatherUr} errorText={errors.fatherUr} /></div>
               <SchoolTextField label={t('st_parent_username')} value={parentUser} onValueChange={setParentUser} forceLtrValue />
               <SchoolTextField label={t('st_parent_password')} value={parentPw} onValueChange={setParentPw} errorText={errors.parentPw} forceLtrValue />
             </div>

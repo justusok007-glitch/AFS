@@ -161,6 +161,8 @@ export interface SchoolTextFieldProps {
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
   forceLtrValue?: boolean;
+  /** Urdu input: right-to-left, Nastaliq font and generous line height so the script is not clipped. */
+  urdu?: boolean;
 }
 
 export const SchoolTextField: React.FC<SchoolTextFieldProps> = ({
@@ -173,6 +175,7 @@ export const SchoolTextField: React.FC<SchoolTextFieldProps> = ({
   leadingIcon,
   trailingIcon,
   forceLtrValue = false,
+  urdu = false,
 }) => {
   return (
     <div className="w-full space-y-1.5">
@@ -194,8 +197,8 @@ export const SchoolTextField: React.FC<SchoolTextFieldProps> = ({
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           placeholder={placeholder}
-          dir={forceLtrValue ? 'ltr' : undefined}
-          className="w-full bg-transparent text-sm text-[#1B2233] placeholder:text-[#6B7385]/70 focus:outline-none"
+          dir={urdu ? 'rtl' : forceLtrValue ? 'ltr' : undefined}
+          className={`w-full bg-transparent text-[#1B2233] placeholder:text-[#6B7385]/70 focus:outline-none ${urdu ? 'font-urdu text-base leading-[2.4] py-1.5' : 'text-sm'}`}
         />
         {trailingIcon && (
           <span className="text-[#6B7385] shrink-0">{trailingIcon}</span>
