@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 const BASE = 'http://localhost:4173/';
-const log = (...a) => console.log('[e2e]', ...a);
+const log = (...a) => { const m = a.join(' ').replace(/[\r\n%]/g, ' ').slice(0, 900); console.log('[e2e]', m); console.log(`::notice title=e2e::${m}`); };
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 400, height: 850 } });
 page.on('pageerror', (e) => log('PAGEERROR', e.message));
