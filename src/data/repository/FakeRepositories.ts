@@ -13,6 +13,8 @@ import {
   ImportStudentResult,
   ImportStudentRow,
   ImportFeeResult,
+  ImportResultResult,
+  ImportResultRow,
   ImportFeeRow,
   ImportFileRow,
   ImportClassRow,
@@ -45,6 +47,7 @@ import {
   DashboardSummary,
   Exam,
   ExamStatus,
+  ExamType,
   ExamSubject,
   FeeCategory,
   FeeCollectionReport,
@@ -1157,6 +1160,64 @@ export class FakeStudentRepository implements StudentRepository {
       }
     }
     return AppResult.success(results);
+  }
+
+  async removeStudents(
+    ids: string[] | 'ALL',
+    actor: Profile
+  ): Promise<AppResult<{ students: number; parents: number }>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can remove students.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const gone = new Set(ids === 'ALL' ? db.students.map((x) => x.id) : ids);
+    const linked = new Set(db.parentStudents.filter((l) => gone.has(l.studentId)).map((l) => l.parentId));
+    const vouchers = new Set(db.feeVouchers.filter((v) => gone.has(v.studentId)).map((v) => v.id));
+    const payments = new Set(db.feePayments.filter((p) => gone.has(p.studentId)).map((p) => p.id));
+    const convs = new Set(db.conversations.filter((c) => gone.has(c.studentId)).map((c) => c.id));
+    const before = db.students.length;
+    db.students = db.students.filter((x) => !gone.has(x.id));
+    db.parentStudents = db.parentStudents.filter((l) => !gone.has(l.studentId));
+    db.attendanceRecords = db.attendanceRecords.filter((r) => !gone.has(r.studentId));
+    db.studentConcessions = db.studentConcessions.filter((c) => !gone.has(c.studentId));
+    db.paymentAllocations = db.paymentAllocations.filter((a) => !payments.has(a.paymentId) && !vouchers.has(a.voucherId));
+    db.feePayments = db.feePayments.filter((p) => !payments.has(p.id));
+    db.feeVouchers = db.feeVouchers.filter((v) => !vouchers.has(v.id));
+    db.marks = db.marks.filter((m) => !gone.has(m.studentId));
+    db.messages = db.messages.filter((m) => !convs.has(m.conversationId));
+    db.conversations = db.conversations.filter((c) => !convs.has(c.id));
+    // parents that no longer have any student
+    const stillLinked = new Set(db.parentStudents.map((l) => l.parentId));
+    const orphans = new Set(
+      db.profiles
+        .filter((p) => p.role === Role.PARENT && (ids === 'ALL' ? true : linked.has(p.id) && !stillLinked.has(p.id)))
+        .map((p) => p.id)
+    );
+    db.profiles = db.profiles.filter((p) => !orphans.has(p.id));
+    orphans.forEach((id) => delete db.passwordsByUserId[id]);
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`, action: 'REMOVE_STUDENTS', tableName: 'students', recordId: 'bulk',
+      oldValue: `${before - db.students.length} students, ${orphans.size} parents`, newValue: null,
+      reason: ids === 'ALL' ? 'All students and parents removed by Admin' : 'Students removed by Admin',
+      changedBy: actor.id, changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success({ students: before - db.students.length, parents: orphans.size });
+  }
+
+  async removeParentsWithoutStudents(actor: Profile): Promise<AppResult<{ parents: number }>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can remove parents.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const linked = new Set(db.parentStudents.map((l) => l.parentId));
+    const orphans = new Set(db.profiles.filter((p) => p.role === Role.PARENT && !linked.has(p.id)).map((p) => p.id));
+    db.profiles = db.profiles.filter((p) => !orphans.has(p.id));
+    orphans.forEach((id) => delete db.passwordsByUserId[id]);
+    saveLocalDatabase(db);
+    return AppResult.success({ parents: orphans.size });
   }
 
   async importStudentFile(
@@ -3179,6 +3240,115 @@ function examAudit(
 }
 
 export class FakeExamRepository implements ExamRepository {
+  async importResultFile(
+    rows: ImportResultRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportResultResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can import results.' });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const nm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, '');
+    const results = new Map<number, ImportResultResult>();
+    const bad = (row: ImportResultRow, error: string): ImportResultResult => ({
+      line: row.line, ok: false, error, warnings: [], studentName: '', admissionNo: row.admissionNo, examName: row.examName, subjectsCount: 0,
+    });
+    let examSeq = 0;
+    const seen = new Set<string>();
+    const touchedSections = new Set<string>(); // examId|sectionId|subjectId
+
+    for (const row of rows) {
+      const no = row.admissionNo.trim().toLowerCase();
+      if (!no) { results.set(row.line, bad(row, 'Adm No is empty.')); continue; }
+      if (!row.examName.trim()) { results.set(row.line, bad(row, 'Exam name is empty.')); continue; }
+      const campus = row.campus.trim() ? findCampusByText(db, row.campus) : undefined;
+      if (row.campus.trim() && !campus) { results.set(row.line, bad(row, `Campus "${row.campus}" not found (use Boys or Girls).`)); continue; }
+      const found = db.students.filter((s) => s.admissionNo.toLowerCase() === no && (!campus || s.campusId === campus.id));
+      if (found.length === 0) { results.set(row.line, bad(row, `No student with Adm No ${row.admissionNo}. Import students first.`)); continue; }
+      if (found.length > 1) { results.set(row.line, bad(row, `Adm No ${row.admissionNo} exists in both campuses - add the Campus column.`)); continue; }
+      const student = found[0];
+      const dupKey = `${student.id}|${nm(row.examName)}`;
+      if (seen.has(dupKey)) { results.set(row.line, bad(row, `Adm No ${row.admissionNo} appears twice for this exam.`)); continue; }
+      seen.add(dupKey);
+      const section = db.sections.find((x) => x.id === student.sectionId);
+      const classId = section?.classId;
+      if (!section || !classId) { results.set(row.line, bad(row, 'Student has no class.')); continue; }
+      const problem = row.marks.find((m) => m.bad);
+      if (problem) { results.set(row.line, bad(row, `Marks for ${problem.subject} are not a number.`)); continue; }
+      const over = row.marks.find((m) => m.obtained !== null && !m.absent && (m.obtained < 0 || m.obtained > m.total));
+      if (over) { results.set(row.line, bad(row, `${over.subject}: ${over.obtained} is more than the total ${over.total}.`)); continue; }
+
+      const warnings: string[] = [];
+      // exam
+      let exam = db.exams.find((e) => nm(e.nameEn) === nm(row.examName) && (!e.campusId || e.campusId === student.campusId));
+      if (!exam) {
+        const lower = row.examName.toLowerCase();
+        exam = {
+          id: `exam_imp_${Date.now().toString(36)}_${++examSeq}`,
+          nameEn: row.examName.trim(), nameUr: row.examName.trim(),
+          type: lower.includes('final') ? ExamType.FINAL_TERM : lower.includes('mid') ? ExamType.MID_TERM : ExamType.MONTHLY_TEST,
+          status: ExamStatus.PUBLISHED, campusId: student.campusId, startDate: null, endDate: null,
+        };
+        db.exams.push(exam);
+        warnings.push(`New exam created and published: ${exam.nameEn}`);
+      } else if (exam.status !== ExamStatus.PUBLISHED) {
+        warnings.push(`Exam "${exam.nameEn}" is not published - parents cannot see these results yet.`);
+      }
+      const examId = exam.id;
+
+      for (const m of row.marks) {
+        if (m.obtained === null && !m.absent) {
+          // blank cell: no mark for this subject
+          const sub0 = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject));
+          if (sub0) db.marks = db.marks.filter((k) => !(k.examId === examId && k.studentId === student.id && k.subjectId === sub0.id));
+          continue;
+        }
+        let sub = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject));
+        if (!sub || !db.classSubjects.some((cs) => cs.classId === classId && cs.subjectId === sub!.id)) {
+          addSubjectsToClass(db, classId, [m.subject]);
+          sub = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject))!;
+          const w = `Subject ${m.subject} added to the class.`;
+          if (!warnings.includes(w)) warnings.push(w);
+        }
+        const existing = db.examSubjects.find((es) => es.examId === examId && es.classId === classId && es.subjectId === sub!.id);
+        const pass = Math.ceil(m.total * 0.33);
+        if (!existing) {
+          db.examSubjects.push({ examId, classId, subjectId: sub.id, totalMarks: m.total, passMarks: pass });
+        } else if (existing.totalMarks !== m.total) {
+          warnings.push(`${m.subject} total changed ${existing.totalMarks} -> ${m.total}.`);
+          existing.totalMarks = m.total;
+          existing.passMarks = Math.min(existing.passMarks, m.total);
+        }
+        db.marks = db.marks.filter((k) => !(k.examId === examId && k.studentId === student.id && k.subjectId === sub!.id));
+        db.marks.push({ examId, studentId: student.id, subjectId: sub.id, obtained: m.absent ? 0 : (m.obtained ?? 0), isAbsent: m.absent });
+        touchedSections.add(`${examId}|${section.id}|${sub.id}`);
+      }
+      results.set(row.line, {
+        line: row.line, ok: true, error: null, warnings, studentName: student.name, admissionNo: student.admissionNo,
+        examName: exam.nameEn, subjectsCount: row.marks.filter((m) => m.obtained !== null || m.absent).length,
+      });
+    }
+
+    if (!dryRun) {
+      touchedSections.forEach((k) => {
+        const [examId, sectionId, subjectId] = k.split('|');
+        if (!db.markSubmissions.some((x) => x.examId === examId && x.sectionId === sectionId && x.subjectId === subjectId)) {
+          db.markSubmissions.push({ examId, sectionId, subjectId, submittedBy: actor.id, submittedAt: new Date().toISOString() });
+        }
+      });
+      db.auditLogs.unshift({
+        id: `aud_${Date.now()}`, action: 'IMPORT_RESULTS', tableName: 'marks', recordId: 'bulk',
+        oldValue: null, newValue: `${[...results.values()].filter((r) => r.ok).length} students`,
+        reason: 'Results file imported by Admin', changedBy: actor.id, changedAt: new Date().toISOString(),
+      });
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(rows.map((r) => results.get(r.line)).filter((x): x is ImportResultResult => !!x));
+  }
+
   async getExams(campusId: string | null): Promise<AppResult<Exam[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();

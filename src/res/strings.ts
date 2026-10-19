@@ -728,6 +728,23 @@ export type StringKey =
   | 'st_unpaid'
   | 'st_err_fee'
   | 'st_err_net_gt'
+  | 'res_imp_title'
+  | 'res_imp_hint'
+  | 'res_imp_btn'
+  | 'res_imp_err_cols'
+  | 'res_imp_done'
+  | 'rm_title'
+  | 'rm_hint'
+  | 'rm_selected_btn'
+  | 'rm_all_btn'
+  | 'rm_all_hint'
+  | 'rm_orphans_btn'
+  | 'rm_confirm_selected'
+  | 'rm_done'
+  | 'rm_select_shown'
+  | 'rm_clear'
+  | 'rm_type_delete'
+  | 'rm_btn'
   | 'fee_imp_title'
   | 'fee_imp_hint'
   | 'fee_imp_btn'
@@ -1677,6 +1694,23 @@ export const stringsEn: Record<StringKey, string> = {
   st_bulk_err_status: 'Status must be Paid or Unpaid',
   st_bulk_err_number: 'Amount is not a number',
   st_bulk_err_cols: 'The file headings were not recognised. Download the template and use its headings.',
+  res_imp_title: 'Import results (CSV)',
+  res_imp_hint: 'Columns: Adm No, Campus, Exam (name), then one column per subject written Subject/Total, e.g. English/80. Use A for absent. A new exam is created and published automatically; students in the file get their marks for that exam replaced.',
+  res_imp_btn: 'Import results (CSV)',
+  res_imp_err_cols: 'The file headings were not recognised. Download the template: it needs Adm No, Exam and subject columns like English/80.',
+  res_imp_done: 'Results imported.',
+  rm_title: 'Remove students and parents',
+  rm_hint: 'Tick students to remove them with their attendance, fees, marks and chats. A parent account is removed too when none of their children are left. This cannot be undone.',
+  rm_selected_btn: 'Remove selected students',
+  rm_all_btn: 'Remove ALL students and parents',
+  rm_all_hint: 'Danger: removes every student and every parent account with all their records. Classes, teachers and staff stay.',
+  rm_orphans_btn: 'Remove parent accounts without a student',
+  rm_confirm_selected: 'Remove {n} students? This cannot be undone.',
+  rm_done: 'Removed (students / parents)',
+  rm_select_shown: 'Select all shown',
+  rm_clear: 'Clear',
+  rm_type_delete: 'Type DELETE to confirm',
+  rm_btn: 'Remove students / parents',
   fee_imp_title: 'Import fee records (CSV)',
   fee_imp_hint: 'Use the accountant\'s fee sheet: Adm No, Campus, Monthly Fee, Prev. Arrears, Admission Fee, Annual Charges, one column per month (e.g. 26-Apr), Total Due, Total Paid. Each student listed here gets their fee records replaced by the file; students not in the file are not touched.',
   fee_imp_btn: 'Import fee records (CSV)',
@@ -2614,6 +2648,23 @@ export const stringsUr: Record<StringKey, string> = {
   st_bulk_err_status: 'اسٹیٹس Paid یا Unpaid ہونا چاہیے',
   st_bulk_err_number: 'رقم عدد نہیں ہے',
   st_bulk_err_cols: 'فائل کے عنوان پہچانے نہیں گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اسی کے عنوان استعمال کریں۔',
+  res_imp_title: 'نتائج اپ لوڈ (CSV)',
+  res_imp_hint: 'کالم: Adm No، Campus، Exam (نام)، پھر ہر مضمون کا کالم Subject/Total کی صورت میں، مثلاً English/80۔ غیر حاضر کے لیے A لکھیں۔ نیا امتحان خود بن کر شائع ہو جائے گا؛ فائل کے طلبہ کے اس امتحان کے نمبر فائل کے مطابق بدل جائیں گے۔',
+  res_imp_btn: 'نتائج اپ لوڈ (CSV)',
+  res_imp_err_cols: 'فائل کے عنوانات نہیں پہچانے گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کریں۔',
+  res_imp_done: 'نتائج اپ لوڈ ہو گئے۔',
+  rm_title: 'طلبہ اور والدین ہٹائیں',
+  rm_hint: 'طلبہ منتخب کریں، ان کی حاضری، فیس، نمبر اور چیٹ سمیت ہٹ جائیں گے۔ جس والد کا کوئی بچہ نہ بچے اس کا اکاؤنٹ بھی ہٹ جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔',
+  rm_selected_btn: 'منتخب طلبہ ہٹائیں',
+  rm_all_btn: 'تمام طلبہ اور والدین ہٹائیں',
+  rm_all_hint: 'خبردار: ہر طالب علم اور ہر والد کا اکاؤنٹ تمام ریکارڈ سمیت ہٹ جائے گا۔ کلاسیں، اساتذہ اور عملہ رہیں گے۔',
+  rm_orphans_btn: 'بغیر طالب علم والے والدین ہٹائیں',
+  rm_confirm_selected: '{n} طلبہ ہٹائیں؟ یہ عمل واپس نہیں ہو سکتا۔',
+  rm_done: 'ہٹا دیے گئے (طلبہ / والدین)',
+  rm_select_shown: 'نظر آنے والے سب منتخب کریں',
+  rm_clear: 'صاف کریں',
+  rm_type_delete: 'تصدیق کے لیے DELETE لکھیں',
+  rm_btn: 'طلبہ / والدین ہٹائیں',
   fee_imp_title: 'فیس ریکارڈ اپ لوڈ (CSV)',
   fee_imp_hint: 'اکاؤنٹنٹ کی فیس شیٹ استعمال کریں۔ فائل میں موجود ہر طالب علم کا فیس ریکارڈ فائل کے مطابق بدل جائے گا، باقی طلبہ کو چھوا نہیں جائے گا۔',
   fee_imp_btn: 'فیس ریکارڈ اپ لوڈ (CSV)',

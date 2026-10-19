@@ -348,6 +348,27 @@ export interface ImportFeeResult {
   paid: number;
 }
 
+/** One student line of the exam team's results file. */
+export interface ImportResultRow {
+  line: number;
+  admissionNo: string;
+  campus: string;
+  examName: string;
+  /** Subjects from the heading "English/80"; value null = blank, absent = marked A/AB. */
+  marks: { subject: string; total: number; obtained: number | null; absent: boolean; bad: boolean }[];
+}
+
+export interface ImportResultResult {
+  line: number;
+  ok: boolean;
+  error: string | null;
+  warnings: string[];
+  studentName: string;
+  admissionNo: string;
+  examName: string;
+  subjectsCount: number;
+}
+
 export interface ImportClassResult {
   line: number;
   ok: boolean;

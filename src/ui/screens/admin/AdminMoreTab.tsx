@@ -3,6 +3,7 @@ import { AlertCircle, LogOut, Settings } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { AuditLogEntry, Profile } from '../../../domain/models/models';
 import { AccountantLookups } from '../accountant/AccountantShared';
+import { AdminRemoveData } from './AdminRemoveData';
 import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
 import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesManager } from '../comms/CommsShared';
@@ -81,10 +82,13 @@ export const AdminMoreTab: React.FC<{
   const { stringResource: t } = useStringResource();
   const sectionOptions = useSectionOptions(lookups);
   const [showAtt, setShowAtt] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
   const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
 
   if (comms === 'messages') return <MessagesTab user={admin} readOnly onBack={() => setComms(null)} />;
   if (comms === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={() => setComms(null)} />;
+
+  if (showRemove) return <AdminRemoveData admin={admin} onBack={() => setShowRemove(false)} />;
 
   if (showAtt) {
     return <AdminAttendanceCorrection admin={admin} sectionOptions={sectionOptions} onBack={() => setShowAtt(false)} />;
@@ -96,6 +100,7 @@ export const AdminMoreTab: React.FC<{
         <PrimaryButton text={t('ad_att_btn')} variant="orange" onClick={() => setShowAtt(true)} />
         <PrimaryButton text={t('nt_manage_btn')} variant="navy" onClick={() => setComms('notices')} />
         <PrimaryButton text={t('ms_audit_btn')} variant="outline" onClick={() => setComms('messages')} />
+        <PrimaryButton text={t('rm_btn')} variant="outline" onClick={() => setShowRemove(true)} />
         <PrimaryButton text={t('settings_open_from_more')} variant="navy" onClick={onOpenSettings} icon={<Settings className="w-4 h-4 text-[#F28C28]" />} />
         <PrimaryButton text={t('logout_button')} variant="outline" onClick={onLogout} icon={<LogOut className="w-4 h-4 text-[#14284B]" />} />
       </SchoolCard>

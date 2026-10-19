@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Plus, Upload } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { Exam, ExamStatus, ExamType, MarksProgressRow, Profile, Subject } from '../../../domain/models/models';
 import { StringKey } from '../../../res/strings';
@@ -15,6 +15,7 @@ import {
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { examName, ExamStatusChip, MarksEntryGrid, subjectName, useSubjectsMap } from '../exams/ExamShared';
+import { AdminResultImport } from './AdminResultImport';
 import { selectCls } from '../principal/PrincipalShared';
 
 export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
@@ -23,6 +24,7 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -47,6 +49,10 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
     return <ExamDetail admin={admin} lookups={lookups} examId={open.id} onBack={() => { setOpenId(null); void load(); }} />;
   }
 
+  if (importing) {
+    return <AdminResultImport admin={admin} onDone={() => void load()} onClose={() => setImporting(false)} />;
+  }
+
   if (creating) {
     return (
       <CreateExam
@@ -65,6 +71,7 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   return (
     <div className="space-y-3">
       <PrimaryButton text={t('ex_new')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setCreating(true)} />
+      <PrimaryButton text={t('res_imp_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setImporting(true)} />
       {exams.length === 0 ? (
         <EmptyState title={t('ex_none')} description="" />
       ) : (

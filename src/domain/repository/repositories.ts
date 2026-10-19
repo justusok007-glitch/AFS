@@ -29,6 +29,8 @@ import {
   ImportClassRow,
   ImportClassResult,
   ImportFeeResult,
+  ImportResultResult,
+  ImportResultRow,
   ImportFeeRow,
   ImportStudentResult,
   AttendanceReportFilter,
@@ -102,6 +104,17 @@ export interface AuthRepository {
 // ============================================================================
 
 export interface StudentRepository {
+  /**
+   * Admin only. Removes the students (or ALL of them) with everything hanging off them (attendance, fees, marks,
+   * chats) and the parent accounts that are left without a student. Cannot be undone.
+   */
+  removeStudents(
+    ids: string[] | 'ALL',
+    actor: Profile
+  ): Promise<AppResult<{ students: number; parents: number }>>;
+  /** Admin only. Removes parent accounts that have no student linked. */
+  removeParentsWithoutStudents(actor: Profile): Promise<AppResult<{ parents: number }>>;
+
   search(filter: StudentSearchFilter): Promise<AppResult<Student[]>>;
   getById(studentId: string): Promise<AppResult<Student>>;
   /** Validates, auto-generates admission no. (AFS-B-2026-031) and roll no., writes an audit entry. */
@@ -311,6 +324,16 @@ export interface FeeRepository {
 // ============================================================================
 
 export interface ExamRepository {
+  /**
+   * Stores the marks of a results file (one exam per line). Creates the exam (published) and its subjects/totals
+   * when missing, matches students by admission no. + campus, replaces the marks of the listed students. Admin only.
+   */
+  importResultFile(
+    rows: ImportResultRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportResultResult[]>>;
+
   getExams(campusId: string | null): Promise<AppResult<Exam[]>>;
   createExam(exam: Exam, actorId: string): Promise<AppResult<Exam>>;
   updateExamStatus(
