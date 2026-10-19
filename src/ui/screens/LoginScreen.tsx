@@ -69,6 +69,15 @@ const STAFF_DEMO_ACCOUNTS: DemoAccountEntry[] = [
     campusNoteUr: 'تمام کیمپس',
   },
   {
+    loginId: 'VP01',
+    roleLabelEn: 'Vice Principal',
+    roleLabelUr: 'وائس پرنسپل',
+    nameEn: 'Sir Hafiz Imran Saeed',
+    nameUr: 'جناب حافظ عمران سعید',
+    campusNoteEn: 'All Campuses',
+    campusNoteUr: 'تمام کیمپس',
+  },
+  {
     loginId: 'PR01',
     roleLabelEn: 'Principal',
     roleLabelUr: 'پرنسپل',
