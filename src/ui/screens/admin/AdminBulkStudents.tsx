@@ -215,6 +215,9 @@ export const AdminBulkStudents: React.FC<{
       {slips && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-[#2E9E5B]">{t('st_bulk_done')} (<span dir="ltr">{slips.length}</span>)</p>
+          {slips.slice(0, 8).map((x) => (
+            <div key={x.profile.id} dir="ltr" className="text-[11px] text-[#6B7385] text-start">{x.profile.fullName} · {x.profile.loginId} / {x.password}</div>
+          ))}
           {slips.length > 0 && (
             <PrimaryButton text={t('st_bulk_print')} variant="orange" onClick={() => onPrintSlips(slips)} />
           )}
