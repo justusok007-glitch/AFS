@@ -497,6 +497,7 @@ export type StringKey =
   | 'pr_kpi_students'
   | 'pr_kpi_boys_girls'
   | 'pr_kpi_attendance'
+  | 'pr_kpi_present_absent'
   | 'pr_kpi_unmarked'
   | 'pr_kpi_collected_today'
   | 'pr_kpi_collected_month'
@@ -1412,6 +1413,7 @@ export const stringsEn: Record<StringKey, string> = {
   pr_kpi_students: 'Total students',
   pr_kpi_boys_girls: 'Boys / Girls',
   pr_kpi_attendance: 'Attendance today',
+  pr_kpi_present_absent: 'Present / Absent',
   pr_kpi_unmarked: 'Sections not marked',
   pr_kpi_collected_today: 'Collected today',
   pr_kpi_collected_month: 'Collected this month',
@@ -2328,6 +2330,7 @@ export const stringsUr: Record<StringKey, string> = {
   pr_kpi_students: 'کل طلبہ',
   pr_kpi_boys_girls: 'لڑکے / لڑکیاں',
   pr_kpi_attendance: 'آج کی حاضری',
+  pr_kpi_present_absent: 'حاضر / غیر حاضر',
   pr_kpi_unmarked: 'حاضری نہ لگانے والے سیکشن',
   pr_kpi_collected_today: 'آج کی وصولی',
   pr_kpi_collected_month: 'اس ماہ کی وصولی',
