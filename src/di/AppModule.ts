@@ -40,8 +40,11 @@ export interface AppRepositoryGraph {
   readonly settingsRepository: SettingsRepository;
 }
 
+import { CLOUD_ENABLED } from '../data/supabase/mode';
+import { SupabaseAuthRepository } from '../data/supabase/SupabaseAuthRepository';
+
 export const AppModule: AppRepositoryGraph = {
-  authRepository: new FakeAuthRepository(),
+  authRepository: CLOUD_ENABLED ? new SupabaseAuthRepository() : new FakeAuthRepository(),
   studentRepository: new FakeStudentRepository(),
   attendanceRepository: new FakeAttendanceRepository(),
   feeRepository: new FakeFeeRepository(),

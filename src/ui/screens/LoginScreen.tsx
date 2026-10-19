@@ -1,3 +1,4 @@
+import { CLOUD_ENABLED } from '../../data/supabase/mode';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Calendar,
@@ -218,8 +219,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onOpenDevDestination,
 }) => {
   const { stringResource, language } = useStringResource();
-  const [loginId, setLoginId] = useState<string>('PR01');
-  const [password, setPassword] = useState<string>('demo1234');
+  const [loginId, setLoginId] = useState<string>(CLOUD_ENABLED ? '' : 'PR01');
+  const [password, setPassword] = useState<string>(CLOUD_ENABLED ? '' : 'demo1234');
   const [errorKey, setErrorKey] = useState<StringKey | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -440,6 +441,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         setErrorKey('login_error_empty');
       } else if (msg === 'ACCOUNT_INACTIVE') {
         setErrorKey('login_error_inactive');
+      } else if (msg === 'NETWORK') {
+        setErrorKey('login_error_network');
       } else {
         setErrorKey('login_error_invalid');
       }
@@ -616,8 +619,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
         {isLoading && <ShimmerPlaceholder lines={2} showHeader />}
 
-        {/* Collapsible "Demo accounts" box */}
-        <SchoolCard className="space-y-3">
+        {/* Collapsible "Demo accounts" box (local demo mode only) */}
+        <SchoolCard className={CLOUD_ENABLED ? 'hidden' : 'space-y-3'}>
           <button
             type="button"
             onClick={() => setDemoExpanded((prev) => !prev)}

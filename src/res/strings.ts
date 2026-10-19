@@ -24,6 +24,11 @@ export type StringKey =
   | 'login_quick_role_hint'
   | 'login_error_empty'
   | 'login_error_invalid'
+  | 'login_error_network'
+  | 'sync_saving'
+  | 'sync_failed'
+  | 'sync_retry'
+  | 'sync_reload'
   | 'login_error_inactive'
   | 'demo_accounts_title'
   | 'demo_accounts_badge'
@@ -949,6 +954,11 @@ export const stringsEn: Record<StringKey, string> = {
   login_quick_role_heading: 'Demo Accounts (Demo Only)',
   login_quick_role_hint: 'Tap any demo account below to fill Login ID and password (demo1234).',
   login_error_empty: 'Please enter both your Login ID and password.',
+  login_error_network: 'Cannot reach the server. Check your internet connection and try again.',
+  sync_saving: 'Saving…',
+  sync_failed: 'Could not save to the server',
+  sync_retry: 'Retry',
+  sync_reload: 'Discard & reload',
   login_error_invalid: 'Incorrect Login ID or password. Please check your credentials and try again.',
   login_error_inactive: 'This account is inactive. Please contact the school administration office.',
   demo_accounts_title: 'Demo Accounts (Demo Only)',
@@ -1876,6 +1886,11 @@ export const stringsUr: Record<StringKey, string> = {
   login_quick_role_heading: 'ڈیمو اکاؤنٹس (صرف ڈیمو کے لیے)',
   login_quick_role_hint: 'لاگ ان آئی ڈی اور پاس ورڈ (demo1234) بھرنے کے لیے کسی بھی اکاؤنٹ پر ٹیپ کریں۔',
   login_error_empty: 'براہ کرم لاگ ان آئی ڈی اور پاس ورڈ دونوں درج کریں۔',
+  login_error_network: 'سرور سے رابطہ نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔',
+  sync_saving: 'محفوظ ہو رہا ہے…',
+  sync_failed: 'سرور پر محفوظ نہیں ہو سکا',
+  sync_retry: 'دوبارہ کوشش',
+  sync_reload: 'ترمیم ختم کر کے دوبارہ لوڈ کریں',
   login_error_invalid: 'غلط لاگ ان آئی ڈی یا پاس ورڈ۔ براہ کرم معلومات چیک کر کے دوبارہ کوشش کریں۔',
   login_error_inactive: 'یہ اکاؤنٹ فی الحال غیر فعال ہے۔ براہ کرم اسکول انتظامیہ سے رابطہ کریں۔',
   demo_accounts_title: 'ڈیمو اکاؤنٹس (صرف ڈیمو کے لیے)',

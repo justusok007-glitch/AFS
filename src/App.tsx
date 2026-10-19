@@ -10,6 +10,7 @@ import { formatSchoolDate } from './domain/formatters/SchoolFormatters';
 import { Campus, UserSession } from './domain/models/models';
 import { LanguageCode } from './res/strings';
 import { PrimaryButton } from './ui/components/SchoolComposables';
+import { SyncBanner } from './ui/components/SyncBanner';
 import { SchoolLogo } from './ui/components/SchoolLogo';
 import { DeveloperCheckScreen } from './ui/screens/DeveloperCheckScreen';
 import {
@@ -314,6 +315,7 @@ export default function App() {
         onCampusChange={handleCampusChange}
         onLogout={handleLogout}
       />
+      <SyncBanner />
     </LocaleProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { CLOUD_ENABLED, cloudHooks, newProfileId } from '../supabase/mode';
 import { LanguageCode } from '../../res/strings';
 import {
   AcademicYear,
@@ -117,7 +118,7 @@ function generateReadablePassword(): string {
   return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
 }
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   LOCAL_DB: 'afs_okara_local_db_v2',
   SESSION: 'afs_okara_session_v1',
   SETTINGS: 'afs_okara_settings_v1',
@@ -140,7 +141,7 @@ function readLocalJson<T>(key: string, fallback: T): T {
   }
 }
 
-function writeLocalJson<T>(key: string, value: T): void {
+export function writeLocalJson<T>(key: string, value: T): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -173,7 +174,7 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
         parsed.notices ??= [];
         parsed.notifications ??= [];
         // Vice Principal demo account was added after the first release.
-        if (!parsed.profiles.some((p) => p.loginId.toUpperCase() === 'VP01')) {
+        if (!CLOUD_ENABLED && !parsed.profiles.some((p) => p.loginId.toUpperCase() === 'VP01')) {
           parsed.profiles.push({
             id: 'usr_vp01',
             loginId: 'VP01',
@@ -208,9 +209,24 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
 
 function saveLocalDatabase(db: LocalDatabaseSnapshot): void {
   writeLocalJson(STORAGE_KEYS.LOCAL_DB, db);
+  cloudHooks.onLocalSave?.();
 }
 
-function mapDomainRoleToUserRole(role: Role): UserRole {
+/** Used by the Supabase sync: stores data WITHOUT telling the sync layer about it. */
+export function replaceLocalDatabase(db: LocalDatabaseSnapshot): void {
+  writeLocalJson(STORAGE_KEYS.LOCAL_DB, db);
+}
+
+export function clearLocalDatabase(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEYS.LOCAL_DB);
+    window.localStorage.removeItem(STORAGE_KEYS.SESSION);
+  } catch {
+    // Ignore
+  }
+}
+
+export function mapDomainRoleToUserRole(role: Role): UserRole {
   switch (role) {
     case Role.PARENT:
       return UserRole.PARENT;
@@ -227,7 +243,7 @@ function mapDomainRoleToUserRole(role: Role): UserRole {
   }
 }
 
-function mapCampusIdToEnum(campusId: string | null): Campus {
+export function mapCampusIdToEnum(campusId: string | null): Campus {
   if (campusId === 'campus_b') return Campus.BOYS;
   if (campusId === 'campus_g') return Campus.GIRLS;
   return Campus.BOTH;
@@ -367,7 +383,7 @@ function createProfileInDb(
   const customPw = input.password?.trim();
   if (customPw && customPw.length < (input.relaxed ? 4 : 6)) return fail(`Password must be at least ${input.relaxed ? 4 : 6} characters.`);
   const password = customPw || generateReadablePassword();
-  const id = `usr_${loginId.toLowerCase()}`;
+  const id = CLOUD_ENABLED ? newProfileId() : `usr_${loginId.toLowerCase()}`;
   const profile: Profile = {
     id,
     loginId,
