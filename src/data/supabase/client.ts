@@ -165,6 +165,9 @@ export async function selectAll<T = Record<string, unknown>>(table: string, quer
 
 export async function upsertRows(table: string, rows: Record<string, unknown>[], onConflict: string): Promise<void> {
   const chunk = 400;
+  // The server requires every row of one request to carry the same keys.
+  const keys = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
+  rows = rows.map((r) => Object.fromEntries(keys.map((k) => [k, r[k] === undefined ? null : r[k]])));
   for (let i = 0; i < rows.length; i += chunk) {
     await authed('POST', `/rest/v1/${table}?on_conflict=${onConflict}`, rows.slice(i, i + chunk), {
       Prefer: 'resolution=merge-duplicates,return=minimal',
