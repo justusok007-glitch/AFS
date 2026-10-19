@@ -723,6 +723,11 @@ export type StringKey =
   | 'st_unpaid'
   | 'st_err_fee'
   | 'st_err_net_gt'
+  | 'cl_import_title'
+  | 'cl_import_hint'
+  | 'cl_import_btn'
+  | 'cl_import_err_cols'
+  | 'cl_import_done'
   | 'st_bulk_btn'
   | 'st_bulk_title'
   | 'st_bulk_hint'
@@ -1646,7 +1651,7 @@ export const stringsEn: Record<StringKey, string> = {
   st_err_net_gt: 'Net fee cannot be more than the actual fee.',
   st_bulk_btn: 'Import students (CSV)',
   st_bulk_title: 'Bulk admit students',
-  st_bulk_hint: 'Pick the class and section, then upload a CSV (save from Excel as \'CSV UTF-8\') with these columns in this order: Student Name En, Student Name Ur, Father Name Eng, Father Name Ur, Phone 1, Phone 2, User Name, Password, Actual Fee, Net Fee, Annual Charges, Annual Charges Status (Paid/Unpaid), Admission Fee, Admission Fee Status. Students sharing one User Name share one parent account.',
+  st_bulk_hint: 'Upload a CSV (save from Excel as \'CSV UTF-8\'). Columns are read by their heading, in any order: Admission No., Student Name (en), Student Name (ur), Father Name, Father Name (ur), Contact 1, Contact 2, Campus (Boys/Girls), Class, Section, Status (Active), User Id, Password. Missing classes and sections are created automatically. Students with the same User Id share one parent account.',
   st_bulk_template: 'Download template',
   st_bulk_checking: 'Checking rows...',
   st_bulk_import: 'Import students',
@@ -1656,7 +1661,12 @@ export const stringsEn: Record<StringKey, string> = {
   st_bulk_pick_section: 'Choose class and section first',
   st_bulk_err_status: 'Status must be Paid or Unpaid',
   st_bulk_err_number: 'Amount is not a number',
-  st_bulk_err_cols: 'Row has too few columns',
+  st_bulk_err_cols: 'The file headings were not recognised. Download the template and use its headings.',
+  cl_import_title: 'Import classes (CSV)',
+  cl_import_hint: 'Columns: Campus (Boys/Girls), Class (en), Class (ur), Sections (separate with ;), Subjects (separate with ;, optional Urdu after |, e.g. English|انگریزی). Existing classes are kept; only new sections and subjects are added.',
+  cl_import_btn: 'Import classes (CSV)',
+  cl_import_err_cols: 'The file headings were not recognised. Download the template and use its headings.',
+  cl_import_done: 'Classes imported.',
   st_err_pw: 'Password must be at least 6 characters.',
   su_tab_school: 'School',
   su_tab_classes: 'Classes',
@@ -2568,7 +2578,7 @@ export const stringsUr: Record<StringKey, string> = {
   st_err_net_gt: 'خالص فیس اصل فیس سے زیادہ نہیں ہو سکتی۔',
   st_bulk_btn: 'طلبہ درآمد کریں (CSV)',
   st_bulk_title: 'طلبہ اکٹھے داخل کریں',
-  st_bulk_hint: 'کلاس اور سیکشن چنیں، پھر CSV اپ لوڈ کریں (ایکسل سے \'CSV UTF-8\' محفوظ کریں) جس میں کالم اسی ترتیب میں ہوں: Student Name En, Student Name Ur, Father Name Eng, Father Name Ur, Phone 1, Phone 2, User Name, Password, Actual Fee, Net Fee, Annual Charges, Annual Charges Status (Paid/Unpaid), Admission Fee, Admission Fee Status۔ ایک ہی یوزر نیم والے طلبہ ایک پیرنٹ اکاؤنٹ شیئر کرتے ہیں۔',
+  st_bulk_hint: 'CSV اپ لوڈ کریں (ایکسل سے \'CSV UTF-8\' محفوظ کریں)۔ کالم اپنے عنوان سے پہچانے جاتے ہیں، ترتیب کوئی بھی ہو: Admission No., Student Name (en), Student Name (ur), Father Name, Father Name (ur), Contact 1, Contact 2, Campus (Boys/Girls), Class, Section, Status (Active), User Id, Password۔ جو کلاس یا سیکشن موجود نہ ہو وہ خود بن جاتا ہے۔ ایک ہی User Id والے طلبہ ایک پیرنٹ اکاؤنٹ شیئر کرتے ہیں۔',
   st_bulk_template: 'ٹیمپلیٹ ڈاؤن لوڈ کریں',
   st_bulk_checking: 'قطاریں چیک ہو رہی ہیں...',
   st_bulk_import: 'طلبہ درآمد کریں',
@@ -2578,7 +2588,12 @@ export const stringsUr: Record<StringKey, string> = {
   st_bulk_pick_section: 'پہلے کلاس اور سیکشن چنیں',
   st_bulk_err_status: 'اسٹیٹس Paid یا Unpaid ہونا چاہیے',
   st_bulk_err_number: 'رقم عدد نہیں ہے',
-  st_bulk_err_cols: 'قطار میں کالم کم ہیں',
+  st_bulk_err_cols: 'فائل کے عنوان پہچانے نہیں گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اسی کے عنوان استعمال کریں۔',
+  cl_import_title: 'کلاسیں درآمد کریں (CSV)',
+  cl_import_hint: 'کالم: Campus (Boys/Girls)، Class (en)، Class (ur)، Sections (؛ سے الگ کریں)، Subjects (؛ سے الگ کریں، اردو نام | کے بعد، مثلاً English|انگریزی)۔ موجود کلاسیں برقرار رہتی ہیں، صرف نئے سیکشن اور مضامین شامل ہوتے ہیں۔',
+  cl_import_btn: 'کلاسیں درآمد کریں (CSV)',
+  cl_import_err_cols: 'فائل کے عنوان پہچانے نہیں گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اسی کے عنوان استعمال کریں۔',
+  cl_import_done: 'کلاسیں درآمد ہو گئیں۔',
   st_err_pw: 'پاس ورڈ کم از کم 6 حروف کا ہو۔',
   su_tab_school: 'اسکول',
   su_tab_classes: 'کلاسز',

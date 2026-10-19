@@ -168,7 +168,6 @@ export const AdminStudentsTab: React.FC<{
         {slipPrint}
         <AdminBulkStudents
           admin={admin}
-          sectionOptions={sectionOptions}
           onAddSlip={onAddSlip}
           onPrintSlips={setPrintSlips}
           onClose={() => {

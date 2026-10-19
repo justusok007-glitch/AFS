@@ -236,7 +236,7 @@ export interface OpeningFees {
 }
 
 export type ParentSpec =
-  | { mode: 'create'; fatherNameUr: string; loginId?: string; password?: string }
+  | { mode: 'create'; fatherNameUr: string; loginId?: string; password?: string; relaxed?: boolean }
   | { mode: 'link'; parentId: string };
 
 export interface NewStudentInput {
@@ -250,6 +250,8 @@ export interface NewStudentInput {
   admissionDate: string;
   guardianPhone: string;
   guardianPhone2?: string;
+  /** Bulk import: keep the admission number from the file instead of generating one. */
+  admissionNo?: string;
   parent?: ParentSpec;
   opening?: OpeningFees;
 }
@@ -280,6 +282,45 @@ export interface ImportStudentRow {
   admissionPaid: boolean;
 }
 
+/** One row of the combined student file (class, section and campus come from the file). */
+export interface ImportFileRow {
+  line: number;
+  admissionNo: string;
+  name: string;
+  nameUr: string;
+  fatherName: string;
+  fatherNameUr: string;
+  phone1: string;
+  phone2: string;
+  campus: string;
+  className: string;
+  sectionName: string;
+  status: string;
+  username: string;
+  password: string;
+  /** Subject columns found in the file header; used only when a new class is created. */
+  subjects: string[];
+}
+
+export interface ImportClassRow {
+  line: number;
+  campus: string;
+  classEn: string;
+  classUr: string;
+  sections: string[];
+  /** "English" or "English|اردو" */
+  subjects: string[];
+}
+
+export interface ImportClassResult {
+  line: number;
+  ok: boolean;
+  error: string | null;
+  className: string;
+  created: boolean;
+  sectionsAdded: number;
+}
+
 export interface ImportStudentResult {
   line: number;
   ok: boolean;
@@ -302,6 +343,8 @@ export interface NewProfileInput {
   /** Admin-chosen Login ID / password (bulk import); generated when omitted. */
   loginId?: string;
   password?: string;
+  /** Bulk import: allow '@' in the user name and passwords of 4+ characters. */
+  relaxed?: boolean;
 }
 
 export interface Student {

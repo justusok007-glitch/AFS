@@ -25,6 +25,9 @@ import {
   MarkSubmission,
   MarksProgressRow,
   ImportStudentRow,
+  ImportFileRow,
+  ImportClassRow,
+  ImportClassResult,
   ImportStudentResult,
   AttendanceReportFilter,
   FeeCollectionReport,
@@ -108,6 +111,12 @@ export interface StudentRepository {
   importStudents(
     sectionId: string,
     rows: ImportStudentRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportStudentResult[]>>;
+  /** Bulk admit from the combined file: campus, class and section per row; missing classes/sections are created. */
+  importStudentFile(
+    rows: ImportFileRow[],
     actor: Profile,
     dryRun: boolean
   ): Promise<AppResult<ImportStudentResult[]>>;
@@ -471,6 +480,12 @@ export interface SettingsRepository {
     cls: Pick<SchoolClass, 'campusId' | 'nameEn' | 'nameUr'> & { id?: string; subjects?: { nameEn: string; nameUr: string }[] },
     actor: Profile
   ): Promise<AppResult<SchoolClass>>;
+  /** Bulk create classes with sections and subjects from a file. Admin only. */
+  importClasses(
+    rows: ImportClassRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportClassResult[]>>;
   /** Create or edit a section, including its class teacher. Admin only. */
   saveSection(
     section: Pick<Section, 'classId' | 'name' | 'classTeacherId'> & { id?: string },

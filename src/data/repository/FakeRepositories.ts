@@ -11,6 +11,9 @@ import {
   Gender,
   ImportStudentResult,
   ImportStudentRow,
+  ImportFileRow,
+  ImportClassRow,
+  ImportClassResult,
   OpeningFees,
   NewProfileInput,
   NewStudentInput,
@@ -184,6 +187,12 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
           });
           parsed.passwordsByUserId['usr_vp01'] = 'demo1234';
         }
+        // One-time clean start: school data (students, parents, classes, sections, subjects) is entered fresh.
+        if (!(parsed as { cleanStart?: boolean }).cleanStart) {
+          wipeSchoolData(parsed);
+          (parsed as { cleanStart?: boolean }).cleanStart = true;
+          writeLocalJson(STORAGE_KEYS.LOCAL_DB, parsed);
+        }
         return parsed;
       }
     }
@@ -191,6 +200,8 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
     // Fallback to initial seed
   }
   const initial = buildInitialDemoDatabase();
+  wipeSchoolData(initial);
+  (initial as { cleanStart?: boolean }).cleanStart = true;
   writeLocalJson(STORAGE_KEYS.LOCAL_DB, initial);
   return initial;
 }
@@ -328,7 +339,7 @@ function createProfileInDb(
   let loginId: string;
   const custom = input.loginId?.trim();
   if (custom) {
-    if (!/^[A-Za-z0-9_.-]{3,20}$/.test(custom)) {
+    if (!(input.relaxed ? /^[A-Za-z0-9_.@-]{3,30}$/ : /^[A-Za-z0-9_.-]{3,20}$/).test(custom)) {
       return fail('User name must be 3-20 letters, digits, dot, dash or underscore.');
     }
     loginId = custom.toUpperCase();
@@ -354,7 +365,7 @@ function createProfileInDb(
   }
 
   const customPw = input.password?.trim();
-  if (customPw && customPw.length < 6) return fail('Password must be at least 6 characters.');
+  if (customPw && customPw.length < (input.relaxed ? 4 : 6)) return fail(`Password must be at least ${input.relaxed ? 4 : 6} characters.`);
   const password = customPw || generateReadablePassword();
   const id = `usr_${loginId.toLowerCase()}`;
   const profile: Profile = {
@@ -452,6 +463,118 @@ function addOpeningVoucher(
   });
 }
 
+// ----------------------------------------------------------------------------
+// Clean start + bulk-import helpers
+// ----------------------------------------------------------------------------
+
+/** Removes students, parents, classes, sections, subjects and everything that hangs off them. Staff, campuses and settings stay. */
+function wipeSchoolData(db: LocalDatabaseSnapshot): void {
+  const parentIds = new Set(db.profiles.filter((p) => p.role === Role.PARENT).map((p) => p.id));
+  db.profiles = db.profiles.filter((p) => p.role !== Role.PARENT);
+  parentIds.forEach((id) => delete db.passwordsByUserId[id]);
+  db.students = [];
+  db.parentStudents = [];
+  db.classes = [];
+  db.sections = [];
+  db.subjects = [];
+  db.classSubjects = [];
+  db.teacherAssignments = [];
+  db.attendanceRecords = [];
+  db.attendanceSubmissions = [];
+  db.classFeeStructures = [];
+  db.studentConcessions = [];
+  db.feeVouchers = [];
+  db.feePayments = [];
+  db.paymentAllocations = [];
+  db.exams = [];
+  db.examSubjects = [];
+  db.marks = [];
+  db.markSubmissions = [];
+  db.conversations = [];
+  db.messages = [];
+  db.notifications = [];
+  db.auditLogs = [];
+}
+
+let importIdCounter = 0;
+const importId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${(importIdCounter++).toString(36)}`;
+
+function findCampusByText(db: LocalDatabaseSnapshot, text: string) {
+  const v = text.trim().toLowerCase();
+  if (!v) return undefined;
+  return db.campuses.find(
+    (c) =>
+      c.code.toLowerCase() === v ||
+      c.nameEn.toLowerCase() === v ||
+      c.nameEn.toLowerCase().replace(/\s*campus$/, '') === v ||
+      c.nameUr === text.trim()
+  );
+}
+
+function findClassByText(db: LocalDatabaseSnapshot, campusId: string, text: string) {
+  const v = text.trim().toLowerCase();
+  if (!v) return undefined;
+  return db.classes.find(
+    (c) =>
+      c.campusId === campusId &&
+      (c.nameEn.toLowerCase() === v ||
+        c.nameEn.toLowerCase() === `class ${v}` ||
+        c.nameEn.toLowerCase() === `grade ${v}` ||
+        c.nameUr === text.trim())
+  );
+}
+
+function addSubjectsToClass(db: LocalDatabaseSnapshot, classId: string, subjects: string[]) {
+  subjects.forEach((raw) => {
+    const [enRaw, urRaw] = raw.split('|');
+    const en = (enRaw ?? '').trim();
+    if (!en) return;
+    let sub = db.subjects.find((x) => x.nameEn.toLowerCase() === en.toLowerCase());
+    if (!sub) {
+      sub = { id: importId('sub'), nameEn: en, nameUr: (urRaw ?? '').trim() || en };
+      db.subjects.push(sub);
+    }
+    if (!db.classSubjects.some((cs) => cs.classId === classId && cs.subjectId === sub!.id)) {
+      db.classSubjects.push({ classId, subjectId: sub.id });
+    }
+  });
+}
+
+function ensureClassInDb(
+  db: LocalDatabaseSnapshot,
+  campusId: string,
+  nameEn: string,
+  nameUr: string,
+  subjects: string[]
+): { cls: SchoolClass; created: boolean } {
+  const found = findClassByText(db, campusId, nameEn);
+  if (found) {
+    addSubjectsToClass(db, found.id, subjects);
+    return { cls: found, created: false };
+  }
+  const sort = db.classes.filter((c) => c.campusId === campusId).reduce((m, c) => Math.max(m, c.sortOrder), 0) + 1;
+  const cls: SchoolClass = { id: importId('cls'), campusId, nameEn, nameUr, sortOrder: sort };
+  db.classes.push(cls);
+  addSubjectsToClass(db, cls.id, subjects);
+  return { cls, created: true };
+}
+
+function ensureSectionInDb(db: LocalDatabaseSnapshot, classId: string, name: string): { section: Section; created: boolean } {
+  const found = db.sections.find((x) => x.classId === classId && x.name.toLowerCase() === name.toLowerCase());
+  if (found) return { section: found, created: false };
+  const section: Section = { id: importId('sec'), classId, name, classTeacherId: null };
+  db.sections.push(section);
+  return { section, created: true };
+}
+
+/** "6" -> Class 6 / جماعت 6 ; a name like "Nursery" is kept as typed. */
+function defaultClassNames(text: string): { en: string; ur: string } {
+  const t = text.trim();
+  if (/^\d+$/.test(t)) return { en: `Class ${t}`, ur: `جماعت ${t}` };
+  return { en: t, ur: t };
+}
+
+
 function admitStudentInDb(
   db: LocalDatabaseSnapshot,
   input: NewStudentInput,
@@ -505,6 +628,11 @@ function admitStudentInDb(
     opening = o;
   }
 
+  const earlyNo = input.admissionNo?.trim();
+  if (earlyNo && db.students.some((x) => x.admissionNo.toLowerCase() === earlyNo.toLowerCase())) {
+    return fail(`Admission number ${earlyNo} already exists.`);
+  }
+
   // Parent account is resolved BEFORE anything is written so a failure leaves no half-admission.
   let parent: Profile | null = null;
   let parentPassword: string | null = null;
@@ -536,6 +664,7 @@ function admitStudentInDb(
           campusId: campus.id,
           loginId: spec.loginId,
           password: spec.password,
+          relaxed: spec.relaxed,
         },
         actor.id
       );
@@ -556,9 +685,13 @@ function admitStudentInDb(
       .filter((s) => s.sectionId === section.id)
       .reduce((m, s) => Math.max(m, s.rollNo), 0) + 1;
 
+  const customNo = input.admissionNo?.trim();
+  if (customNo && db.students.some((x) => x.admissionNo.toLowerCase() === customNo.toLowerCase())) {
+    return fail(`Admission number ${customNo} already exists.`);
+  }
   const student: Student = {
     id: `stu_${String(nextIdNum).padStart(3, '0')}`,
-    admissionNo: `AFS-${campus.code}-${input.admissionDate.slice(0, 4)}-${String(nextSeq).padStart(3, '0')}`,
+    admissionNo: customNo || `AFS-${campus.code}-${input.admissionDate.slice(0, 4)}-${String(nextSeq).padStart(3, '0')}`,
     name,
     nameUr,
     fatherName,
@@ -999,6 +1132,106 @@ export class FakeStudentRepository implements StudentRepository {
           oldValue: null,
           newValue: `${okCount} students imported`,
           reason: 'Bulk student import',
+          changedBy: actor.id,
+          changedAt: new Date().toISOString(),
+        });
+        saveLocalDatabase(db);
+      }
+    }
+    return AppResult.success(results);
+  }
+
+  async importStudentFile(
+    rows: ImportFileRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportStudentResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can import students.' });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const blank = (row: ImportFileRow, error: string): ImportStudentResult => ({
+      line: row.line,
+      ok: false,
+      error,
+      warnings: [],
+      studentName: row.name,
+      admissionNo: row.admissionNo || null,
+      parentLoginId: null,
+      parentCreated: false,
+      profile: null,
+      password: null,
+    });
+    const seenNos = new Set<string>();
+    const results: ImportStudentResult[] = rows.map((row) => {
+      if (row.status && row.status.trim().toLowerCase() !== 'active') {
+        return blank(row, `Status "${row.status}" - only Active students can be imported.`);
+      }
+      const campus = findCampusByText(db, row.campus);
+      if (!campus) return blank(row, `Campus "${row.campus}" not found (use Boys or Girls).`);
+      if (!row.className.trim()) return blank(row, 'Class is required.');
+      if (!row.sectionName.trim()) return blank(row, 'Section is required.');
+      if (row.admissionNo) {
+        const key = row.admissionNo.toLowerCase();
+        if (seenNos.has(key)) return blank(row, `Admission number ${row.admissionNo} appears twice in the file.`);
+        seenNos.add(key);
+      }
+      const names = defaultClassNames(row.className);
+      const { cls, created: classCreated } = ensureClassInDb(db, campus.id, names.en, names.ur, row.subjects);
+      const { section, created: sectionCreated } = ensureSectionInDb(db, cls.id, row.sectionName.trim());
+      const r = admitStudentInDb(
+        db,
+        {
+          name: row.name,
+          nameUr: row.nameUr,
+          fatherName: row.fatherName,
+          gender: campus.code === 'G' ? Gender.FEMALE : Gender.MALE,
+          dateOfBirth: '',
+          sectionId: section.id,
+          admissionDate: today(),
+          guardianPhone: row.phone1,
+          guardianPhone2: row.phone2,
+          admissionNo: row.admissionNo || undefined,
+          parent: {
+            mode: 'create',
+            fatherNameUr: row.fatherNameUr,
+            loginId: row.username.trim() || undefined,
+            password: row.password.trim() || undefined,
+            relaxed: true,
+          },
+        },
+        actor
+      );
+      if (!r.ok) return blank(row, r.message);
+      const warnings = [...r.warnings];
+      if (classCreated) warnings.push(`New class created: ${cls.nameEn}`);
+      else if (sectionCreated) warnings.push(`New section created: ${cls.nameEn} - ${section.name}`);
+      return {
+        line: row.line,
+        ok: true,
+        error: null,
+        warnings,
+        studentName: r.data.student.name,
+        admissionNo: r.data.student.admissionNo,
+        parentLoginId: r.data.parent?.loginId ?? null,
+        parentCreated: r.data.parentPassword !== null,
+        profile: r.data.parentPassword !== null ? r.data.parent : null,
+        password: r.data.parentPassword,
+      };
+    });
+    if (!dryRun) {
+      const okCount = results.filter((x) => x.ok).length;
+      if (okCount > 0) {
+        db.auditLogs.unshift({
+          id: auditId(),
+          action: 'BULK_IMPORT_STUDENTS',
+          tableName: 'students',
+          recordId: 'file',
+          oldValue: null,
+          newValue: `${okCount} students imported`,
+          reason: 'Bulk student import (file)',
           changedBy: actor.id,
           changedAt: new Date().toISOString(),
         });
@@ -4131,6 +4364,51 @@ export class FakeSettingsRepository implements SettingsRepository {
     });
     saveLocalDatabase(db);
     return AppResult.success(saved);
+  }
+
+  async importClasses(
+    rows: ImportClassRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportClassResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can change classes.' });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const results: ImportClassResult[] = rows.map((row) => {
+      const bad = (error: string): ImportClassResult => ({ line: row.line, ok: false, error, className: row.classEn, created: false, sectionsAdded: 0 });
+      const campus = findCampusByText(db, row.campus);
+      if (!campus) return bad(`Campus "${row.campus}" not found (use Boys or Girls).`);
+      const en = row.classEn.trim();
+      if (en.length < 1) return bad('Class name (English) is required.');
+      const names = /^\d+$/.test(en) ? defaultClassNames(en) : { en, ur: row.classUr.trim() || en };
+      const ur = row.classUr.trim() || names.ur;
+      const { cls, created } = ensureClassInDb(db, campus.id, names.en, ur, row.subjects);
+      let added = 0;
+      row.sections.forEach((sn) => {
+        const name = sn.trim();
+        if (!name) return;
+        if (ensureSectionInDb(db, cls.id, name).created) added++;
+      });
+      return { line: row.line, ok: true, error: null, className: cls.nameEn, created, sectionsAdded: added };
+    });
+    if (!dryRun && results.some((x) => x.ok)) {
+      db.auditLogs.unshift({
+        id: auditId(),
+        action: 'BULK_IMPORT_CLASSES',
+        tableName: 'classes',
+        recordId: 'file',
+        oldValue: null,
+        newValue: `${results.filter((x) => x.ok).length} classes imported`,
+        reason: 'Bulk class import',
+        changedBy: actor.id,
+        changedAt: new Date().toISOString(),
+      });
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(results);
   }
 
   async saveSection(

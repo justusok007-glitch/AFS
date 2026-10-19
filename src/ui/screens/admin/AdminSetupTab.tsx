@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Layers, Medal, Plus, School, Trash2, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Layers, Medal, Plus, School, Trash2, Upload, Wallet } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
 import {
@@ -25,6 +25,7 @@ import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { selectCls } from '../principal/PrincipalShared';
 import { AdminExamsSection } from './AdminExamsSection';
+import { AdminClassImport } from './AdminClassImport';
 
 type SetupTab = 'school' | 'classes' | 'fees' | 'exams' | 'holidays' | 'grading';
 
@@ -210,6 +211,7 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const teachers = Object.values(lookups.staffMap).filter((p) => p.role === Role.TEACHER && p.isActive);
 
@@ -374,6 +376,11 @@ const ClassesSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> =
         );
       })}
 
+      {importing ? (
+        <AdminClassImport admin={admin} onDone={lookups.reload} onClose={() => setImporting(false)} />
+      ) : (
+        <PrimaryButton text={t('cl_import_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setImporting(true)} />
+      )}
         <PrimaryButton text={t('su_add_class')} variant="outline" icon={<Plus className="w-4 h-4 text-[#F28C28]" />} onClick={() => { setAddingClass(true); setEditClassId(null); setCEn(''); setCUr(''); setSubRows([{ en: '', ur: '' }]); }} />
     </div>
   );
