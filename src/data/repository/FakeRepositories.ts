@@ -1190,35 +1190,35 @@ export class FakeStudentRepository implements StudentRepository {
       const campus = findCampusByText(db, row.campus);
       if (!campus) return blank(row, `Campus "${row.campus}" not found (use Boys or Girls).`);
       if (!row.className.trim()) return blank(row, 'Class is required.');
-      // Already imported earlier (same parent user name + same student name)? Only correct the admission no.
+      // Already imported earlier (same student name + father in this campus)? Keep it, only correct the admission no.
       const wantedNo = row.admissionNo.trim();
       const loginUp = row.username.trim().toUpperCase();
-      if (loginUp) {
-        const parent = db.profiles.find((p) => p.role === Role.PARENT && p.loginId.toUpperCase() === loginUp);
-        const existing = parent
-          ? db.parentStudents
-              .filter((l) => l.parentId === parent.id)
-              .map((l) => db.students.find((st) => st.id === l.studentId))
-              .find((st) => st && st.campusId === campus.id && st.name.trim().toLowerCase() === row.name.trim().toLowerCase())
-          : undefined;
-        if (parent && existing) {
-          const taken = wantedNo && db.students.some((o) => o.id !== existing.id && o.campusId === campus.id && o.admissionNo.toLowerCase() === wantedNo.toLowerCase());
-          if (taken) return blank(row, `Adm No ${wantedNo} already belongs to another student.`);
-          const warnings = ['Already in the app - existing student kept.'];
-          if (wantedNo && existing.admissionNo !== wantedNo) {
-            warnings.push(`Admission number changed ${existing.admissionNo} -> ${wantedNo}.`);
-            existing.admissionNo = wantedNo;
-          }
-          if (row.netFee !== undefined && row.netFee > 0) {
-            db.studentConcessions = db.studentConcessions.filter((c) => !(c.studentId === existing.id && c.feeHeadId === 'fh_tuition'));
-            db.studentConcessions.push({ studentId: existing.id, feeHeadId: 'fh_tuition', type: ConcessionType.OVERRIDE, value: row.netFee, reason: `From student file (actual fee ${row.actualFee ?? row.netFee}, net fee ${row.netFee})` });
-          }
-          return {
-            line: row.line, ok: true, error: null, warnings,
-            studentName: existing.name, admissionNo: existing.admissionNo,
-            parentLoginId: parent.loginId, parentCreated: false, profile: null, password: null,
-          };
+      const sameText = (x: string, y: string) => x.trim().toLowerCase() === y.trim().toLowerCase();
+      const existing = db.students.find(
+        (st) => st.campusId === campus.id && sameText(st.name, row.name) && sameText(st.fatherName, row.fatherName)
+      );
+      if (existing) {
+        const taken = wantedNo && db.students.some((o) => o.id !== existing.id && o.campusId === campus.id && o.admissionNo.toLowerCase() === wantedNo.toLowerCase());
+        if (taken) return blank(row, `Adm No ${wantedNo} already belongs to another student.`);
+        const link = db.parentStudents.find((l) => l.studentId === existing.id);
+        const parent = link ? db.profiles.find((p) => p.id === link.parentId) : undefined;
+        const warnings = ['Already in the app - existing student kept.'];
+        if (wantedNo && existing.admissionNo !== wantedNo) {
+          warnings.push(`Admission number changed ${existing.admissionNo} -> ${wantedNo}.`);
+          existing.admissionNo = wantedNo;
         }
+        if (parent && loginUp && parent.loginId.toUpperCase() !== loginUp) {
+          warnings.push(`Parent user name stays ${parent.loginId} (file says ${row.username}); change it in Users if needed.`);
+        }
+        if (row.netFee !== undefined && row.netFee > 0) {
+          db.studentConcessions = db.studentConcessions.filter((c) => !(c.studentId === existing.id && c.feeHeadId === 'fh_tuition'));
+          db.studentConcessions.push({ studentId: existing.id, feeHeadId: 'fh_tuition', type: ConcessionType.OVERRIDE, value: row.netFee, reason: `From student file (actual fee ${row.actualFee ?? row.netFee}, net fee ${row.netFee})` });
+        }
+        return {
+          line: row.line, ok: true, error: null, warnings,
+          studentName: existing.name, admissionNo: existing.admissionNo,
+          parentLoginId: parent?.loginId ?? null, parentCreated: false, profile: null, password: null,
+        };
       }
       if (!row.sectionName.trim()) return blank(row, 'Section is required.');
       if (row.admissionNo) {
