@@ -135,6 +135,8 @@ export interface StudentRepository {
   ): Promise<AppResult<ParentStudent>>;
   unlinkParent(parentId: string, studentId: string): Promise<AppResult<void>>;
   childrenOfParent(parentId: string): Promise<AppResult<Student[]>>;
+  /** Parent accounts linked to a student. */
+  parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>>;
   promoteClass(
     fromSectionId: string,
     toSectionId: string,
@@ -517,6 +519,12 @@ export interface SettingsRepository {
     profileId: string,
     actor: Profile
   ): Promise<AppResult<{ profile: Profile; password: string }>>;
+  /** Admin edits any account directly: name, phone, Login ID and (optionally) a new password. */
+  updateAccount(
+    profileId: string,
+    changes: { fullName?: string; fullNameUr?: string; phone?: string; loginId?: string; password?: string },
+    actor: Profile
+  ): Promise<AppResult<Profile>>;
   setProfileActive(
     profileId: string,
     isActive: boolean,

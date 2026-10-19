@@ -1187,6 +1187,13 @@ export class FakeStudentRepository implements StudentRepository {
     return AppResult.success(undefined);
   }
 
+  async parentsOfStudent(studentId: string): Promise<AppResult<Profile[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const ids = new Set(db.parentStudents.filter((ps) => ps.studentId === studentId).map((ps) => ps.parentId));
+    return AppResult.success(db.profiles.filter((p) => ids.has(p.id)));
+  }
+
   async childrenOfParent(parentId: string): Promise<AppResult<Student[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
@@ -4417,6 +4424,61 @@ export class FakeSettingsRepository implements SettingsRepository {
     });
     saveLocalDatabase(db);
     return AppResult.success(profile);
+  }
+
+  async updateAccount(
+    profileId: string,
+    changes: { fullName?: string; fullNameUr?: string; phone?: string; loginId?: string; password?: string },
+    actor: Profile
+  ): Promise<AppResult<Profile>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can edit accounts.' });
+    }
+    const fail = (message: string) => AppResult.failure<Profile>({ kind: 'ValidationFailed', message });
+    const db = getOrSeedLocalDatabase();
+    const idx = db.profiles.findIndex((p) => p.id === profileId);
+    if (idx === -1) return fail('User not found.');
+    const cur = db.profiles[idx];
+    const next: Profile = { ...cur };
+    if (changes.fullName !== undefined) {
+      if (changes.fullName.trim().length < 3) return fail('Name (English) is required.');
+      next.fullName = changes.fullName.trim();
+    }
+    if (changes.fullNameUr !== undefined) {
+      if (changes.fullNameUr.trim().length < 2) return fail('Name (Urdu) is required.');
+      next.fullNameUr = changes.fullNameUr.trim();
+    }
+    if (changes.phone !== undefined) {
+      const ph = changes.phone.replace(/[\s-]/g, '');
+      if (!/^\+?\d{10,13}$/.test(ph)) return fail('Enter a valid phone number.');
+      next.phone = ph;
+    }
+    if (changes.loginId !== undefined) {
+      const lid = changes.loginId.trim();
+      if (lid.length < 3 || /\s/.test(lid)) return fail('User name must be at least 3 characters with no spaces.');
+      if (db.profiles.some((p) => p.id !== profileId && p.loginId.toLowerCase() === lid.toLowerCase())) {
+        return fail('This user name is already taken.');
+      }
+      next.loginId = lid;
+    }
+    const pw = changes.password?.trim();
+    if (pw && pw.length < 6) return fail('Password must be at least 6 characters.');
+    db.profiles[idx] = next;
+    if (pw) db.passwordsByUserId[profileId] = pw;
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'UPDATE_ACCOUNT',
+      tableName: 'profiles',
+      recordId: profileId,
+      oldValue: cur.loginId,
+      newValue: next.loginId,
+      reason: pw ? 'Account details and password changed by Admin' : 'Account details changed by Admin',
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(next);
   }
 
   async setProfileActive(

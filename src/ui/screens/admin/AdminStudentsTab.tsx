@@ -19,6 +19,7 @@ import {
   ParentAttendanceSummary,
   ParentSpec,
   Profile,
+  ParentRelation,
   Role,
   Student,
   StudentStatus,
@@ -46,7 +47,7 @@ import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { percentColor, selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
 import { AdminBulkStudents } from './AdminBulkStudents';
-import { SlipSheet } from './AdminUsersTab';
+import { AccountEditor, SlipSheet } from './AdminUsersTab';
 
 type View =
   | { kind: 'list' }
@@ -310,6 +311,24 @@ const StudentForm: React.FC<{
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [linked, setLinked] = useState<Profile[]>([]);
+  const [editParent, setEditParent] = useState<Profile | null>(null);
+  const reloadLinked = useCallback(async () => {
+    if (!existing) return;
+    const r = await AppModule.studentRepository.parentsOfStudent(existing.id);
+    setLinked(r.ok ? r.data : []);
+  }, [existing]);
+  useEffect(() => {
+    void reloadLinked();
+  }, [reloadLinked]);
+  useEffect(() => {
+    if (!existing) return;
+    void (async () => {
+      const r = await AppModule.settingsRepository.getProfiles(Role.PARENT, null);
+      setParents(r.ok ? r.data : []);
+    })();
+  }, [existing]);
+
   useEffect(() => {
     if (parentMode !== 'link') return;
     void (async () => {
@@ -509,6 +528,36 @@ const StudentForm: React.FC<{
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {existing && (
+        <div className="space-y-2 border-t border-[#E4E8F0] pt-3">
+          <label className="block text-xs font-bold text-[#14284B]">{t('ac_parent_heading')}</label>
+          {linked.length === 0 && <p className="text-xs text-[#6B7385]">{t('ac_parent_none')}</p>}
+          {linked.map((p) => (
+            <div key={p.id} className="rounded-xl border border-[#E4E8F0] px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 text-xs">
+                  <b>{p.fullName}</b>
+                  <div dir="ltr" className="font-mono text-[#6B7385] text-start">{p.loginId} · {p.phone}</div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button type="button" className="text-xs font-semibold text-[#F28C28] cursor-pointer min-h-[36px]" onClick={() => setEditParent(editParent?.id === p.id ? null : p)}>{t('ac_edit_btn')}</button>
+                  <button type="button" className="text-xs font-semibold text-[#D64545] cursor-pointer min-h-[36px]" onClick={() => void (async () => { await AppModule.studentRepository.unlinkParent(p.id, existing.id); if (editParent?.id === p.id) setEditParent(null); void reloadLinked(); })()}>{t('ac_parent_unlink')}</button>
+                </div>
+              </div>
+              {editParent?.id === p.id && (
+                <AccountEditor admin={admin} user={p} onCancel={() => setEditParent(null)} onSaved={(np) => { setLinked(linked.map((x) => (x.id === np.id ? np : x))); setEditParent(np); }} />
+              )}
+            </div>
+          ))}
+          <SchoolTextField label={t('ac_parent_link_search')} value={parentQuery} onValueChange={setParentQuery} leadingIcon={<Search className="w-4 h-4" />} />
+          {parentMatches.filter((p) => !linked.some((l) => l.id === p.id)).map((p) => (
+            <button key={p.id} type="button" onClick={() => void (async () => { await AppModule.studentRepository.linkParent(p.id, existing.id, ParentRelation.FATHER); setParentQuery(''); void reloadLinked(); })()} className="w-full text-start rounded-xl border border-[#E4E8F0] px-3 py-2 text-xs cursor-pointer">
+              <b>{p.fullName}</b> <span dir="ltr" className="font-mono text-[#6B7385]">{p.loginId} · {p.phone}</span>
+            </button>
+          ))}
         </div>
       )}
 

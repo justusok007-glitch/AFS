@@ -269,7 +269,7 @@ const CreateUserForm: React.FC<{
         </select>
       </div>
       <SchoolTextField label={t('ad_form_name_en')} value={nameEn} onValueChange={setNameEn} errorText={errors.nameEn} />
-      <div dir="rtl">
+      <div>
         <SchoolTextField urdu label={t('ad_form_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} />
       </div>
       <SchoolTextField label={t('ad_form_phone')} value={phone} onValueChange={setPhone} errorText={errors.phone} forceLtrValue />
@@ -303,6 +303,7 @@ const UserDetail: React.FC<{
   const { stringResource: t, language } = useStringResource();
   const [current, setCurrent] = useState<Profile>(user);
   const [confirm, setConfirm] = useState<'reset' | 'active' | null>(null);
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -345,6 +346,11 @@ const UserDetail: React.FC<{
       </SchoolCard>
 
       {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+      {editing ? (
+        <AccountEditor admin={admin} user={current} onCancel={() => setEditing(false)} onSaved={(p) => { setCurrent(p); setEditing(false); }} />
+      ) : (
+        <PrimaryButton text={t('ac_edit_btn')} variant="orange" onClick={() => setEditing(true)} />
+      )}
       <div className="grid grid-cols-2 gap-2.5">
         <PrimaryButton text={t('ad_detail_reset')} variant="navy" icon={<KeyRound className="w-4 h-4 text-[#F28C28]" />} onClick={() => setConfirm('reset')} />
         <PrimaryButton
@@ -370,6 +376,55 @@ const UserDetail: React.FC<{
       {current.role === Role.PARENT && <ParentChildren parent={current} lookups={lookups} />}
       {current.role === Role.TEACHER && <TeacherAssignments admin={admin} teacher={current} lookups={lookups} />}
     </div>
+  );
+};
+
+/** Admin edits an account directly: name, phone, user name and password. Shared by every role. */
+export const AccountEditor: React.FC<{
+  admin: Profile;
+  user: Profile;
+  onCancel: () => void;
+  onSaved: (p: Profile) => void;
+}> = ({ admin, user, onCancel, onSaved }) => {
+  const { stringResource: t } = useStringResource();
+  const [nameEn, setNameEn] = useState(user.fullName);
+  const [nameUr, setNameUr] = useState(user.fullNameUr);
+  const [phone, setPhone] = useState(user.phone);
+  const [loginId, setLoginId] = useState(user.loginId);
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    setErr(null);
+    const r = await AppModule.settingsRepository.updateAccount(
+      user.id,
+      { fullName: nameEn, fullNameUr: nameUr, phone, loginId, password: password || undefined },
+      admin
+    );
+    setSaving(false);
+    if (!r.ok) return setErr(r.error.message);
+    setDone(true);
+    onSaved(r.data);
+  };
+
+  return (
+    <SchoolCard className="space-y-3">
+      <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('ac_edit_title')}</h3>
+      <SchoolTextField label={t('ad_form_name_en')} value={nameEn} onValueChange={setNameEn} />
+      <div><SchoolTextField urdu label={t('ad_form_name_ur')} value={nameUr} onValueChange={setNameUr} /></div>
+      <SchoolTextField label={t('ad_form_phone')} value={phone} onValueChange={setPhone} forceLtrValue />
+      <SchoolTextField label={t('ac_username')} value={loginId} onValueChange={setLoginId} forceLtrValue />
+      <SchoolTextField label={t('ac_new_password')} value={password} onValueChange={setPassword} placeholder={t('ac_password_hint')} forceLtrValue />
+      {err && <p className="text-xs font-medium text-[#D64545]">{err}</p>}
+      {done && <p className="text-xs font-semibold text-[#2E9E5B]">{t('ex_saved')}</p>}
+      <div className="grid grid-cols-2 gap-2">
+        <PrimaryButton text={t('acc_cancel_btn')} variant="outline" onClick={onCancel} />
+        <PrimaryButton text={t('su_save')} variant="orange" loading={saving} onClick={() => void save()} />
+      </div>
+    </SchoolCard>
   );
 };
 

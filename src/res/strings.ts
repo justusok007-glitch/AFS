@@ -750,6 +750,15 @@ export type StringKey =
   | 'su_class_name_en'
   | 'su_class_name_ur'
   | 'su_subjects_heading'
+  | 'ac_edit_btn'
+  | 'ac_edit_title'
+  | 'ac_username'
+  | 'ac_new_password'
+  | 'ac_password_hint'
+  | 'ac_parent_heading'
+  | 'ac_parent_none'
+  | 'ac_parent_unlink'
+  | 'ac_parent_link_search'
   | 'su_sections_heading'
   | 'su_subject_en'
   | 'su_subject_ur'
@@ -1656,6 +1665,15 @@ export const stringsEn: Record<StringKey, string> = {
   su_class_name_en: 'Class name (English)',
   su_class_name_ur: 'Class name (Urdu)',
   su_subjects_heading: 'Subjects of this class (add as many as you need)',
+  ac_edit_btn: 'Edit account',
+  ac_edit_title: 'Edit account',
+  ac_username: 'User name (Login ID)',
+  ac_new_password: 'New password',
+  ac_password_hint: 'Leave empty to keep the current password',
+  ac_parent_heading: 'Parent accounts linked to this student',
+  ac_parent_none: 'No parent account is linked yet.',
+  ac_parent_unlink: 'Unlink',
+  ac_parent_link_search: 'Search a parent account to link (name, ID or phone)',
   su_sections_heading: 'Section names (rename here)',
   su_subject_en: 'Subject name (English)',
   su_subject_ur: 'Subject name (Urdu, optional)',
@@ -2563,6 +2581,15 @@ export const stringsUr: Record<StringKey, string> = {
   su_class_name_en: 'کلاس کا نام (انگریزی)',
   su_class_name_ur: 'کلاس کا نام (اردو)',
   su_subjects_heading: 'اس کلاس کے مضامین (جتنے چاہیں شامل کریں)',
+  ac_edit_btn: 'اکاؤنٹ میں ترمیم',
+  ac_edit_title: 'اکاؤنٹ میں ترمیم',
+  ac_username: 'یوزر نیم (لاگ ان آئی ڈی)',
+  ac_new_password: 'نیا پاس ورڈ',
+  ac_password_hint: 'موجودہ پاس ورڈ رکھنے کے لیے خالی چھوڑیں',
+  ac_parent_heading: 'اس طالب علم سے منسلک والدین کے اکاؤنٹ',
+  ac_parent_none: 'ابھی کوئی والدین اکاؤنٹ منسلک نہیں۔',
+  ac_parent_unlink: 'منسلکی ختم کریں',
+  ac_parent_link_search: 'منسلک کرنے کے لیے والدین اکاؤنٹ تلاش کریں (نام، آئی ڈی یا فون)',
   su_sections_heading: 'سیکشن کے نام (یہاں تبدیل کریں)',
   su_subject_en: 'مضمون کا نام (انگریزی)',
   su_subject_ur: 'مضمون کا نام (اردو، اختیاری)',
