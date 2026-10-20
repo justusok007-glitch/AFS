@@ -53,7 +53,7 @@ export function parseDailyFile(text: string): { rows: ImportPaymentRow[]; fatal:
       admissionNo: g(iNo),
       name: g(iName),
       campus: g(iCampus),
-      feeFor: /arrear/i.test(f) ? 'ARREARS' : monthOf(f) ?? '',
+      feeFor: /arrear/i.test(f) ? 'ARREARS' : /admission/i.test(f) ? 'ADMISSION' : /annual/i.test(f) ? 'ANNUAL' : monthOf(f) ?? '',
       amount: money(g(iAmt)),
     } as ImportPaymentRow;
   });
@@ -85,6 +85,7 @@ export const DailyFeeImport: React.FC<{ actor: Profile; onClose: () => void }> =
   };
 
   const good = checked?.filter((x) => x.ok) ?? [];
+  const receiptCount = new Set(good.map((x) => x.receiptNo.toLowerCase())).size;
   const failed = checked?.filter((x) => !x.ok) ?? [];
   const total = good.reduce((s, x) => s + x.amount, 0);
 
@@ -96,7 +97,7 @@ export const DailyFeeImport: React.FC<{ actor: Profile; onClose: () => void }> =
     const r = await AppModule.feeRepository.importDailyPayments(rows.filter((x) => okLines.has(x.line)), actor, false);
     setBusy(false);
     if (!r.ok) return setErr(r.error.message);
-    setDone(r.data.filter((x) => x.ok).length);
+    setDone(new Set(r.data.filter((x) => x.ok).map((x) => x.receiptNo.toLowerCase())).size);
     setRows(null);
     setChecked(null);
   };
@@ -128,15 +129,15 @@ export const DailyFeeImport: React.FC<{ actor: Profile; onClose: () => void }> =
       {checked && (
         <div className="space-y-1.5 text-xs">
           <div className="font-semibold text-[#2E9E5B]">
-            <span dir="ltr">{good.length}</span> {t('st_csv_valid')} · <span dir="ltr">Rs {total.toLocaleString('en-US')}</span>
+            <span dir="ltr">{receiptCount}</span> {t('st_csv_valid')} · <span dir="ltr">Rs {total.toLocaleString('en-US')}</span>
           </div>
           {failed.length > 0 && (
-            <div className="font-semibold text-[#D64545]"><span dir="ltr">{failed.length}</span> {t('st_csv_invalid')}</div>
+            <div className="font-semibold text-[#D64545]"><span dir="ltr">{new Set(failed.map((x) => x.receiptNo.toLowerCase())).size}</span> {t('st_csv_invalid')}</div>
           )}
-          {failed.slice(0, 15).map((x) => (
+          {failed.filter((x, i, a) => a.findIndex((y) => y.receiptNo.toLowerCase() === x.receiptNo.toLowerCase()) === i).slice(0, 15).map((x) => (
             <div key={`f${x.line}`} dir="ltr" className="text-[11px] text-[#D64545] text-start">{t('st_csv_row')} {x.line} ({x.receiptNo} · {x.studentName}): {x.error}</div>
           ))}
-          {good.slice(0, 25).map((x) => (
+          {good.filter((x) => x.warnings.length > 0).slice(0, 25).map((x) => (
             <div key={`g${x.line}`} dir="ltr" className="text-[11px] text-[#6B7385] text-start">{x.receiptNo} · {x.studentName}: {x.warnings.join(' ')}</div>
           ))}
           {good.length === 0 && <p className="text-[#6B7385]">{t('st_csv_none')}</p>}
@@ -146,7 +147,7 @@ export const DailyFeeImport: React.FC<{ actor: Profile; onClose: () => void }> =
       {err && <p className="text-xs text-[#D64545]">{err}</p>}
       <div className="grid grid-cols-2 gap-2">
         <PrimaryButton text={t('ad_cred_done')} variant="outline" onClick={onClose} />
-        <PrimaryButton text={`${t('st_bulk_import')}${good.length ? ` (${good.length})` : ''}`} variant="orange" loading={busy} disabled={good.length === 0 || checking} onClick={() => void doImport()} />
+        <PrimaryButton text={`${t('st_bulk_import')}${good.length ? ` (${receiptCount})` : ''}`} variant="orange" loading={busy} disabled={good.length === 0 || checking} onClick={() => void doImport()} />
       </div>
     </SchoolCard>
   );

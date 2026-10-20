@@ -2283,96 +2283,163 @@ export class FakeFeeRepository implements FeeRepository {
     db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
     let allocSeq = db.paymentAllocations.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0);
     const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
-    // oldest payment first, so partial payments fall in the order they were really made
-    const ordered = [...rows].sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.line - b.line);
-    for (const row of ordered) {
-      const res = (ok: boolean, error: string | null, warnings: string[], studentName = row.name): ImportPaymentResult => ({
-        line: row.line, ok, error, warnings, studentName, admissionNo: row.admissionNo, receiptNo: row.receiptNo, amount: row.amount ?? 0,
-      });
-      const bad = (m: string) => results.push(res(false, m, []));
-      if (!row.receiptNo.trim()) { bad('Receipt No is empty.'); continue; }
-      if (seenReceipts.has(row.receiptNo.trim().toLowerCase())) { bad(`Receipt ${row.receiptNo} is already recorded (or appears twice in the file).`); continue; }
-      if (!row.date) { bad('Payment Date is missing or not a valid date (use 02-Oct-2026).'); continue; }
-      if (!row.amount || row.amount <= 0) { bad('Amount is missing or zero.'); continue; }
-      if (!row.feeFor) { bad('Fee For must be a month (e.g. Oct-2026) or Previous Arrears.'); continue; }
-      const no = row.admissionNo.trim().toLowerCase();
-      if (!no) { bad('Adm No is empty.'); continue; }
-      const campus = row.campus.trim() ? findCampusByText(db, row.campus) : undefined;
-      const matches = db.students.filter((s) => s.admissionNo.toLowerCase() === no && (!campus || s.campusId === campus.id));
-      if (matches.length === 0) { bad(`No student with Adm No ${row.admissionNo}.`); continue; }
-      if (matches.length > 1) { bad(`Adm No ${row.admissionNo} exists in both campuses - add the Campus column.`); continue; }
+    const nextVoucherNo = (pre: string) => {
+      const max = db.feeVouchers.filter((v) => v.voucherNo.startsWith(pre)).reduce((m, v) => Math.max(m, Number(v.voucherNo.slice(2)) || 0), 0);
+      return `${pre}${String(max + 1).padStart(4, '0')}`;
+    };
+
+    // One receipt may be written on several lines (monthly fee + arrears ...): they are one payment.
+    const groups = new Map<string, ImportPaymentRow[]>();
+    rows.forEach((r) => {
+      const key = r.receiptNo.trim().toLowerCase() || `__line${r.line}`;
+      groups.set(key, [...(groups.get(key) ?? []), r]);
+    });
+    const ordered = [...groups.values()].sort((x, y) => (x[0].date || '').localeCompare(y[0].date || '') || x[0].line - y[0].line);
+
+    for (const lines of ordered) {
+      const head = lines[0];
+      const out = (ok: boolean, error: string | null, warnings: string[], studentName: string) =>
+        lines.forEach((r, i) =>
+          results.push({
+            line: r.line, ok, error, warnings: i === 0 ? warnings : [], studentName, admissionNo: r.admissionNo,
+            receiptNo: r.receiptNo, amount: r.amount ?? 0,
+          })
+        );
+      const bad = (m: string) => out(false, m, [], head.name);
+      if (!head.receiptNo.trim()) { bad('Receipt No is empty.'); continue; }
+      if (seenReceipts.has(head.receiptNo.trim().toLowerCase())) { bad(`Receipt ${head.receiptNo} is already recorded.`); continue; }
+      const lineErr = lines.find((r) => !r.date || !r.amount || r.amount <= 0 || !r.feeFor || !r.admissionNo.trim());
+      if (lineErr) {
+        bad(!lineErr.date ? 'Payment Date is missing or not a valid date (use 02-Oct-2026).'
+          : !lineErr.amount || lineErr.amount <= 0 ? 'Amount is missing or zero.'
+          : !lineErr.feeFor ? 'Fee For must be a month (e.g. Oct-2026), Previous Arrears, Admission Fee or Annual Charges.'
+          : 'Adm No is empty.');
+        continue;
+      }
+      if (lines.some((r) => r.admissionNo.trim().toLowerCase() !== head.admissionNo.trim().toLowerCase() || r.date !== head.date || r.campus.trim().toLowerCase() !== head.campus.trim().toLowerCase())) {
+        bad(`Receipt ${head.receiptNo} is used for different students or dates. One receipt number must belong to one student and one day.`);
+        continue;
+      }
+      const campus = head.campus.trim() ? findCampusByText(db, head.campus) : undefined;
+      const no = head.admissionNo.trim().toLowerCase();
+      const matches = db.students.filter((st) => st.admissionNo.toLowerCase() === no && (!campus || st.campusId === campus.id));
+      if (matches.length === 0) { bad(`No student with Adm No ${head.admissionNo}.`); continue; }
+      if (matches.length > 1) { bad(`Adm No ${head.admissionNo} exists in both campuses - add the Campus column.`); continue; }
       const student = matches[0];
       const warnings: string[] = [];
-      if (row.name.trim() && norm(row.name) !== norm(student.name)) warnings.push(`Name in file "${row.name}" differs from "${student.name}".`);
+      if (head.name.trim() && norm(head.name) !== norm(student.name)) warnings.push(`Name in file "${head.name}" differs from "${student.name}".`);
 
-      // open items of this student, oldest voucher first
-      const vouchers = db.feeVouchers.filter((v) => v.studentId === student.id).sort((a, b) => a.billingMonth.localeCompare(b.billingMonth));
+      const realVouchers = db.feeVouchers.filter((v) => v.studentId === student.id);
+      if (realVouchers.length === 0) { bad('This student has no opening balance yet. Upload the opening balance sheet first.'); continue; }
+      // work on copies; only saved when every line of the receipt fits
+      const work: FeeVoucher[] = structuredClone(realVouchers).sort((x, y) => x.billingMonth.localeCompare(y.billingMonth));
+      const pre = student.campusId === 'campus_g' ? 'G-' : 'B-';
+      const created: FeeVoucher[] = [];
+      const allocs = new Map<string, number>(); // voucherId|feeHeadId -> amount
+      const addAlloc = (v: FeeVoucher, feeHeadId: string, amount: number) =>
+        allocs.set(`${v.id}|${feeHeadId}`, (allocs.get(`${v.id}|${feeHeadId}`) ?? 0) + amount);
       type Slot = { v: FeeVoucher; item: FeeVoucherItem; open: number };
-      const slots: Slot[] = [];
-      vouchers.forEach((v) => v.items.forEach((item) => {
-        const open = item.amount - (item.waivedAmount ?? 0) - (item.paidAmount ?? 0);
-        if (open > 0) slots.push({ v, item, open });
-      }));
-      const totalOpen = slots.reduce((s, x) => s + x.open, 0);
-      if (vouchers.length === 0) { bad('This student has no opening balance yet. Upload the opening balance sheet first.'); continue; }
-      if (row.amount > totalOpen) { bad(`Amount ${row.amount} is more than the student owes (${totalOpen}).`); continue; }
+      const openSlots = (): Slot[] =>
+        work.flatMap((v) => v.items.map((item) => ({ v, item, open: item.amount - (item.waivedAmount ?? 0) - (item.paidAmount ?? 0) }))).filter((x) => x.open > 0);
+      const pay = (x: Slot, amt: number) => { x.item.paidAmount = (x.item.paidAmount ?? 0) + amt; addAlloc(x.v, x.item.feeHeadId, amt); };
+      const newPaidItem = (v: FeeVoucher, feeHeadId: string, description: string, amount: number) => {
+        v.items.push({ feeHeadId, description, amount, waivedAmount: 0, paidAmount: amount });
+        addAlloc(v, feeHeadId, amount);
+      };
+      const summary: string[] = [];
+      let failed: string | null = null;
 
-      const isMonthly = (x: Slot) => x.item.feeHeadId === 'fh_tuition';
-      const isArrears = (x: Slot) => x.item.feeHeadId === 'fh_arrears';
-      const first: Slot[] = row.feeFor === 'ARREARS' ? [] : slots.filter((x) => x.v.billingMonth === row.feeFor && isMonthly(x));
-      if (row.feeFor !== 'ARREARS' && first.length === 0) {
-        warnings.push(`No unpaid ${row.feeFor} monthly fee found; the amount went to the oldest dues.`);
+      for (const line of lines) {
+        let left = line.amount ?? 0;
+        const label = line.feeFor === 'ARREARS' ? 'Previous Arrears' : line.feeFor === 'ADMISSION' ? 'Admission Fee' : line.feeFor === 'ANNUAL' ? 'Annual Charges' : line.feeFor;
+        const isMonth = /^\d{4}-\d{2}$/.test(line.feeFor);
+        const takeFrom = (slots: Slot[]) => {
+          for (const x of slots) {
+            if (left <= 0) break;
+            const take = Math.min(left, x.open);
+            pay(x, take);
+            left -= take;
+          }
+        };
+        const byAge = (x: Slot, y: Slot) => x.v.billingMonth.localeCompare(y.v.billingMonth) || (priority[x.item.feeHeadId] ?? 99) - (priority[y.item.feeHeadId] ?? 99);
+
+        if (isMonth && !work.some((v) => v.billingMonth === line.feeFor) && line.feeFor > work[work.length - 1].billingMonth) {
+          // a month that is not billed yet: the fee is paid in advance
+          const no2 = nextVoucherNo(pre);
+          const v: FeeVoucher = {
+            id: `vch_${no2.toLowerCase()}`, voucherNo: no2, studentId: student.id, campusId: student.campusId, billingMonth: line.feeFor,
+            issueDate: `${line.feeFor}-01`, dueDate: `${line.feeFor}-10`, items: [], status: VoucherStatus.PAID,
+          };
+          db.feeVouchers.push(v); // reserves the number while this file is processed
+          created.push(v);
+          work.push(v);
+          newPaidItem(v, 'fh_tuition', `Monthly Tuition Fee (${line.feeFor})`, left);
+          summary.push(`${label}: Rs ${left} paid in advance`);
+          left = 0;
+        } else if (isMonth) {
+          const m = openSlots().filter((x) => x.v.billingMonth === line.feeFor && x.item.feeHeadId === 'fh_tuition');
+          const before = left;
+          takeFrom(m);
+          const toMonth = before - left;
+          if (m.length === 0) warnings.push(`No unpaid ${line.feeFor} monthly fee found; ${label} went to the oldest dues.`);
+          takeFrom(openSlots().filter((x) => x.item.feeHeadId === 'fh_arrears').sort(byAge));
+          const toArrears = before - toMonth - left;
+          takeFrom(openSlots().sort(byAge));
+          summary.push(`${label}: Rs ${toMonth} monthly fee` + (toArrears ? `, Rs ${toArrears} arrears` : ''));
+        } else if (line.feeFor === 'ARREARS') {
+          const before = left;
+          takeFrom(openSlots().filter((x) => x.item.feeHeadId === 'fh_arrears').sort(byAge));
+          takeFrom(openSlots().sort(byAge));
+          summary.push(`${label}: Rs ${before - left}`);
+        } else {
+          const head2 = line.feeFor === 'ADMISSION' ? 'fh_admission' : 'fh_annual';
+          takeFrom(openSlots().filter((x) => x.item.feeHeadId === head2).sort(byAge));
+          if (left > 0) {
+            newPaidItem(work[work.length - 1], head2, label, left); // a charge paid on the spot
+            left = 0;
+          }
+          summary.push(`${label}: Rs ${line.amount}`);
+        }
+        if (left > 0) { failed = `${label}: Rs ${left} is more than the student owes.`; break; }
       }
-      const rest = (list: Slot[]) => list.filter((x) => !first.includes(x));
-      const order = [
-        ...first,
-        ...rest(slots.filter(isArrears)),
-        ...rest(slots.filter((x) => !isArrears(x))).sort(
-          (a, b) => a.v.billingMonth.localeCompare(b.v.billingMonth) || (priority[a.item.feeHeadId] ?? 99) - (priority[b.item.feeHeadId] ?? 99)
-        ),
-      ];
-      const paymentId = `pay_${row.receiptNo.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${student.id}`;
-      let left = row.amount;
-      let toMonth = 0;
-      let toOther = 0;
-      const touched = new Set<string>();
-      const allocs: { voucherId: string; feeHeadId: string; amount: number }[] = [];
-      for (const x of order) {
-        if (left <= 0) break;
-        const take = Math.min(left, x.open);
-        x.item.paidAmount = (x.item.paidAmount ?? 0) + take;
-        left -= take;
-        if (first.includes(x)) toMonth += take; else toOther += take;
-        touched.add(x.v.id);
-        allocs.push({ voucherId: x.v.id, feeHeadId: x.item.feeHeadId, amount: take });
+
+      if (failed) {
+        created.forEach((v) => { db.feeVouchers = db.feeVouchers.filter((x) => x.id !== v.id); });
+        bad(failed);
+        continue;
       }
-      vouchers.filter((v) => touched.has(v.id)).forEach((v) => {
-        const total = v.items.reduce((s, i) => s + i.amount - (i.waivedAmount ?? 0), 0);
-        const paid = v.items.reduce((s, i) => s + (i.paidAmount ?? 0), 0);
+      // save
+      work.forEach((v) => {
+        const total = v.items.reduce((sum, i) => sum + i.amount - (i.waivedAmount ?? 0), 0);
+        const paid = v.items.reduce((sum, i) => sum + (i.paidAmount ?? 0), 0);
         v.status = paid >= total ? VoucherStatus.PAID : paid > 0 ? VoucherStatus.PARTIAL : VoucherStatus.UNPAID;
+        const at = db.feeVouchers.findIndex((x) => x.id === v.id);
+        if (at >= 0) db.feeVouchers[at] = v; else db.feeVouchers.push(v);
       });
+      const amount = lines.reduce((sum, r) => sum + (r.amount ?? 0), 0);
+      const paymentId = `pay_${head.receiptNo.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${student.id}`;
       db.feePayments.push({
-        id: paymentId, receiptNo: row.receiptNo.trim(), studentId: student.id, amount: row.amount, paidOn: row.date,
+        id: paymentId, receiptNo: head.receiptNo.trim(), studentId: student.id, amount, paidOn: head.date,
         method: PaymentMethod.CASH, receivedBy: actor.id, isVoid: false, reference: null,
-        remarks: `Daily fee file (${row.feeFor === 'ARREARS' ? 'Previous Arrears' : row.feeFor})`,
+        remarks: `Daily fee file (${lines.map((r) => (r.feeFor === 'ARREARS' ? 'Previous Arrears' : r.feeFor)).join(' + ')})`,
       });
-      allocs.forEach((a) => {
+      allocs.forEach((amt, key) => {
+        const [voucherId, feeHeadId] = key.split('|');
         allocSeq += 1;
-        db.paymentAllocations.push({ id: `alloc_day_${allocSeq}`, paymentId, voucherId: a.voucherId, feeHeadId: a.feeHeadId, allocatedAmount: a.amount });
+        db.paymentAllocations.push({ id: `alloc_day_${allocSeq}`, paymentId, voucherId, feeHeadId, allocatedAmount: amt });
       });
-      seenReceipts.add(row.receiptNo.trim().toLowerCase());
-      warnings.push(`Rs ${toMonth} to the monthly fee, Rs ${toOther} to arrears/other dues.`);
-      results.push(res(true, null, warnings, student.name));
+      seenReceipts.add(head.receiptNo.trim().toLowerCase());
+      out(true, null, [...warnings, summary.join(' · ')], student.name);
     }
     if (!dryRun) {
       db.auditLogs.unshift({
         id: `aud_${Date.now()}`, action: 'IMPORT_PAYMENTS', tableName: 'fee_payments', recordId: 'bulk',
-        oldValue: null, newValue: `${results.filter((r) => r.ok).length} payments`, reason: 'Daily fee file imported',
+        oldValue: null, newValue: `${results.filter((r) => r.ok).length} payment lines`, reason: 'Daily fee file imported',
         changedBy: actor.id, changedAt: new Date().toISOString(),
       });
       saveLocalDatabase(db);
     }
-    return AppResult.success(results.sort((a, b) => a.line - b.line));
+    return AppResult.success(results.sort((x, y) => x.line - y.line));
   }
 
   async getFeeHeads(): Promise<AppResult<FeeHead[]>> {
