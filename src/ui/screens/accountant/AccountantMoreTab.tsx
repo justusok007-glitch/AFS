@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, LogOut, Settings } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { formatRupees } from '../../../domain/formatters/SchoolFormatters';
+import { DailyFeeImport } from '../admin/DailyFeeImport';
 import {
   ClassFeeStructure,
+  Profile,
   ConcessionType,
   Student,
   StudentConcession,
@@ -23,10 +25,12 @@ import {
 } from './AccountantShared';
 
 export const AccountantMoreTab: React.FC<{
+  actor: Profile;
   lookups: AccountantLookups;
   onOpenSettings: () => void;
   onLogout: () => void;
-}> = ({ lookups, onOpenSettings, onLogout }) => {
+}> = ({ actor, lookups, onOpenSettings, onLogout }) => {
+  const [dailyOpen, setDailyOpen] = useState(false);
   const { stringResource: t, language } = useStringResource();
   const [structures, setStructures] = useState<ClassFeeStructure[]>([]);
   const [concessions, setConcessions] = useState<{ student: Student; items: StudentConcession[] }[]>([]);
@@ -63,9 +67,14 @@ export const AccountantMoreTab: React.FC<{
     return `${t(`acc_concession_${c.type}` as StringKey)}: ${val}`;
   };
 
+  if (dailyOpen) {
+    return <DailyFeeImport actor={actor} onClose={() => { lookups.reload(); setDailyOpen(false); }} />;
+  }
+
   return (
     <div className="space-y-3">
       <SchoolCard className="space-y-2.5">
+        <PrimaryButton text={t('daily_imp_btn')} variant="orange" onClick={() => setDailyOpen(true)} />
         <PrimaryButton text={t('settings_open_from_more')} variant="navy" onClick={onOpenSettings} icon={<Settings className="w-4 h-4 text-[#F28C28]" />} />
         <PrimaryButton text={t('logout_button')} variant="outline" onClick={onLogout} icon={<LogOut className="w-4 h-4 text-[#14284B]" />} />
       </SchoolCard>

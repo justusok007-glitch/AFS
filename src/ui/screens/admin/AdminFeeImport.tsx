@@ -11,18 +11,20 @@ const norm = (h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, '');
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 /** "26-Apr", "Apr-26" or "2026-04" -> "2026-04"; anything else -> null. */
-function monthOf(h: string): string | null {
+export function monthOf(h: string): string | null {
   const t = h.trim();
   let m = /^(\d{2})[-\s/]([A-Za-z]{3})[A-Za-z]*$/.exec(t);
   if (m) return MONTHS.includes(m[2].toLowerCase()) ? `20${m[1]}-${String(MONTHS.indexOf(m[2].toLowerCase()) + 1).padStart(2, '0')}` : null;
   m = /^([A-Za-z]{3})[A-Za-z]*[-\s/](\d{2})$/.exec(t);
   if (m) return MONTHS.includes(m[1].toLowerCase()) ? `20${m[2]}-${String(MONTHS.indexOf(m[1].toLowerCase()) + 1).padStart(2, '0')}` : null;
+  m = /^([A-Za-z]{3})[A-Za-z]*[-\s/](\d{4})$/.exec(t);
+  if (m) return MONTHS.includes(m[1].toLowerCase()) ? `${m[2]}-${String(MONTHS.indexOf(m[1].toLowerCase()) + 1).padStart(2, '0')}` : null;
   m = /^(\d{4})-(\d{2})$/.exec(t);
   return m ? `${m[1]}-${m[2]}` : null;
 }
 
 /** "2,300" -> 2300, "—" or blank -> undefined. */
-function money(v: string | undefined): number | undefined {
+export function money(v: string | undefined): number | undefined {
   const s = (v ?? '').replace(/,/g, '').replace(/[^\d.]/g, '');
   return s === '' ? undefined : Math.round(Number(s));
 }
@@ -33,9 +35,57 @@ export const FEE_FILE_HEADER = [
   'Total Due', 'Total Paid', 'Arrears',
 ];
 
+export const OPENING_HEADER = [
+  'Adm No', 'Student Name', 'Class', 'Campus', 'Billing Month', 'Monthly Fee', 'Previous Arrears',
+  'Admission Fee Due', 'Annual Charges Due', 'Total Due',
+];
+
+/** Opening balance sheet: one line per student, balance as it stands on the day the app starts. */
+function parseOpeningFile(lines: string[]): { rows: ImportFeeRow[]; fatal: boolean } {
+  const raw = splitCsvLine(lines[0]);
+  const head = raw.map(norm);
+  const find = (...n: string[]) => head.findIndex((h) => n.includes(h));
+  const iNo = find('admno', 'admissionno', 'admissionnumber');
+  const iName = find('studentname', 'name');
+  const iCampus = find('campus');
+  const iMonth = find('billingmonth');
+  const iMonthly = find('monthlyfee', 'monthly');
+  const iPrev = find('previousarrears', 'prevarrears');
+  const iAdm = find('admissionfeedue', 'admissionfee');
+  const iAnn = find('annualchargesdue', 'annualcharges');
+  const iDue = find('totaldue');
+  if (iNo < 0 || iMonth < 0 || iMonthly < 0) return { rows: [], fatal: true };
+  const rows: ImportFeeRow[] = lines.slice(1).map((ln, k) => {
+    const c = splitCsvLine(ln);
+    const g = (i: number) => (i >= 0 ? (c[i] ?? '').trim() : '');
+    const month = monthOf(g(iMonth)) ?? '';
+    const monthly = money(g(iMonthly)) ?? 0;
+    const y = Number(month.slice(0, 4));
+    const mo = Number(month.slice(5));
+    const arrearsMonth = !month ? '' : mo === 1 ? `${y - 1}-12` : `${y}-${String(mo - 1).padStart(2, '0')}`;
+    return {
+      line: k + 2,
+      admissionNo: g(iNo),
+      name: g(iName),
+      campus: g(iCampus),
+      monthlyFee: monthly,
+      prevArrears: money(g(iPrev)) ?? 0,
+      admissionFee: money(g(iAdm)) ?? 0,
+      annualCharges: money(g(iAnn)) ?? 0,
+      arrearsMonth: arrearsMonth || '2000-01',
+      months: month && monthly > 0 ? [{ month, amount: monthly }] : [],
+      totalDue: money(g(iDue)),
+      totalPaid: 0,
+      strict: true,
+    };
+  });
+  return { rows, fatal: false };
+}
+
 export function parseFeeFile(text: string): { rows: ImportFeeRow[]; fatal: boolean } {
   const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() && !/^[,;\s]*$/.test(l));
   if (lines.length < 2) return { rows: [], fatal: true };
+  if (splitCsvLine(lines[0]).map(norm).includes('billingmonth')) return parseOpeningFile(lines);
   const raw = splitCsvLine(lines[0]);
   const head = raw.map(norm);
   const find = (...n: string[]) => head.findIndex((h) => n.includes(h));
@@ -132,9 +182,10 @@ export const AdminFeeImport: React.FC<{ admin: Profile; onClose: () => void }> =
           variant="outline"
           icon={<Download className="w-4 h-4 text-[#F28C28]" />}
           onClick={() =>
-            downloadCsv('fees-template.csv', [
-              FEE_FILE_HEADER,
-              ['1001', 'Ali Raza', '6', 'Active', 'Boys', '2,000', '0', '—', '—', '2,000', '2,000', '2,000', '', '', '', '', '', '', '', '', '', '6,000', '4,000', '2,000'],
+            downloadCsv('opening-balance-template.csv', [
+              OPENING_HEADER,
+              ['1001', 'Ali Raza', '6', 'Boys', 'Oct-2026', '2000', '6800', '0', '0', '8800'],
+              ['1002', 'Sara Khan', '7', 'Boys', 'Oct-2026', '2300', '0', '4000', '2000', '8300'],
             ])
           }
         />

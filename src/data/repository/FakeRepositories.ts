@@ -16,6 +16,8 @@ import {
   ImportResultResult,
   ImportResultRow,
   ImportFeeRow,
+  ImportPaymentResult,
+  ImportPaymentRow,
   ImportFileRow,
   ImportClassRow,
   ImportClassResult,
@@ -2132,6 +2134,16 @@ export class FakeFeeRepository implements FeeRepository {
       const warnings: string[] = [];
       const billed = row.months.reduce((s, m) => s + m.amount, 0);
       const colSum = row.prevArrears + row.admissionFee + row.annualCharges + billed;
+      if (row.strict) {
+        if (row.totalDue !== undefined && row.totalDue !== colSum) {
+          byLine.set(row.line, fail(row, `Total Due ${row.totalDue} does not match Monthly Fee + Previous Arrears + Admission + Annual = ${colSum}. Correct the sheet.`));
+          continue;
+        }
+        if (db.feePayments.some((p) => p.studentId === student.id && !p.isVoid)) {
+          byLine.set(row.line, fail(row, 'This student already has payments recorded, so the opening balance cannot be applied again.'));
+          continue;
+        }
+      }
       // The accountant's own Total Due / Arrears figures are the master record; the columns only give the breakdown.
       let due = colSum;
       if (row.totalDue !== undefined) due = row.totalDue;
@@ -2252,6 +2264,115 @@ export class FakeFeeRepository implements FeeRepository {
     }
     rows.forEach((r) => { const x = byLine.get(r.line); if (x) results.push(x); });
     return AppResult.success(results);
+  }
+
+  async importDailyPayments(
+    rows: ImportPaymentRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportPaymentResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN && actor.role !== Role.ACCOUNTANT) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin or Accountant can import fee payments.' });
+    }
+    const stored = getOrSeedLocalDatabase();
+    const db = dryRun ? structuredClone(stored) : stored;
+    const results: ImportPaymentResult[] = [];
+    const seenReceipts = new Set(db.feePayments.map((p) => p.receiptNo.toLowerCase()));
+    const priority: Record<string, number> = {};
+    db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
+    let allocSeq = db.paymentAllocations.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0);
+    const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+    // oldest payment first, so partial payments fall in the order they were really made
+    const ordered = [...rows].sort((a, b) => (a.date || '').localeCompare(b.date || '') || a.line - b.line);
+    for (const row of ordered) {
+      const res = (ok: boolean, error: string | null, warnings: string[], studentName = row.name): ImportPaymentResult => ({
+        line: row.line, ok, error, warnings, studentName, admissionNo: row.admissionNo, receiptNo: row.receiptNo, amount: row.amount ?? 0,
+      });
+      const bad = (m: string) => results.push(res(false, m, []));
+      if (!row.receiptNo.trim()) { bad('Receipt No is empty.'); continue; }
+      if (seenReceipts.has(row.receiptNo.trim().toLowerCase())) { bad(`Receipt ${row.receiptNo} is already recorded (or appears twice in the file).`); continue; }
+      if (!row.date) { bad('Payment Date is missing or not a valid date (use 02-Oct-2026).'); continue; }
+      if (!row.amount || row.amount <= 0) { bad('Amount is missing or zero.'); continue; }
+      if (!row.feeFor) { bad('Fee For must be a month (e.g. Oct-2026) or Previous Arrears.'); continue; }
+      const no = row.admissionNo.trim().toLowerCase();
+      if (!no) { bad('Adm No is empty.'); continue; }
+      const campus = row.campus.trim() ? findCampusByText(db, row.campus) : undefined;
+      const matches = db.students.filter((s) => s.admissionNo.toLowerCase() === no && (!campus || s.campusId === campus.id));
+      if (matches.length === 0) { bad(`No student with Adm No ${row.admissionNo}.`); continue; }
+      if (matches.length > 1) { bad(`Adm No ${row.admissionNo} exists in both campuses - add the Campus column.`); continue; }
+      const student = matches[0];
+      const warnings: string[] = [];
+      if (row.name.trim() && norm(row.name) !== norm(student.name)) warnings.push(`Name in file "${row.name}" differs from "${student.name}".`);
+
+      // open items of this student, oldest voucher first
+      const vouchers = db.feeVouchers.filter((v) => v.studentId === student.id).sort((a, b) => a.billingMonth.localeCompare(b.billingMonth));
+      type Slot = { v: FeeVoucher; item: FeeVoucherItem; open: number };
+      const slots: Slot[] = [];
+      vouchers.forEach((v) => v.items.forEach((item) => {
+        const open = item.amount - (item.waivedAmount ?? 0) - (item.paidAmount ?? 0);
+        if (open > 0) slots.push({ v, item, open });
+      }));
+      const totalOpen = slots.reduce((s, x) => s + x.open, 0);
+      if (vouchers.length === 0) { bad('This student has no opening balance yet. Upload the opening balance sheet first.'); continue; }
+      if (row.amount > totalOpen) { bad(`Amount ${row.amount} is more than the student owes (${totalOpen}).`); continue; }
+
+      const isMonthly = (x: Slot) => x.item.feeHeadId === 'fh_tuition';
+      const isArrears = (x: Slot) => x.item.feeHeadId === 'fh_arrears';
+      const first: Slot[] = row.feeFor === 'ARREARS' ? [] : slots.filter((x) => x.v.billingMonth === row.feeFor && isMonthly(x));
+      if (row.feeFor !== 'ARREARS' && first.length === 0) {
+        warnings.push(`No unpaid ${row.feeFor} monthly fee found; the amount went to the oldest dues.`);
+      }
+      const rest = (list: Slot[]) => list.filter((x) => !first.includes(x));
+      const order = [
+        ...first,
+        ...rest(slots.filter(isArrears)),
+        ...rest(slots.filter((x) => !isArrears(x))).sort(
+          (a, b) => a.v.billingMonth.localeCompare(b.v.billingMonth) || (priority[a.item.feeHeadId] ?? 99) - (priority[b.item.feeHeadId] ?? 99)
+        ),
+      ];
+      const paymentId = `pay_${row.receiptNo.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${student.id}`;
+      let left = row.amount;
+      let toMonth = 0;
+      let toOther = 0;
+      const touched = new Set<string>();
+      const allocs: { voucherId: string; feeHeadId: string; amount: number }[] = [];
+      for (const x of order) {
+        if (left <= 0) break;
+        const take = Math.min(left, x.open);
+        x.item.paidAmount = (x.item.paidAmount ?? 0) + take;
+        left -= take;
+        if (first.includes(x)) toMonth += take; else toOther += take;
+        touched.add(x.v.id);
+        allocs.push({ voucherId: x.v.id, feeHeadId: x.item.feeHeadId, amount: take });
+      }
+      vouchers.filter((v) => touched.has(v.id)).forEach((v) => {
+        const total = v.items.reduce((s, i) => s + i.amount - (i.waivedAmount ?? 0), 0);
+        const paid = v.items.reduce((s, i) => s + (i.paidAmount ?? 0), 0);
+        v.status = paid >= total ? VoucherStatus.PAID : paid > 0 ? VoucherStatus.PARTIAL : VoucherStatus.UNPAID;
+      });
+      db.feePayments.push({
+        id: paymentId, receiptNo: row.receiptNo.trim(), studentId: student.id, amount: row.amount, paidOn: row.date,
+        method: PaymentMethod.CASH, receivedBy: actor.id, isVoid: false, reference: null,
+        remarks: `Daily fee file (${row.feeFor === 'ARREARS' ? 'Previous Arrears' : row.feeFor})`,
+      });
+      allocs.forEach((a) => {
+        allocSeq += 1;
+        db.paymentAllocations.push({ id: `alloc_day_${allocSeq}`, paymentId, voucherId: a.voucherId, feeHeadId: a.feeHeadId, allocatedAmount: a.amount });
+      });
+      seenReceipts.add(row.receiptNo.trim().toLowerCase());
+      warnings.push(`Rs ${toMonth} to the monthly fee, Rs ${toOther} to arrears/other dues.`);
+      results.push(res(true, null, warnings, student.name));
+    }
+    if (!dryRun) {
+      db.auditLogs.unshift({
+        id: `aud_${Date.now()}`, action: 'IMPORT_PAYMENTS', tableName: 'fee_payments', recordId: 'bulk',
+        oldValue: null, newValue: `${results.filter((r) => r.ok).length} payments`, reason: 'Daily fee file imported',
+        changedBy: actor.id, changedAt: new Date().toISOString(),
+      });
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(results.sort((a, b) => a.line - b.line));
   }
 
   async getFeeHeads(): Promise<AppResult<FeeHead[]>> {

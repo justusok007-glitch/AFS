@@ -70,6 +70,7 @@ export const AccountantRoot: React.FC<AccountantRootProps> = ({
     case 'more':
       return (
         <AccountantMoreTab
+          actor={accountant}
           lookups={lookups}
           onOpenSettings={onOpenSettings}
           onLogout={onLogout}

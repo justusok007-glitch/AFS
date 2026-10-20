@@ -339,6 +339,33 @@ export interface ImportFeeRow {
   totalDue?: number;
   totalPaid: number;
   arrears?: number;
+  /** Opening-balance sheet: Total Due must equal the columns, and students who already have payments are refused. */
+  strict?: boolean;
+}
+
+/** One line of the daily fee entry sheet. */
+export interface ImportPaymentRow {
+  line: number;
+  receiptNo: string;
+  /** yyyy-mm-dd, '' when missing or unreadable. */
+  date: string;
+  admissionNo: string;
+  name: string;
+  campus: string;
+  /** "Oct-2026" -> "2026-10", "Previous Arrears" -> 'ARREARS', '' when missing. */
+  feeFor: string;
+  amount?: number;
+}
+
+export interface ImportPaymentResult {
+  line: number;
+  ok: boolean;
+  error: string | null;
+  warnings: string[];
+  studentName: string;
+  admissionNo: string;
+  receiptNo: string;
+  amount: number;
 }
 
 export interface ImportFeeResult {

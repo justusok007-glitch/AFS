@@ -32,6 +32,8 @@ import {
   ImportResultResult,
   ImportResultRow,
   ImportFeeRow,
+  ImportPaymentResult,
+  ImportPaymentRow,
   ImportStudentResult,
   AttendanceReportFilter,
   FeeCollectionReport,
@@ -230,6 +232,16 @@ export interface FeeRepository {
     actor: Profile,
     dryRun: boolean
   ): Promise<AppResult<ImportFeeResult[]>>;
+
+  /**
+   * Records the daily fee sheet as payments. Each amount first clears the monthly fee it is for,
+   * the rest goes to previous arrears, then to any other open dues. Admin or Accountant. dryRun only checks.
+   */
+  importDailyPayments(
+    rows: ImportPaymentRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportPaymentResult[]>>;
 
   getFeeHeads(): Promise<AppResult<FeeHead[]>>;
   saveFeeHead(feeHead: FeeHead, actorId: string): Promise<AppResult<FeeHead>>;

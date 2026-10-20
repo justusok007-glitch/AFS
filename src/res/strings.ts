@@ -769,6 +769,11 @@ export type StringKey =
   | 'rm_type_delete'
   | 'rm_btn'
   | 'fee_imp_title'
+  | 'daily_imp_title'
+  | 'daily_imp_btn'
+  | 'daily_imp_hint'
+  | 'daily_imp_err_cols'
+  | 'daily_imp_done'
   | 'fee_imp_hint'
   | 'fee_imp_btn'
   | 'fee_imp_err_cols'
@@ -1760,10 +1765,15 @@ export const stringsEn: Record<StringKey, string> = {
   rm_clear: 'Clear',
   rm_type_delete: 'Type DELETE to confirm',
   rm_btn: 'Remove students / parents',
-  fee_imp_title: 'Import fee records (CSV)',
-  fee_imp_hint: 'Use the accountant\'s fee sheet: Adm No, Campus, Monthly Fee, Prev. Arrears, Admission Fee, Annual Charges, one column per month (e.g. 26-Apr), Total Due, Total Paid. Each student listed here gets their fee records replaced by the file; students not in the file are not touched.',
-  fee_imp_btn: 'Import fee records (CSV)',
-  fee_imp_err_cols: 'The file headings were not recognised. Download the template and use its headings (Adm No, month columns, Total Paid).',
+  fee_imp_title: 'Opening balance (CSV)',
+  daily_imp_title: 'Daily fee entries (CSV)',
+  daily_imp_btn: 'Daily fee entries (CSV)',
+  daily_imp_hint: 'One line per payment: Receipt No, Payment Date, Adm No, Fee For (a month like Oct-2026, or Previous Arrears) and Amount. Each amount first clears that month\'s monthly fee; anything extra goes to previous arrears. A receipt already recorded is skipped, so the same file can be uploaded again safely. The opening balance must be uploaded first.',
+  daily_imp_err_cols: 'The file headings were not recognised. Download the template (Receipt No, Payment Date, Adm No, Fee For, Amount).',
+  daily_imp_done: 'Payments recorded.',
+  fee_imp_hint: 'One line per student with what the student owes on the day you start: Adm No, Billing Month (e.g. Oct-2026), Monthly Fee, Previous Arrears, Admission Fee Due, Annual Charges Due and Total Due (the sum of those four). Use 0 where nothing is due. A student who already has payments is not changed. After this, record fees with the daily fee sheet.',
+  fee_imp_btn: 'Opening balance (CSV)',
+  fee_imp_err_cols: 'The file headings were not recognised. Download the template and use its headings (Adm No, Billing Month, Monthly Fee...).',
   fee_imp_done: 'Fee records imported.',
   cl_import_title: 'Import classes (CSV)',
   cl_import_hint: 'Columns: Campus (Boys/Girls), Class (en), Class (ur), Sections (separate with ;), Subjects (separate with ;, optional Urdu after |, e.g. English|انگریزی). Existing classes are kept; only new sections and subjects are added.',
@@ -2740,9 +2750,14 @@ export const stringsUr: Record<StringKey, string> = {
   rm_clear: 'صاف کریں',
   rm_type_delete: 'تصدیق کے لیے DELETE لکھیں',
   rm_btn: 'طلبہ / والدین ہٹائیں',
-  fee_imp_title: 'فیس ریکارڈ اپ لوڈ (CSV)',
-  fee_imp_hint: 'اکاؤنٹنٹ کی فیس شیٹ استعمال کریں۔ فائل میں موجود ہر طالب علم کا فیس ریکارڈ فائل کے مطابق بدل جائے گا، باقی طلبہ کو چھوا نہیں جائے گا۔',
-  fee_imp_btn: 'فیس ریکارڈ اپ لوڈ (CSV)',
+  fee_imp_title: 'ابتدائی بقایا (CSV)',
+  daily_imp_title: 'روزانہ فیس اندراج (CSV)',
+  daily_imp_btn: 'روزانہ فیس اندراج (CSV)',
+  daily_imp_hint: 'ہر ادائیگی کی ایک لائن: Receipt No، Payment Date، Adm No، Fee For (ماہ جیسے Oct-2026 یا Previous Arrears) اور Amount۔ رقم پہلے اس ماہ کی ماہانہ فیس میں لگتی ہے، بچی ہوئی رقم پچھلے بقایا میں جاتی ہے۔ جو رسید پہلے درج ہو چکی ہو وہ چھوڑ دی جاتی ہے، اس لیے وہی فائل دوبارہ اپ لوڈ ہو تو محفوظ ہے۔ پہلے ابتدائی بقایا اپ لوڈ ہونا ضروری ہے۔',
+  daily_imp_err_cols: 'فائل کے عنوانات نہیں پہچانے گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کریں۔',
+  daily_imp_done: 'ادائیگیاں درج ہو گئیں۔',
+  fee_imp_hint: 'ہر طالب علم کی ایک لائن: آغاز کے دن اس کے ذمے جو رقم ہے۔ Adm No، Billing Month (مثلاً Oct-2026)، Monthly Fee، Previous Arrears، Admission Fee Due، Annual Charges Due اور Total Due (ان چاروں کا مجموعہ)۔ جہاں کچھ نہیں وہاں 0 لکھیں۔ جس طالب علم کی ادائیگیاں پہلے سے درج ہوں اس میں تبدیلی نہیں ہوگی۔ اس کے بعد فیس روزانہ فیس شیٹ سے درج کریں۔',
+  fee_imp_btn: 'ابتدائی بقایا (CSV)',
   fee_imp_err_cols: 'فائل کے عنوانات نہیں پہچانے گئے۔ ٹیمپلیٹ ڈاؤن لوڈ کر کے اس کے عنوانات استعمال کریں۔',
   fee_imp_done: 'فیس ریکارڈ اپ لوڈ ہو گیا۔',
   cl_import_title: 'کلاسیں درآمد کریں (CSV)',
