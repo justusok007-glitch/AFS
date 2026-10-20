@@ -5,6 +5,7 @@ import {
   Message,
   Notice,
   AttendanceRecord,
+  AttendanceUnlock,
   AttendanceStatus,
   AttendanceSubmission,
   AuditLogEntry,
