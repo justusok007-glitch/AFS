@@ -220,7 +220,7 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
 function activeUnlockFor(db: LocalDatabaseSnapshot, sectionId: string, date: string): AttendanceUnlock | null {
   const now = Date.now();
   const hits = (db.attendanceUnlocks ?? []).filter(
-    (u) => u.date === date && (u.sectionId === null || u.sectionId === sectionId) && new Date(u.expiresAt).getTime() > now
+    (u) => u.date === date && (!u.sectionId || u.sectionId === sectionId) && new Date(u.expiresAt).getTime() > now
   );
   return hits.sort((a, b) => b.expiresAt.localeCompare(a.expiresAt))[0] ?? null;
 }
