@@ -494,3 +494,17 @@ export function markPulled() {
 }
 
 cloudHooks.onLocalSave = schedulePush;
+
+/** Light check used while an attendance screen is open: fetches only the open unlocks (works even if other edits are unsaved). */
+export async function fetchUnlocks(): Promise<void> {
+  const t = readTokens();
+  if (!t) return;
+  const spec = SPECS.find((s) => s.table === 'attendance_unlocks')!;
+  const rows = await selectAll<Row>('attendance_unlocks', `expires_at=gt.${encodeURIComponent(new Date().toISOString())}&order=expires_at.desc`);
+  const db = getOrSeedLocalDatabase();
+  const fresh = rows.map((r) => fromDbRow(spec, r) as unknown as NonNullable<LocalDatabaseSnapshot['attendanceUnlocks']>[number]);
+  const localOnly = (db.attendanceUnlocks ?? []).filter((u) => new Date(u.expiresAt).getTime() > Date.now() && !fresh.some((f) => f.id === u.id));
+  db.attendanceUnlocks = [...fresh, ...localOnly];
+  replaceLocalDatabase(db);
+  if (lastSynced) lastSynced.attendanceUnlocks = structuredClone(fresh);
+}

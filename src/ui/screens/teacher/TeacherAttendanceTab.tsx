@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
-import { refreshIfIdle } from '../../../data/supabase/sync';
+import { fetchUnlocks } from '../../../data/supabase/sync';
 import {
   checkWeeklyOffOrHoliday,
   subscribeToClock,
@@ -176,7 +176,7 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
     if (!activeSectionId) return;
     let off = false;
     const check = async () => {
-      await refreshIfIdle(8000);
+      try { await fetchUnlocks(); } catch { /* offline: use what is stored */ }
       const r = await AppModule.attendanceRepository.getActiveUnlock(activeSectionId, selectedDate);
       if (!off) {
         setNowMs(Date.now());

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Lock, Unlock } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
+import { getSyncStatus, pushNow } from '../../../data/supabase/sync';
 import { today } from '../../../domain/clock';
 import { AttendanceUnlock, Profile } from '../../../domain/models/models';
 import { PrimaryButton, SchoolCard } from '../../components/SchoolComposables';
@@ -47,8 +48,14 @@ export const AdminAttendanceUnlock: React.FC<{
     setBusy(true);
     setErr(null);
     const r = await AppModule.attendanceRepository.openUnlock(admin, { sectionId: sectionId === 'ALL' ? null : sectionId, date, minutes: m });
+    if (!r.ok) {
+      setBusy(false);
+      return setErr(r.error.message);
+    }
+    try { await pushNow(); } catch { /* shown below */ }
     setBusy(false);
-    if (!r.ok) return setErr(r.error.message);
+    const st = getSyncStatus();
+    if (st.state === 'error') setErr('Not saved to the server, so other phones cannot see it: ' + st.message);
     void load();
   };
   const close = async (id: string) => {
