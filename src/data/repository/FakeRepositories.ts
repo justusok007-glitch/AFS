@@ -243,6 +243,8 @@ export function mapDomainRoleToUserRole(role: Role): UserRole {
       return UserRole.VICE_PRINCIPAL;
     case Role.ACCOUNTANT:
       return UserRole.ACCOUNTANT;
+    case Role.ATTENDANCE_COORDINATOR:
+      return UserRole.ATTENDANCE_COORDINATOR;
     case Role.ADMIN:
       return UserRole.ADMIN;
   }
@@ -374,6 +376,7 @@ function createProfileInDb(
       [Role.PRINCIPAL]: { prefix: 'PR', digits: 2 },
       [Role.VICE_PRINCIPAL]: { prefix: 'VP', digits: 2 },
       [Role.ACCOUNTANT]: { prefix: 'AC', digits: 2 },
+      [Role.ATTENDANCE_COORDINATOR]: { prefix: 'CO', digits: 2 },
       [Role.ADMIN]: { prefix: 'AD', digits: 2 },
     };
     const { prefix, digits } = spec[input.role];
@@ -1750,7 +1753,7 @@ export class FakeAttendanceRepository implements AttendanceRepository {
     const lockTime = db.schoolSettings.attendanceLockTime || '23:59';
     const nowTime = getCurrentKarachiTimeHHMM();
 
-    if (actor.role === Role.TEACHER) {
+    if (actor.role === Role.TEACHER || actor.role === Role.ATTENDANCE_COORDINATOR) {
       // Check assigned section with canMarkAttendance == true
       const isAssigned = db.teacherAssignments.some(
         (ta) =>

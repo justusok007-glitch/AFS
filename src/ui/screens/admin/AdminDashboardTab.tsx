@@ -17,7 +17,7 @@ import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { PrincipalSummaryDashboard } from '../principal/PrincipalSummaryDashboard';
 
-const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
+const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ATTENDANCE_COORDINATOR, Role.ADMIN];
 
 /** Admin dashboard = the principal dashboard plus a small system overview. */
 export const AdminOverviewTab: React.FC<{

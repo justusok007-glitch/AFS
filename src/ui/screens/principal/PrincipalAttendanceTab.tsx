@@ -21,11 +21,19 @@ import {
   studentClassLabel,
 } from '../accountant/AccountantShared';
 import { percentColor, selectCls } from './PrincipalShared';
+import { ParentContactButtons } from './ParentContactButtons';
 
 type Range = 'today' | 'week' | 'month' | 'custom';
 const THRESHOLDS = [95, 90, 85, 80, 75, 60];
 
-export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = ({ lookups }) => {
+export const PrincipalAttendanceTab: React.FC<{
+  lookups: AccountantLookups;
+  /** Attendance Coordinator: only these sections are shown. */
+  scopeSectionIds?: string[];
+  /** Show one-tap Call / WhatsApp buttons under each student. */
+  contactActions?: boolean;
+}> = ({ lookups, scopeSectionIds, contactActions = false }) => {
+  const scope = useMemo(() => (scopeSectionIds ? new Set(scopeSectionIds) : null), [scopeSectionIds]);
   const { stringResource: t, language } = useStringResource();
   const [campus, setCampus] = useState('ALL');
   const [cls, setCls] = useState('ALL');
@@ -34,7 +42,7 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
   const [from, setFrom] = useState(today().slice(0, 7) + '-01');
   const [to, setTo] = useState(today());
   const [threshold, setThreshold] = useState(75);
-  const [mode, setMode] = useState<'chronic' | 'all' | 'today'>('chronic');
+  const [mode, setMode] = useState<'chronic' | 'all' | 'today'>(contactActions ? 'today' : 'chronic');
   const chronicOnly = mode === 'chronic';
   const [todayReport, setTodayReport] = useState<AttendanceReport | null>(null);
   const [todayLoading, setTodayLoading] = useState(false);
@@ -111,17 +119,17 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
   const todayAbsent = useMemo(
     () =>
       (todayReport?.studentRows ?? [])
-        .filter((r) => r.absent > 0)
+        .filter((r) => r.absent > 0 && (!scope || scope.has(r.student.sectionId)))
         .sort((a, b) => studentClassLabel(a.student, lookups, 'en').localeCompare(studentClassLabel(b.student, lookups, 'en')) || a.student.name.localeCompare(b.student.name)),
     [todayReport, lookups]
   );
 
   const students = useMemo(() => {
     if (!report) return [];
-    const rows = [...report.studentRows].filter((r) => r.present + r.late + r.absent > 0);
+    const rows = [...report.studentRows].filter((r) => r.present + r.late + r.absent > 0 && (!scope || scope.has(r.student.sectionId)));
     const filtered = chronicOnly ? rows.filter((r) => r.percent < threshold) : rows;
     return filtered.sort((a, b) => a.percent - b.percent);
-  }, [report, chronicOnly, threshold]);
+  }, [report, chronicOnly, threshold, scope]);
 
   const exportCsv = () => {
     if (!report) return;
@@ -144,12 +152,17 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
     { id: 'ALL', label: t('campus_both') },
     ...lookups.campuses.map((c) => ({ id: c.id, label: language === 'ur' ? c.nameUr : c.nameEn })),
   ];
-  const classOptions = lookups.classes.filter((c) => campus === 'ALL' || c.campusId === campus);
-  const sectionOptions = Object.values(lookups.sectionsMap).filter((s) => cls !== 'ALL' && s.classId === cls);
+  const inScope = (secId: string) => !scope || scope.has(secId);
+  const classOptions = lookups.classes.filter(
+    (c) =>
+      (campus === 'ALL' || c.campusId === campus) &&
+      Object.values(lookups.sectionsMap).some((s) => s.classId === c.id && inScope(s.id))
+  );
+  const sectionOptions = Object.values(lookups.sectionsMap).filter((s) => cls !== 'ALL' && s.classId === cls && inScope(s.id));
 
   return (
     <div className="space-y-3">
-      <PrincipalAttendanceSummary lookups={lookups} />
+      {!contactActions && <PrincipalAttendanceSummary lookups={lookups} />}
       <SchoolCard className="space-y-2.5">
         <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('pr_att_filters')}</h3>
         <TabRow tabs={campusTabs} selected={campus} onSelect={(v) => { setCampus(v); setCls('ALL'); setSec('ALL'); }} />
@@ -262,9 +275,12 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
                 <p className="text-xs text-[#2E9E5B] font-semibold">{t('pr_today_absent_none')}</p>
               ) : (
                 todayAbsent.map((r) => (
-                  <div key={r.student.id} className="flex items-center justify-between gap-2 border-t border-[#E4E8F0] pt-1.5">
-                    <StudentNameBlock student={r.student} classLabel={studentClassLabel(r.student, lookups, language)} />
-                    <span className="shrink-0 text-[11px] font-bold text-[#D64545]">{t('pr_absent')}</span>
+                  <div key={r.student.id} className="space-y-2 border-t border-[#E4E8F0] pt-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <StudentNameBlock student={r.student} classLabel={studentClassLabel(r.student, lookups, language)} />
+                      <span className="shrink-0 text-[11px] font-bold text-[#D64545]">{t('pr_absent')}</span>
+                    </div>
+                    {contactActions && <ParentContactButtons student={r.student} lookups={lookups} kind="absent" />}
                   </div>
                 ))
               )
@@ -272,12 +288,15 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
               <p className="text-xs text-[#2E9E5B] font-semibold">{t('pr_chronic_none')}</p>
             ) : (
               students.slice(0, 60).map((r) => (
-                <div key={r.student.id} className="flex items-center justify-between gap-2 border-t border-[#E4E8F0] pt-1.5">
-                  <StudentNameBlock student={r.student} classLabel={studentClassLabel(r.student, lookups, language)} />
-                  <div className="text-end shrink-0">
-                    <div dir="ltr" className="font-mono text-sm font-bold" style={{ color: percentColor(r.percent) }}>{r.percent}%</div>
-                    <div dir="ltr" className="text-[10px] text-[#6B7385]">{r.present + r.late}P · {r.absent}A · {r.leave}L</div>
+                <div key={r.student.id} className="space-y-2 border-t border-[#E4E8F0] pt-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <StudentNameBlock student={r.student} classLabel={studentClassLabel(r.student, lookups, language)} />
+                    <div className="text-end shrink-0">
+                      <div dir="ltr" className="font-mono text-sm font-bold" style={{ color: percentColor(r.percent) }}>{r.percent}%</div>
+                      <div dir="ltr" className="text-[10px] text-[#6B7385]">{r.present + r.late}P · {r.absent}A · {r.leave}L</div>
+                    </div>
                   </div>
+                  {contactActions && <ParentContactButtons student={r.student} lookups={lookups} kind="low" percent={r.percent} />}
                 </div>
               ))
             )}

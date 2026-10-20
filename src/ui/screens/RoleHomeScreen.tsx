@@ -55,6 +55,7 @@ import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
 import { ParentResultsTab } from './parent/ParentResultsTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
+import { CoordinatorRecords } from './principal/CoordinatorRecords';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
@@ -119,6 +120,24 @@ export function getRoleTabs(role: UserRole): RoleTabSpec[] {
           id: 'messages',
           labelKey: 'tab_messages',
           icon: <MessageSquare className="w-5 h-5" />,
+        },
+        {
+          id: 'more',
+          labelKey: 'tab_more',
+          icon: <MoreHorizontal className="w-5 h-5" />,
+        },
+      ];
+    case UserRole.ATTENDANCE_COORDINATOR:
+      return [
+        {
+          id: 'attendance',
+          labelKey: 'tab_mark_attendance',
+          icon: <CalendarCheck className="w-5 h-5" />,
+        },
+        {
+          id: 'records',
+          labelKey: 'tab_att_records',
+          icon: <ClipboardCheck className="w-5 h-5" />,
         },
         {
           id: 'more',
@@ -341,7 +360,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   const handleGuardedTabChange = (nextTabIndex: number) => {
     if (nextTabIndex === activeTabIndex) return;
     if (
-      session.role === UserRole.TEACHER &&
+      (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
       currentTab.id === 'attendance' &&
       teacherAttendanceDirty
     ) {
@@ -353,7 +372,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
   const handleGuardedOpenSettings = () => {
     if (
-      session.role === UserRole.TEACHER &&
+      (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
       currentTab.id === 'attendance' &&
       teacherAttendanceDirty
     ) {
@@ -365,7 +384,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
   const handleGuardedLogout = () => {
     if (
-      session.role === UserRole.TEACHER &&
+      (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
       currentTab.id === 'attendance' &&
       teacherAttendanceDirty
     ) {
@@ -530,6 +549,38 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           icon={<Clock className="w-6 h-6 text-[#F28C28]" />}
         />
       </>
+    );
+  };
+
+  const renderCoordinatorTabBody = () => {
+    if (loading) {
+      return (
+        <div className="space-y-3">
+          <ShimmerPlaceholder lines={3} showHeader />
+        </div>
+      );
+    }
+    if (currentTab.id === 'attendance') {
+      return (
+        <TeacherAttendanceTab
+          teacherProfile={session.profile}
+          classesMap={classesMap}
+          selectedSectionId={teacherSelectedSectionId}
+          onSelectSectionId={setTeacherSelectedSectionId}
+          onDirtyChange={setTeacherAttendanceDirty}
+        />
+      );
+    }
+    if (currentTab.id === 'records') {
+      return <CoordinatorRecords coordinator={session.profile} />;
+    }
+    return (
+      <TeacherMoreTab
+        teacherProfile={session.profile}
+        classesMap={classesMap}
+        onOpenSettings={handleGuardedOpenSettings}
+        onLogout={handleGuardedLogout}
+      />
     );
   };
 
@@ -780,6 +831,8 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (
           renderTeacherTabBody()
+        ) : session.role === UserRole.ATTENDANCE_COORDINATOR ? (
+          renderCoordinatorTabBody()
         ) : session.role === UserRole.ADMIN ? (
           <AdminRoot
             admin={session.profile}

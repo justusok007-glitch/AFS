@@ -41,7 +41,7 @@ import {
 import { selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
 
-const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ADMIN];
+const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ATTENDANCE_COORDINATOR, Role.ADMIN];
 const roleKey = (r: Role) => `role_${r.toLowerCase()}` as StringKey;
 
 export const AdminUsersTab: React.FC<{
@@ -231,6 +231,7 @@ const CreateUserForm: React.FC<{
   const [nameUr, setNameUr] = useState('');
   const [phone, setPhone] = useState('');
   const [campus, setCampus] = useState('');
+  const [coordClasses, setCoordClasses] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -243,6 +244,7 @@ const CreateUserForm: React.FC<{
     if (nameUr.trim().length < 2) e.nameUr = t('ad_err_name_ur');
     if (!/^\+?\d{10,13}$/.test(phone.replace(/[\s-]/g, ''))) e.phone = t('ad_err_phone');
     if (needsCampus && !campus) e.campus = t('ad_err_campus');
+    if (role === Role.ATTENDANCE_COORDINATOR && coordClasses.length === 0) e.coord = t('ad_coord_pick_class');
     setErrors(e);
     setFormError(null);
     if (Object.keys(e).length) return;
@@ -251,6 +253,9 @@ const CreateUserForm: React.FC<{
       { role, fullName: nameEn, fullNameUr: nameUr, phone, campusId: campus || null },
       admin
     );
+    if (r.ok && role === Role.ATTENDANCE_COORDINATOR) {
+      await saveCoordinatorClasses(admin, r.data.profile.id, coordClasses, [], lookups);
+    }
     setSaving(false);
     if (!r.ok) {
       setFormError(r.error.message || t('ad_err_generic'));
@@ -281,6 +286,9 @@ const CreateUserForm: React.FC<{
         </select>
         {errors.campus && <p className="text-xs font-medium text-[#D64545]">{errors.campus}</p>}
       </div>
+      {role === Role.ATTENDANCE_COORDINATOR && (
+        <ClassPicker lookups={lookups} value={coordClasses} onChange={setCoordClasses} error={errors.coord} />
+      )}
       {formError && <p className="text-xs font-medium text-[#D64545]">{formError}</p>}
       <div className="grid grid-cols-2 gap-2">
         <PrimaryButton text={t('acc_cancel_btn')} variant="outline" onClick={onCancel} />
@@ -375,6 +383,7 @@ const UserDetail: React.FC<{
 
       {current.role === Role.PARENT && <ParentChildren parent={current} lookups={lookups} />}
       {current.role === Role.TEACHER && <TeacherAssignments admin={admin} teacher={current} lookups={lookups} />}
+      {current.role === Role.ATTENDANCE_COORDINATOR && <CoordinatorClasses admin={admin} coordinator={current} lookups={lookups} />}
     </div>
   );
 };
@@ -494,6 +503,120 @@ const ParentChildren: React.FC<{ parent: Profile; lookups: AccountantLookups }> 
           </button>
         </div>
       ))}
+    </SchoolCard>
+  );
+};
+
+/** Tick the classes a coordinator can see and mark (every section of a ticked class). */
+const ClassPicker: React.FC<{
+  lookups: AccountantLookups;
+  value: string[];
+  onChange: (v: string[]) => void;
+  error?: string;
+}> = ({ lookups, value, onChange, error }) => {
+  const { stringResource: t, language } = useStringResource();
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold">{t('ad_coord_classes')}</label>
+      <p className="text-[11px] text-[#6B7385]">{t('ad_coord_classes_hint')}</p>
+      <div className="grid grid-cols-2 gap-x-2">
+        {lookups.classes.map((c) => (
+          <label key={c.id} className="flex items-center gap-2 text-xs min-h-[36px]">
+            <input
+              type="checkbox"
+              checked={value.includes(c.id)}
+              onChange={(e) => onChange(e.target.checked ? [...value, c.id] : value.filter((x) => x !== c.id))}
+            />
+            {language === 'ur' ? c.nameUr : c.nameEn}
+          </label>
+        ))}
+      </div>
+      {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+    </div>
+  );
+};
+
+/** Makes the coordinator's assignments match the ticked classes. */
+async function saveCoordinatorClasses(
+  admin: Profile,
+  coordinatorId: string,
+  wanted: string[],
+  existing: TeacherAssignment[],
+  lookups: AccountantLookups
+): Promise<string | null> {
+  const sectionsOf = (classId: string) => Object.values(lookups.sectionsMap).filter((s) => s.classId === classId);
+  const wantedSections = new Set(wanted.flatMap((c) => sectionsOf(c).map((s) => s.id)));
+  for (const a of existing) {
+    if (!wantedSections.has(a.sectionId)) {
+      const r = await AppModule.settingsRepository.deleteTeacherAssignment(a.id, admin);
+      if (!r.ok) return r.error.message;
+    }
+  }
+  const have = new Set(existing.map((a) => a.sectionId));
+  let n = 0;
+  for (const secId of wantedSections) {
+    if (have.has(secId)) continue;
+    const r = await AppModule.settingsRepository.saveTeacherAssignment(
+      {
+        id: `ta_${Date.now()}_${n++}`,
+        teacherId: coordinatorId,
+        sectionId: secId,
+        subjectId: null,
+        canMarkAttendance: true,
+        canEnterMarks: false,
+      },
+      admin
+    );
+    if (!r.ok) return r.error.message;
+  }
+  return null;
+}
+
+const CoordinatorClasses: React.FC<{ admin: Profile; coordinator: Profile; lookups: AccountantLookups }> = ({ admin, coordinator, lookups }) => {
+  const { stringResource: t } = useStringResource();
+  const [items, setItems] = useState<TeacherAssignment[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const a = await AppModule.settingsRepository.getTeacherAssignments(coordinator.id);
+    const list = a.ok ? a.data : [];
+    setItems(list);
+    const classIds = new Set(list.map((x) => lookups.sectionsMap[x.sectionId]?.classId).filter(Boolean) as string[]);
+    setPicked(Array.from(classIds));
+    setLoading(false);
+  }, [coordinator.id, lookups.sectionsMap]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    setError(null);
+    const err = await saveCoordinatorClasses(admin, coordinator.id, picked, items, lookups);
+    setSaving(false);
+    if (err) return setError(err);
+    setMsg(t('ex_saved'));
+    void load();
+  };
+
+  return (
+    <SchoolCard className="space-y-2.5">
+      {loading ? (
+        <ShimmerPlaceholder lines={2} />
+      ) : (
+        <>
+          <ClassPicker lookups={lookups} value={picked} onChange={setPicked} />
+          {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+          {msg && <p className="text-xs font-semibold text-[#2E9E5B]">{msg}</p>}
+          <PrimaryButton text={t('su_save')} variant="orange" loading={saving} onClick={() => void save()} />
+        </>
+      )}
     </SchoolCard>
   );
 };

@@ -48,6 +48,16 @@ export type StringKey =
   | 'role_principal'
   | 'role_vice_principal'
   | 'role_accountant'
+  | 'role_attendance_coordinator'
+  | 'tab_mark_attendance'
+  | 'tab_att_records'
+  | 'att_call'
+  | 'att_whatsapp'
+  | 'att_no_phone'
+  | 'ad_coord_classes'
+  | 'ad_coord_classes_hint'
+  | 'ad_coord_pick_class'
+  | 'role_attendance_coordinator_desc'
   | 'role_admin'
   | 'role_parent_desc'
   | 'role_teacher_desc'
@@ -1007,6 +1017,16 @@ export const stringsEn: Record<StringKey, string> = {
   role_principal: 'Principal',
   role_vice_principal: 'Vice Principal',
   role_accountant: 'Accountant',
+  role_attendance_coordinator: 'Attendance Coordinator',
+  tab_mark_attendance: 'Mark',
+  tab_att_records: 'Records',
+  att_call: 'Call',
+  att_whatsapp: 'WhatsApp',
+  att_no_phone: 'No phone number on file.',
+  ad_coord_classes: 'Classes this coordinator can see and mark',
+  ad_coord_classes_hint: 'All sections of each ticked class.',
+  ad_coord_pick_class: 'Tick at least one class.',
+  role_attendance_coordinator_desc: 'Marks attendance of assigned classes and contacts parents of absentees',
   role_admin: 'Admin',
   role_parent_desc: 'Child attendance, fee vouchers & notices',
   role_teacher_desc: 'Class roll call, exam marks & parent messages',
@@ -1967,6 +1987,16 @@ export const stringsUr: Record<StringKey, string> = {
   role_principal: 'پرنسپل',
   role_vice_principal: 'وائس پرنسپل',
   role_accountant: 'اکاؤنٹنٹ',
+  role_attendance_coordinator: 'حاضری کوآرڈینیٹر',
+  tab_mark_attendance: 'حاضری لگائیں',
+  tab_att_records: 'ریکارڈ',
+  att_call: 'کال',
+  att_whatsapp: 'واٹس ایپ',
+  att_no_phone: 'فون نمبر موجود نہیں۔',
+  ad_coord_classes: 'وہ کلاسیں جن کی حاضری یہ کوآرڈینیٹر دیکھ اور لگا سکتا ہے',
+  ad_coord_classes_hint: 'ٹک کی گئی ہر کلاس کے تمام سیکشن۔',
+  ad_coord_pick_class: 'کم از کم ایک کلاس منتخب کریں۔',
+  role_attendance_coordinator_desc: 'مقررہ کلاسوں کی حاضری لگانا اور غیر حاضر طلبہ کے والدین سے رابطہ',
   role_admin: 'ایڈمن',
   role_parent_desc: 'بچے کی حاضری، فیس واؤچر اور نوٹس بلیٹن',
   role_teacher_desc: 'کلاس حاضری، امتحانی نمبر اور والدین کے پیغامات',
