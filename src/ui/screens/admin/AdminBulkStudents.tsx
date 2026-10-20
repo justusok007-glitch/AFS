@@ -68,7 +68,7 @@ export function parseStudentFile(text: string, colsMsg: string): { rows: Parsed[
     iSection = secIdx[secIdx.length - 1];
     if (iCampus < 0 && secIdx.length > 1) iCampus = secIdx[0];
   }
-  if (iName < 0 || iNameUr < 0 || iFather < 0 || iFatherUr < 0 || iP1 < 0 || iClass < 0 || iSection < 0 || iCampus < 0) {
+  if (iName < 0 || iClass < 0 || iSection < 0 || iCampus < 0) {
     return { rows: [], fatal: colsMsg };
   }
   const known = new Set([iNo, iName, iNameUr, iFather, iFatherUr, iP1, iP2, iClass, iStatus, iUser, iPass, iCampus, iSection, iActual, iNet, iPrev, iAdmFee, iAnnual]);

@@ -350,7 +350,7 @@ function createProfileInDb(
   const phone = normalizePkPhone(input.phone);
   if (fullName.length < 3) return fail('Full name (English) is required.');
   if (fullNameUr.length < 2) return fail('Full name (Urdu) is required.');
-  if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid phone number.');
+  if (!/^\+?\d{10,13}$/.test(phone) && !(input.relaxed && phone === '')) return fail('Enter a valid phone number.');
   const needsCampus =
     input.role === Role.PARENT ||
     input.role === Role.TEACHER ||
@@ -603,16 +603,29 @@ function admitStudentInDb(
 ): { ok: true; data: AdmitResult; warnings: string[] } | Fail {
   const fail = (message: string): Fail => ({ ok: false, message });
   const warnings: string[] = [];
-  const name = input.name.trim();
-  const nameUr = input.nameUr.trim();
-  const fatherName = input.fatherName.trim();
-  const phone = normalizePkPhone(input.guardianPhone);
-  const phone2 = normalizePkPhone(input.guardianPhone2 ?? '');
+  const lenient = input.lenient === true;
+  let name = input.name.trim();
+  let nameUr = input.nameUr.trim();
+  let fatherName = input.fatherName.trim();
+  let phone = normalizePkPhone(input.guardianPhone);
+  let phone2 = normalizePkPhone(input.guardianPhone2 ?? '');
   const dob = input.dateOfBirth.trim();
+  let noFather = false;
+  if (lenient) {
+    if (!name && nameUr) name = nameUr;
+    if (!nameUr) { nameUr = name; if (name) warnings.push('No Urdu name: English name used.'); }
+    if (fatherName.length < 3) { fatherName = 'No Parent'; noFather = true; warnings.push('No father name: saved as "No Parent".'); }
+    if (!/^\+?\d{10,13}$/.test(phone)) {
+      warnings.push(phone ? `Contact "${phone}" is not a valid number: saved as typed.` : 'No contact number: saved as "No Contact".');
+      phone = phone || 'No Contact';
+    }
+    if (phone2 && !/^\+?\d{10,13}$/.test(phone2)) phone2 = '';
+  }
+  const phoneOk = /^\+?\d{10,13}$/.test(phone);
   if (name.length < 3) return fail('Student name (English) is required.');
   if (nameUr.length < 2) return fail('Student name (Urdu) is required.');
   if (fatherName.length < 3) return fail("Father's name is required.");
-  if (!/^\+?\d{10,13}$/.test(phone)) return fail('Enter a valid guardian phone number.');
+  if (!lenient && !phoneOk) return fail('Enter a valid guardian phone number.');
   if (phone2 && !/^\+?\d{10,13}$/.test(phone2)) return fail('Phone 2 is not a valid number.');
   if (dob) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return fail('Date of birth is not valid.');
@@ -629,7 +642,7 @@ function admitStudentInDb(
   const campus = db.campuses.find((c) => c.id === cls.campusId);
   if (!campus) return fail('Campus not found for this section.');
 
-  const duplicate = db.students.some(
+  const duplicate = !noFather && db.students.some(
     (s) =>
       s.status === StudentStatus.ACTIVE &&
       s.name.trim().toLowerCase() === name.toLowerCase() &&
@@ -661,14 +674,17 @@ function admitStudentInDb(
     const wantedId = input.parent.parentId;
     parent = db.profiles.find((p) => p.id === wantedId && p.role === Role.PARENT) ?? null;
     if (!parent) return fail('Selected parent account was not found.');
+  } else if (input.parent?.mode === 'create' && lenient && noFather && !input.parent.loginId?.trim()) {
+    // no father and no user name given: the student is added without a parent account
+    warnings.push('No parent account created for this student.');
   } else if (input.parent?.mode === 'create') {
-    const spec = input.parent;
+    const spec = { ...input.parent, fatherNameUr: input.parent.fatherNameUr.trim() || (lenient ? (noFather ? `Parent of ${name}` : fatherName) : '') };
     if (spec.fatherNameUr.trim().length < 2) return fail("Father's name (Urdu) is required.");
     const wanted = spec.loginId?.trim().toUpperCase();
     // Same father (name + contact number) = same account, whatever user name the file gives.
     const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
-    const myPhones = [phone, phone2].filter(Boolean).map((x) => normalizePkPhone(String(x)));
-    const sameFather = db.profiles.find((p) => {
+    const myPhones = [phone, phone2].filter((x) => /^\+?\d{10,13}$/.test(String(x))).map((x) => normalizePkPhone(String(x)));
+    const sameFather = noFather ? undefined : db.profiles.find((p) => {
       if (p.role !== Role.PARENT || !sameName(p.fullName, fatherName)) return false;
       const theirs = [p.phone, ...db.parentStudents
         .filter((l) => l.parentId === p.id)
@@ -693,9 +709,9 @@ function admitStudentInDb(
         db,
         {
           role: Role.PARENT,
-          fullName: fatherName,
+          fullName: noFather ? `Parent of ${name}` : fatherName,
           fullNameUr: spec.fatherNameUr,
-          phone,
+          phone: phoneOk ? phone : '',
           campusId: campus.id,
           loginId: spec.loginId,
           password: spec.password,
@@ -1317,6 +1333,7 @@ export class FakeStudentRepository implements StudentRepository {
           guardianPhone: row.phone1,
           guardianPhone2: row.phone2,
           admissionNo: row.admissionNo || undefined,
+          lenient: true,
           parent: {
             mode: 'create',
             fatherNameUr: row.fatherNameUr,

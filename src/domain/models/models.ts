@@ -252,6 +252,8 @@ export interface NewStudentInput {
   guardianPhone2?: string;
   /** Bulk import: keep the admission number from the file instead of generating one. */
   admissionNo?: string;
+  /** Bulk import: missing Urdu name / father / phone are filled with placeholders instead of rejecting the student. */
+  lenient?: boolean;
   parent?: ParentSpec;
   opening?: OpeningFees;
 }
