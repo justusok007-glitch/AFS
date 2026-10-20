@@ -540,6 +540,9 @@ export type StringKey =
   | 'pr_days_covered'
   | 'pr_class_table'
   | 'pr_student_list'
+  | 'pr_today_absent'
+  | 'pr_today_absent_none'
+  | 'pr_today_not_marked'
   | 'pr_chronic_title'
   | 'pr_chronic_below'
   | 'pr_chronic_none'
@@ -1496,6 +1499,9 @@ export const stringsEn: Record<StringKey, string> = {
   pr_days_covered: 'Days covered',
   pr_class_table: 'Class / section table',
   pr_student_list: 'Students',
+  pr_today_absent: 'Today\'s absentees',
+  pr_today_absent_none: 'No student is absent today.',
+  pr_today_not_marked: 'Attendance has not been marked today yet.',
   pr_chronic_title: 'Chronic absentees',
   pr_chronic_below: 'Below',
   pr_chronic_none: 'No student is below this attendance.',
@@ -2453,6 +2459,9 @@ export const stringsUr: Record<StringKey, string> = {
   pr_days_covered: 'شامل دن',
   pr_class_table: 'کلاس / سیکشن جدول',
   pr_student_list: 'طلبہ',
+  pr_today_absent: 'آج کے غیر حاضر',
+  pr_today_absent_none: 'آج کوئی طالب علم غیر حاضر نہیں۔',
+  pr_today_not_marked: 'آج کی حاضری ابھی نہیں لگی۔',
   pr_chronic_title: 'مسلسل غیر حاضر طلبہ',
   pr_chronic_below: 'سے کم',
   pr_chronic_none: 'کوئی طالب علم اس حاضری سے کم نہیں۔',

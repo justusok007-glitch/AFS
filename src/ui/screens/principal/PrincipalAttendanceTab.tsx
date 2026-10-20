@@ -34,7 +34,10 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
   const [from, setFrom] = useState(today().slice(0, 7) + '-01');
   const [to, setTo] = useState(today());
   const [threshold, setThreshold] = useState(75);
-  const [chronicOnly, setChronicOnly] = useState(true);
+  const [mode, setMode] = useState<'chronic' | 'all' | 'today'>('chronic');
+  const chronicOnly = mode === 'chronic';
+  const [todayReport, setTodayReport] = useState<AttendanceReport | null>(null);
+  const [todayLoading, setTodayLoading] = useState(false);
   const [report, setReport] = useState<AttendanceReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -76,6 +79,26 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (mode !== 'today') return;
+    let off = false;
+    setTodayLoading(true);
+    void AppModule.dashboardRepository
+      .getAttendanceReport({
+        campusId: campus === 'ALL' ? null : campus,
+        classId: cls === 'ALL' ? null : cls,
+        sectionId: sec === 'ALL' ? null : sec,
+        fromDate: today(),
+        toDate: today(),
+      })
+      .then((r) => {
+        if (off) return;
+        setTodayReport(r.ok ? r.data : null);
+        setTodayLoading(false);
+      });
+    return () => { off = true; };
+  }, [mode, campus, cls, sec]);
+
   const className = (id: string) => {
     const c = lookups.classesMap[id];
     return c ? (language === 'ur' ? c.nameUr : c.nameEn) : id;
@@ -84,6 +107,14 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
     const s = lookups.sectionsMap[secId];
     return s ? `${className(s.classId)} - ${s.name}` : secId;
   };
+
+  const todayAbsent = useMemo(
+    () =>
+      (todayReport?.studentRows ?? [])
+        .filter((r) => r.absent > 0)
+        .sort((a, b) => studentClassLabel(a.student, lookups, 'en').localeCompare(studentClassLabel(b.student, lookups, 'en')) || a.student.name.localeCompare(b.student.name)),
+    [todayReport, lookups]
+  );
 
   const students = useMemo(() => {
     if (!report) return [];
@@ -203,17 +234,18 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
 
           <SchoolCard className="space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-bold text-[#14284B]">{chronicOnly ? t('pr_chronic_title') : t('pr_student_list')}</h3>
-              <span dir="ltr" className="text-[11px] text-[#6B7385]">{students.length}</span>
+              <h3 className="text-xs font-bold text-[#14284B]">{mode === 'today' ? t('pr_today_absent') : chronicOnly ? t('pr_chronic_title') : t('pr_student_list')}</h3>
+              <span dir="ltr" className="text-[11px] text-[#6B7385]">{mode === 'today' ? todayAbsent.length : students.length}</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <TabRow
                 tabs={[
                   { id: 'chronic', label: t('pr_chronic_title') },
                   { id: 'all', label: t('pr_show_all_students') },
+                  { id: 'today', label: t('pr_today_absent') },
                 ]}
-                selected={chronicOnly ? 'chronic' : 'all'}
-                onSelect={(v) => setChronicOnly(v === 'chronic')}
+                selected={mode}
+                onSelect={(v) => setMode(v as 'chronic' | 'all' | 'today')}
               />
               {chronicOnly && (
                 <select className={selectCls} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} aria-label={t('pr_chronic_below')}>
@@ -221,7 +253,22 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
                 </select>
               )}
             </div>
-            {students.length === 0 ? (
+            {mode === 'today' ? (
+              todayLoading ? (
+                <ShimmerPlaceholder lines={3} />
+              ) : !todayReport || todayReport.daysCovered === 0 ? (
+                <p className="text-xs text-[#6B7385]">{t('pr_today_not_marked')}</p>
+              ) : todayAbsent.length === 0 ? (
+                <p className="text-xs text-[#2E9E5B] font-semibold">{t('pr_today_absent_none')}</p>
+              ) : (
+                todayAbsent.map((r) => (
+                  <div key={r.student.id} className="flex items-center justify-between gap-2 border-t border-[#E4E8F0] pt-1.5">
+                    <StudentNameBlock student={r.student} classLabel={studentClassLabel(r.student, lookups, language)} />
+                    <span className="shrink-0 text-[11px] font-bold text-[#D64545]">{t('pr_absent')}</span>
+                  </div>
+                ))
+              )
+            ) : students.length === 0 ? (
               <p className="text-xs text-[#2E9E5B] font-semibold">{t('pr_chronic_none')}</p>
             ) : (
               students.slice(0, 60).map((r) => (
@@ -234,7 +281,7 @@ export const PrincipalAttendanceTab: React.FC<{ lookups: AccountantLookups }> = 
                 </div>
               ))
             )}
-            {students.length > 60 && <p className="text-[11px] text-center text-[#6B7385]">{t('acc_showing_first').replace('50', '60')}</p>}
+            {mode !== 'today' && students.length > 60 && <p className="text-[11px] text-center text-[#6B7385]">{t('acc_showing_first').replace('50', '60')}</p>}
           </SchoolCard>
 
         </>
