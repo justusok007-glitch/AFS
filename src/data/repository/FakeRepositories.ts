@@ -3240,7 +3240,9 @@ export class FakeFeeRepository implements FeeRepository {
   async getAllPayments(): Promise<AppResult<FeePayment[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
-    return AppResult.success(db.feePayments);
+    const byPayment: Record<string, PaymentAllocation[]> = {};
+    db.paymentAllocations.forEach((a) => (byPayment[a.paymentId] ??= []).push(a));
+    return AppResult.success(db.feePayments.map((p) => ({ ...p, allocations: byPayment[p.id] ?? [] })));
   }
 
   /**

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AppModule } from '../../../di/AppModule';
 import { currentMonth, today } from '../../../domain/clock';
 import { formatRupees } from '../../../domain/formatters/SchoolFormatters';
-import { FeeCategory, FeeCollectionReport, FeeVoucher } from '../../../domain/models/models';
+import { FeeCategory, FeeCollectionReport, FeePayment, FeeVoucher } from '../../../domain/models/models';
 import { StringKey } from '../../../res/strings';
 import { SchoolCard, ShimmerPlaceholder, TabRow } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
@@ -15,21 +15,39 @@ const Money: React.FC<{ v: number; className?: string }> = ({ v, className }) =>
   <span dir="ltr" className={`font-mono tabular-nums ${className ?? ''}`}>{formatRupees(v)}</span>
 );
 
-function groupVouchers(vouchers: FeeVoucher[], month: string): Record<GroupId, Totals> {
-  const g: Record<GroupId, Totals> = {
-    arrears: { charged: 0, received: 0 }, month: { charged: 0, received: 0 }, admission: { charged: 0, received: 0 },
-    annual: { charged: 0, received: 0 }, other: { charged: 0, received: 0 },
-  };
+/** Charged per group comes from the bills; this month's group also holds fees billed for later months (advances). */
+function chargedByGroup(vouchers: FeeVoucher[], month: string): Record<GroupId, number> {
+  const g: Record<GroupId, number> = { arrears: 0, month: 0, admission: 0, annual: 0, other: 0 };
   for (const v of vouchers) {
     for (const it of v.items) {
       const id: GroupId =
         it.feeHeadId === 'fh_arrears' ? 'arrears'
-        : it.feeHeadId === 'fh_tuition' && v.billingMonth === month ? 'month'
+        : it.feeHeadId === 'fh_tuition' && v.billingMonth >= month ? 'month'
         : it.feeHeadId === 'fh_admission' ? 'admission'
         : it.feeHeadId === 'fh_annual' ? 'annual'
         : 'other';
-      g[id].charged += Math.max(0, it.amount - (it.waivedAmount ?? 0));
-      g[id].received += it.paidAmount ?? 0;
+      g[id] += Math.max(0, it.amount - (it.waivedAmount ?? 0));
+    }
+  }
+  return g;
+}
+
+const GROUP_OF_CATEGORY: Record<string, GroupId> = { ARREARS: 'arrears', MONTHLY: 'month', ADMISSION: 'admission', ANNUAL: 'annual' };
+const GROUP_OF_HEAD: Record<string, GroupId> = { fh_arrears: 'arrears', fh_tuition: 'month', fh_admission: 'admission', fh_annual: 'annual' };
+
+/** Received per group, by the fee type the cashier wrote on the receipt (bills' allocation when there is none). */
+function receivedByGroup(payments: FeePayment[]): Record<GroupId, number> {
+  const g: Record<GroupId, number> = { arrears: 0, month: 0, admission: 0, annual: 0, other: 0 };
+  for (const p of payments) {
+    if (p.isVoid) continue;
+    const declared = /\[by:([^\]]+)\]/.exec(p.remarks ?? '');
+    if (declared) {
+      for (const part of declared[1].split(',')) {
+        const [k, v] = part.split('=');
+        g[GROUP_OF_CATEGORY[k] ?? 'other'] += Number(v) || 0;
+      }
+    } else {
+      for (const a of p.allocations ?? []) g[GROUP_OF_HEAD[a.feeHeadId ?? ''] ?? 'other'] += a.allocatedAmount;
     }
   }
   return g;
@@ -46,14 +64,22 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [v, r] = await Promise.all([
+    const [v, pay, r] = await Promise.all([
       AppModule.feeRepository.getAllVouchers(),
+      AppModule.feeRepository.getAllPayments(),
       AppModule.feeRepository.getCollectionReport({
         fromDate: `${month}-01`, toDate: today(), campusId: campus === 'ALL' ? null : campus,
       }),
     ]);
     const list = v.ok ? v.data.filter((x) => campus === 'ALL' || x.campusId === campus) : [];
-    setGroups(groupVouchers(list, month));
+    const campusOf: Record<string, string> = {};
+    (v.ok ? v.data : []).forEach((x) => (campusOf[x.studentId] = x.campusId));
+    const pays = pay.ok ? pay.data.filter((p) => campus === 'ALL' || campusOf[p.studentId] === campus) : [];
+    const charged = chargedByGroup(list, month);
+    const received = receivedByGroup(pays);
+    const merged = {} as Record<GroupId, Totals>;
+    (Object.keys(charged) as GroupId[]).forEach((k) => (merged[k] = { charged: charged[k], received: received[k] }));
+    setGroups(merged);
     setReport(r.ok ? r.data : null);
     setLoading(false);
   }, [campus, month]);
