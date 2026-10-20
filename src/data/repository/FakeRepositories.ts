@@ -3222,7 +3222,7 @@ export class FakeFeeRepository implements FeeRepository {
   }
 
   /**
-   * getDefaulters returns students who have unpaid/partial past months (before currentMonth()),
+   * getDefaulters returns every student with an unpaid or partly paid bill (this month included),
    * along with their unpaid months and total amount due.
    */
   async getDefaulters(
@@ -3230,8 +3230,6 @@ export class FakeFeeRepository implements FeeRepository {
   ): Promise<AppResult<FeeDefaulterSummary[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();
-    const curMonth = currentMonth();
-
     const defaulters: FeeDefaulterSummary[] = [];
 
     for (const stu of db.students) {
@@ -3244,11 +3242,6 @@ export class FakeFeeRepository implements FeeRepository {
         )
         .sort((a, b) => a.billingMonth.localeCompare(b.billingMonth));
 
-      const hasPastUnpaidMonth = unpaidVouchers.some(
-        (v) => v.billingMonth < curMonth
-      );
-      if (!hasPastUnpaidMonth) continue;
-
       const monthsUnpaid = unpaidVouchers.map((v) => v.billingMonth);
       const amountDue = unpaidVouchers.reduce((sum, v) => {
         const vUnpaid = v.items.reduce((s, it) => {
@@ -3258,6 +3251,7 @@ export class FakeFeeRepository implements FeeRepository {
         return sum + vUnpaid;
       }, 0);
 
+      if (amountDue <= 0) continue;
       defaulters.push({
         student: stu,
         monthsUnpaid,
