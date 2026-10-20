@@ -50,6 +50,16 @@ export type StringKey =
   | 'role_accountant'
   | 'role_attendance_coordinator'
   | 'tab_mark_attendance'
+  | 'co_tab_progress'
+  | 'co_tab_totals'
+  | 'co_no_sections'
+  | 'co_assigned'
+  | 'co_marked'
+  | 'co_remaining'
+  | 'co_students'
+  | 'co_totals_note'
+  | 'co_by_section'
+  | 'co_not_marked'
   | 'tab_att_records'
   | 'att_call'
   | 'att_whatsapp'
@@ -1019,6 +1029,16 @@ export const stringsEn: Record<StringKey, string> = {
   role_accountant: 'Accountant',
   role_attendance_coordinator: 'Attendance Coordinator',
   tab_mark_attendance: 'Mark',
+  co_tab_progress: 'Assigned vs remaining',
+  co_tab_totals: 'Present vs absent',
+  co_no_sections: 'No classes are assigned to you yet.',
+  co_assigned: 'Assigned',
+  co_marked: 'Marked',
+  co_remaining: 'Remaining',
+  co_students: 'students',
+  co_totals_note: '{n} section(s) not marked yet are not counted.',
+  co_by_section: 'Section-wise today',
+  co_not_marked: 'Not marked yet',
   tab_att_records: 'Records',
   att_call: 'Call',
   att_whatsapp: 'WhatsApp',
@@ -1989,6 +2009,16 @@ export const stringsUr: Record<StringKey, string> = {
   role_accountant: 'اکاؤنٹنٹ',
   role_attendance_coordinator: 'حاضری کوآرڈینیٹر',
   tab_mark_attendance: 'حاضری لگائیں',
+  co_tab_progress: 'تفویض شدہ بمقابلہ باقی',
+  co_tab_totals: 'حاضر بمقابلہ غیر حاضر',
+  co_no_sections: 'ابھی آپ کو کوئی کلاس تفویض نہیں کی گئی۔',
+  co_assigned: 'تفویض شدہ',
+  co_marked: 'لگی ہوئی',
+  co_remaining: 'باقی',
+  co_students: 'طلبہ',
+  co_totals_note: '{n} سیکشن کی حاضری ابھی نہیں لگی، وہ شمار نہیں۔',
+  co_by_section: 'آج سیکشن وار',
+  co_not_marked: 'ابھی نہیں لگی',
   tab_att_records: 'ریکارڈ',
   att_call: 'کال',
   att_whatsapp: 'واٹس ایپ',

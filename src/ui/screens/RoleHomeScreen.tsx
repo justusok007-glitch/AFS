@@ -55,7 +55,8 @@ import { ParentAttendanceTab } from './parent/ParentAttendanceTab';
 import { ParentFeesTab } from './parent/ParentFeesTab';
 import { ParentResultsTab } from './parent/ParentResultsTab';
 import { ParentHomeTab } from './parent/ParentHomeTab';
-import { CoordinatorRecords } from './principal/CoordinatorRecords';
+import { CoordinatorDashboard } from './teacher/CoordinatorDashboard';
+import { formatClassSectionTitle } from './teacher/TeacherHelpers';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
@@ -66,10 +67,12 @@ import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 export interface RoleTabSpec {
   id: string;
   labelKey: StringKey;
+  /** Plain label that replaces labelKey (e.g. a section name). */
+  label?: string;
   icon: React.ReactNode;
 }
 
-export function getRoleTabs(role: UserRole): RoleTabSpec[] {
+export function getRoleTabs(role: UserRole, sectionTabs: { id: string; label: string }[] = []): RoleTabSpec[] {
   switch (role) {
     case UserRole.PARENT:
       return [
@@ -130,15 +133,16 @@ export function getRoleTabs(role: UserRole): RoleTabSpec[] {
     case UserRole.ATTENDANCE_COORDINATOR:
       return [
         {
-          id: 'attendance',
-          labelKey: 'tab_mark_attendance',
+          id: 'dashboard',
+          labelKey: 'tab_dashboard',
+          icon: <LayoutDashboard className="w-5 h-5" />,
+        },
+        ...sectionTabs.map((s) => ({
+          id: `sec:${s.id}`,
+          labelKey: 'tab_mark_attendance' as StringKey,
+          label: s.label,
           icon: <CalendarCheck className="w-5 h-5" />,
-        },
-        {
-          id: 'records',
-          labelKey: 'tab_att_records',
-          icon: <ClipboardCheck className="w-5 h-5" />,
-        },
+        })),
         {
           id: 'more',
           labelKey: 'tab_more',
@@ -253,8 +257,17 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   onLogout,
 }) => {
   const { stringResource, language } = useStringResource();
-  const roleTabs = getRoleTabs(session.role);
+  const [coordSections, setCoordSections] = useState<Section[]>([]);
+  const [coordClasses, setCoordClasses] = useState<Record<string, SchoolClass>>({});
+  const roleTabs = getRoleTabs(
+    session.role,
+    coordSections.map((s) => ({
+      id: s.id,
+      label: formatClassSectionTitle(s, coordClasses, language).replace(/^class\s*/i, ''),
+    }))
+  );
   const currentTab = roleTabs[activeTabIndex] ?? roleTabs[0];
+  const isMarkTab = currentTab.id === 'attendance' || currentTab.id.startsWith('sec:');
 
   const [loading, setLoading] = useState<boolean>(true);
   const [childrenList, setChildrenList] = useState<Student[]>([]);
@@ -315,6 +328,12 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       }
       setSectionsMap(sMap);
 
+      if (session.role === UserRole.ATTENDANCE_COORDINATOR) {
+        const mine = await AppModule.attendanceRepository.sectionsForTeacher(session.profile.id);
+        setCoordClasses(cMap);
+        setCoordSections(mine.ok ? mine.data : []);
+      }
+
       refreshUnread();
 
       if (session.role === UserRole.PARENT) {
@@ -361,7 +380,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     if (nextTabIndex === activeTabIndex) return;
     if (
       (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
-      currentTab.id === 'attendance' &&
+      isMarkTab &&
       teacherAttendanceDirty
     ) {
       setPendingLeaveAction({ type: 'tab', index: nextTabIndex });
@@ -373,7 +392,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   const handleGuardedOpenSettings = () => {
     if (
       (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
-      currentTab.id === 'attendance' &&
+      isMarkTab &&
       teacherAttendanceDirty
     ) {
       setPendingLeaveAction({ type: 'settings' });
@@ -385,7 +404,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   const handleGuardedLogout = () => {
     if (
       (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
-      currentTab.id === 'attendance' &&
+      isMarkTab &&
       teacherAttendanceDirty
     ) {
       setPendingLeaveAction({ type: 'logout' });
@@ -560,19 +579,32 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
         </div>
       );
     }
-    if (currentTab.id === 'attendance') {
+    if (currentTab.id === 'dashboard') {
       return (
-        <TeacherAttendanceTab
-          teacherProfile={session.profile}
-          classesMap={classesMap}
-          selectedSectionId={teacherSelectedSectionId}
-          onSelectSectionId={setTeacherSelectedSectionId}
-          onDirtyChange={setTeacherAttendanceDirty}
+        <CoordinatorDashboard
+          coordinator={session.profile}
+          sections={coordSections}
+          classesMap={coordClasses}
+          onOpenSection={(secId) => {
+            const idx = roleTabs.findIndex((x) => x.id === `sec:${secId}`);
+            if (idx >= 0) onTabChange(idx);
+          }}
         />
       );
     }
-    if (currentTab.id === 'records') {
-      return <CoordinatorRecords coordinator={session.profile} />;
+    if (currentTab.id.startsWith('sec:')) {
+      const secId = currentTab.id.slice(4);
+      return (
+        <TeacherAttendanceTab
+          key={secId}
+          lockedSection
+          teacherProfile={session.profile}
+          classesMap={classesMap}
+          selectedSectionId={secId}
+          onSelectSectionId={() => {}}
+          onDirtyChange={setTeacherAttendanceDirty}
+        />
+      );
     }
     return (
       <TeacherMoreTab
@@ -946,7 +978,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
         aria-label="Role Bottom Navigation"
         className={`sticky bottom-0 z-30 bg-white border-t border-[#E4E8F0] px-1.5 py-1 shrink-0 no-print ps-nav`}
       >
-        <div className="grid grid-cols-5 items-center">
+        <div className={roleTabs.length > 5 ? 'flex items-center overflow-x-auto' : 'grid grid-cols-5 items-center'}>
           {roleTabs.map((tab, idx) => {
             const isSelected = idx === activeTabIndex;
             return (
@@ -954,7 +986,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => handleGuardedTabChange(idx)}
-                className={`${isSelected ? 'ps-tab-active' : ''} min-h-[54px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
+                className={`${isSelected ? 'ps-tab-active' : ''} ${roleTabs.length > 5 ? 'flex-1 min-w-[64px]' : ''} min-h-[54px] px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer ${
                   isSelected
                     ? 'text-[#F28C28] font-bold'
                     : 'text-[#6B7385] hover:text-[#14284B] font-medium'
@@ -974,7 +1006,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
                   )}
                 </span>
                 <span className="text-[10px] leading-tight whitespace-nowrap truncate max-w-full">
-                  {stringResource(tab.labelKey)}
+                  {tab.label ?? stringResource(tab.labelKey)}
                 </span>
               </button>
             );

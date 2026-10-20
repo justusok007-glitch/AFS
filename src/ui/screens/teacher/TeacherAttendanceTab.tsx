@@ -63,6 +63,8 @@ export interface TeacherAttendanceTabProps {
   selectedSectionId: string | null;
   onSelectSectionId: (sectionId: string) => void;
   onDirtyChange: (isDirty: boolean) => void;
+  /** Section chosen by the screen (coordinator tabs): hides the section picker. */
+  lockedSection?: boolean;
 }
 
 interface StudentDraftRow {
@@ -77,6 +79,7 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
   selectedSectionId,
   onSelectSectionId,
   onDirtyChange,
+  lockedSection = false,
 }) => {
   const { stringResource, language, isRtl } = useStringResource();
 
@@ -562,7 +565,12 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          {lockedSection && (
+            <div className="font-heading text-sm font-bold text-[#14284B]">
+              {formatClassSectionTitle(activeSection, classesMap, language)}
+            </div>
+          )}
+          <div className={lockedSection ? 'hidden' : 'grid grid-cols-2 gap-2'}>
             {assignedSections.map((sec) => {
               const isSelected = sec.id === activeSection.id;
               const title = formatClassSectionTitle(sec, classesMap, language);
