@@ -142,6 +142,12 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
     });
   }, []);
 
+  // keep the loaders stable: these props/functions can change identity on every render
+  const srRef = useRef(stringResource);
+  srRef.current = stringResource;
+  const onSelectRef = useRef(onSelectSectionId);
+  onSelectRef.current = onSelectSectionId;
+
   const activeSection =
     assignedSections.find((s) => s.id === selectedSectionId) ??
     assignedSections[0] ??
@@ -224,7 +230,7 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
 
       if (!sectionsRes.ok) {
         setLoadError(
-          formatDomainErrorMessage(sectionsRes.error, stringResource)
+          formatDomainErrorMessage(sectionsRes.error, srRef.current)
         );
         return;
       }
@@ -244,19 +250,19 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
       if (secs.length > 0) {
         const validSelected = secs.find((s) => s.id === selectedSectionId);
         if (!validSelected) {
-          onSelectSectionId(secs[0].id);
+          onSelectRef.current(secs[0].id);
         }
       }
     } catch (err) {
       setLoadError(
         err instanceof Error
           ? err.message
-          : stringResource('domain_err_generic')
+          : srRef.current('domain_err_generic')
       );
     } finally {
       setLoadingSections(false);
     }
-  }, [teacherProfile.id, selectedSectionId, onSelectSectionId, stringResource]);
+  }, [teacherProfile.id, selectedSectionId]);
 
   useEffect(() => {
     loadInitialSetup();
@@ -304,17 +310,17 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
 
       if (!studentsRes.ok) {
         setLoadError(
-          formatDomainErrorMessage(studentsRes.error, stringResource)
+          formatDomainErrorMessage(studentsRes.error, srRef.current)
         );
         return;
       }
       if (!subRes.ok) {
-        setLoadError(formatDomainErrorMessage(subRes.error, stringResource));
+        setLoadError(formatDomainErrorMessage(subRes.error, srRef.current));
         return;
       }
       if (!recordsRes.ok) {
         setLoadError(
-          formatDomainErrorMessage(recordsRes.error, stringResource)
+          formatDomainErrorMessage(recordsRes.error, srRef.current)
         );
         return;
       }
@@ -351,12 +357,12 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
       setLoadError(
         err instanceof Error
           ? err.message
-          : stringResource('domain_err_generic')
+          : srRef.current('domain_err_generic')
       );
     } finally {
       setLoadingRoster(false);
     }
-  }, [activeSection, activeCampusId, selectedDate, stringResource]);
+  }, [activeSection, activeCampusId, selectedDate]);
 
   useEffect(() => {
     setSuccessBanner(null);
