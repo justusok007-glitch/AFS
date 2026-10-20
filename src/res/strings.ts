@@ -50,6 +50,15 @@ export type StringKey =
   | 'role_accountant'
   | 'role_attendance_coordinator'
   | 'tab_mark_attendance'
+  | 'fb_title'
+  | 'fb_this_month'
+  | 'fb_other'
+  | 'fb_charged'
+  | 'fb_received'
+  | 'fb_pending'
+  | 'fb_total_charged'
+  | 'fb_collected_month'
+  | 'fb_total'
   | 'co_tab_progress'
   | 'co_tab_totals'
   | 'co_no_sections'
@@ -1034,6 +1043,15 @@ export const stringsEn: Record<StringKey, string> = {
   role_accountant: 'Accountant',
   role_attendance_coordinator: 'Attendance Coordinator',
   tab_mark_attendance: 'Mark',
+  fb_title: 'Fee breakdown',
+  fb_this_month: 'This month\'s fee',
+  fb_other: 'Other dues',
+  fb_charged: 'Charged',
+  fb_received: 'Received',
+  fb_pending: 'Pending',
+  fb_total_charged: 'Total charged',
+  fb_collected_month: 'Received this month, by type',
+  fb_total: 'Total received',
   co_tab_progress: 'Assigned vs remaining',
   co_tab_totals: 'Present vs absent',
   co_no_sections: 'No classes are assigned to you yet.',
@@ -2019,6 +2037,15 @@ export const stringsUr: Record<StringKey, string> = {
   role_accountant: 'اکاؤنٹنٹ',
   role_attendance_coordinator: 'حاضری کوآرڈینیٹر',
   tab_mark_attendance: 'حاضری لگائیں',
+  fb_title: 'فیس کی تفصیل',
+  fb_this_month: 'اس ماہ کی فیس',
+  fb_other: 'دیگر واجبات',
+  fb_charged: 'واجب',
+  fb_received: 'وصول',
+  fb_pending: 'باقی',
+  fb_total_charged: 'کل واجب',
+  fb_collected_month: 'اس ماہ وصولی، قسم وار',
+  fb_total: 'کل وصولی',
   co_tab_progress: 'تفویض شدہ بمقابلہ باقی',
   co_tab_totals: 'حاضر بمقابلہ غیر حاضر',
   co_no_sections: 'ابھی آپ کو کوئی کلاس تفویض نہیں کی گئی۔',

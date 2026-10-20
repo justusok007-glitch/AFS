@@ -53,7 +53,7 @@ export const AccountantRoot: React.FC<AccountantRootProps> = ({
           </div>
         );
       }
-      return <AccountantDashboardTab onSwitchTab={onSwitchTab} onOpenDefaulters={() => setShowDefaulters(true)} onOpenSettings={onOpenSettings} />;
+      return <AccountantDashboardTab lookups={lookups} onSwitchTab={onSwitchTab} onOpenDefaulters={() => setShowDefaulters(true)} onOpenSettings={onOpenSettings} />;
     case 'collect':
       return (
         <AccountantCollectTab

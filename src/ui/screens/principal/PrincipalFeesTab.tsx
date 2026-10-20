@@ -5,6 +5,7 @@ import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantDefaultersTab } from '../accountant/AccountantDefaultersTab';
 import { AccountantReportsTab } from '../accountant/AccountantReportsTab';
 import { AccountantLookups } from '../accountant/AccountantShared';
+import { FeeBreakdownCard } from '../accountant/FeeBreakdownCard';
 
 type Sub = 'reports' | 'defaulters';
 
@@ -14,6 +15,7 @@ export const PrincipalFeesTab: React.FC<{ lookups: AccountantLookups }> = ({ loo
   const [sub, setSub] = useState<Sub>('reports');
   return (
     <div className="space-y-3">
+      <FeeBreakdownCard lookups={lookups} />
       <PrincipalFeesSummary lookups={lookups} />
       <TabRow
         tabs={[
