@@ -8,7 +8,6 @@ import {
   PrimaryButton,
   SchoolCard,
   ShimmerPlaceholder,
-  TabRow,
 } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups, StudentNameBlock, studentClassLabel } from '../accountant/AccountantShared';
@@ -20,8 +19,7 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
   const subjects = useSubjectsMap();
   const [exams, setExams] = useState<Exam[]>([]);
   const [examId, setExamId] = useState('');
-  const [campus, setCampus] = useState('ALL');
-  const [cls, setCls] = useState('ALL');
+  const [cls, setCls] = useState('');
   const [data, setData] = useState<ExamAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -40,14 +38,16 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
   const exam = exams.find((e) => e.id === examId) ?? exams[0];
 
   useEffect(() => {
-    if (!exam) {
+    if (!exam || !cls) {
       setLoading(false);
+      setData(null);
       return;
     }
     let cancelled = false;
     setLoading(true);
+    const campusOfClass = lookups.classes.find((c) => c.id === cls)?.campusId ?? null;
     void AppModule.examRepository
-      .getExamAnalytics(exam.id, campus === 'ALL' ? null : campus, cls === 'ALL' ? null : cls)
+      .getExamAnalytics(exam.id, campusOfClass, cls)
       .then((r) => {
         if (cancelled) return;
         if (r.ok) setData(r.data);
@@ -57,7 +57,7 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
     return () => {
       cancelled = true;
     };
-  }, [exam, campus, cls]);
+  }, [exam, cls, lookups.classes]);
 
   if (failed) {
     return <EmptyState title={t('error_loading_title')} description={t('error_loading_subtitle')} actionLabel={t('retry_button')} onAction={() => { setFailed(false); void loadExams(); }} icon={<AlertCircle className="w-6 h-6 text-[#D64545]" />} />;
@@ -66,7 +66,11 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
     return <EmptyState title={t('rs_no_exams')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />;
   }
 
-  const classOptions = lookups.classes.filter((c) => campus === 'ALL' || c.campusId === campus);
+  const campusLabel = (id: string) => {
+    const c = lookups.campuses.find((x) => x.id === id);
+    return c ? (language === 'ur' ? c.nameUr : c.nameEn) : '';
+  };
+  const classOptions = lookups.classes;
   const gradeColors = [CHART.green, CHART.blue, CHART.navy, CHART.amber, CHART.orange, CHART.red, CHART.grey];
 
   return (
@@ -76,18 +80,15 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
           {exams.map((e) => (<option key={e.id} value={e.id}>{examName(e, language)}</option>))}
         </select>
         {exam && <ExamStatusChip status={exam.status} />}
-        <TabRow
-          tabs={[{ id: 'ALL', label: t('campus_both') }, ...lookups.campuses.map((c) => ({ id: c.id, label: language === 'ur' ? c.nameUr : c.nameEn }))]}
-          selected={campus}
-          onSelect={(v) => { setCampus(v); setCls('ALL'); }}
-        />
         <select className={selectCls} value={cls} onChange={(e) => setCls(e.target.value)}>
-          <option value="ALL">{t('rs_all_classes')}</option>
-          {classOptions.map((c) => (<option key={c.id} value={c.id}>{language === 'ur' ? c.nameUr : c.nameEn}</option>))}
+          <option value="">{t('rs_choose_class')}</option>
+          {classOptions.map((c) => (<option key={c.id} value={c.id}>{campusLabel(c.campusId)} · {language === 'ur' ? c.nameUr : c.nameEn}</option>))}
         </select>
       </SchoolCard>
 
-      {loading || !data ? (
+      {!cls ? (
+        <EmptyState title={t('rs_pick_class_hint')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />
+      ) : loading || !data ? (
         <ShimmerPlaceholder lines={5} showHeader />
       ) : data.studentsCount === 0 && data.incompleteCount === 0 ? (
         <EmptyState title={t('rs_none')} description="" />
@@ -120,11 +121,11 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
 
           <SchoolCard className="space-y-2">
             <div className="font-heading text-xs font-bold text-[#14284B]">{t('rs_subject_avgs')}</div>
-            <div dir="ltr" className="w-full h-52">
+            <div dir="ltr" className="w-full h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.subjectAverages.map((s) => ({ name: subjectName(subjects, s.subjectId, language), pct: s.averagePercent }))} margin={{ top: 20, right: 8, left: -16, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
-                  <XAxis dataKey="name" interval={0} tick={{ fill: '#1B2233', fontSize: 9 }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
+                  <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} tick={{ fill: '#1B2233', fontSize: 10 }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
                   <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: CHART.grey, fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip formatter={(v: unknown) => [`${Number(v)}%`, t('rs_avg')]} contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.grid}`, fontSize: 12 }} />
                   <Bar dataKey="pct" radius={[8, 8, 0, 0]} maxBarSize={40}>

@@ -909,6 +909,8 @@ export type StringKey =
   | 'rs_grade_dist'
   | 'rs_subject_avgs'
   | 'rs_top10'
+  | 'rs_choose_class'
+  | 'rs_pick_class_hint'
   | 'rs_all_classes'
   | 'rs_no_exams'
   | 'rs_publish_hint'
@@ -1863,6 +1865,8 @@ export const stringsEn: Record<StringKey, string> = {
   rs_grade_dist: 'Grade distribution',
   rs_subject_avgs: 'Subject averages',
   rs_top10: 'Top 10 students',
+  rs_choose_class: 'Choose class',
+  rs_pick_class_hint: 'Choose an exam and a class to see the result.',
   rs_all_classes: 'All classes',
   rs_no_exams: 'No exam has reached marks entry yet.',
   rs_publish_hint: 'Parents see results only after you publish.',
@@ -2818,6 +2822,8 @@ export const stringsUr: Record<StringKey, string> = {
   rs_grade_dist: 'گریڈ کی تقسیم',
   rs_subject_avgs: 'مضمون وار اوسط',
   rs_top10: 'نمایاں 10 طلبہ',
+  rs_choose_class: 'کلاس منتخب کریں',
+  rs_pick_class_hint: 'نتیجہ دیکھنے کے لیے امتحان اور کلاس منتخب کریں۔',
   rs_all_classes: 'تمام کلاسیں',
   rs_no_exams: 'ابھی کوئی امتحان نمبر اندراج تک نہیں پہنچا۔',
   rs_publish_hint: 'والدین نتیجہ شائع کرنے کے بعد ہی دیکھ سکتے ہیں۔',
