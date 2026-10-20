@@ -2113,7 +2113,7 @@ export class FakeFeeRepository implements FeeRepository {
     const fail = (row: ImportFeeRow, error: string): ImportFeeResult => ({
       line: row.line, ok: false, error, warnings: [], studentName: row.name, admissionNo: row.admissionNo, due: 0, paid: 0,
     });
-    const plan: { row: ImportFeeRow; student: Student; warnings: string[]; due: number }[] = [];
+    const plan: { row: ImportFeeRow; student: Student; warnings: string[]; due: number; paid: number; extra: number; collapse: boolean }[] = [];
     const results: ImportFeeResult[] = [];
     const byLine = new Map<number, ImportFeeResult>();
     for (const row of rows) {
@@ -2131,16 +2131,31 @@ export class FakeFeeRepository implements FeeRepository {
       seen.add(student.id);
       const warnings: string[] = [];
       const billed = row.months.reduce((s, m) => s + m.amount, 0);
-      const due = row.prevArrears + row.admissionFee + row.annualCharges + billed;
-      if (row.totalDue !== undefined && row.totalDue !== due) {
-        warnings.push(`Total Due in file is ${row.totalDue}, but the columns add up to ${due}. Using ${due}.`);
-      }
+      const colSum = row.prevArrears + row.admissionFee + row.annualCharges + billed;
+      // The accountant's own Total Due / Arrears figures are the master record; the columns only give the breakdown.
+      let due = colSum;
+      if (row.totalDue !== undefined) due = row.totalDue;
+      else if (row.arrears !== undefined) due = row.arrears + row.totalPaid;
       let paid = row.totalPaid;
-      if (paid > due) { warnings.push(`Total Paid ${paid} is more than Total Due ${due}; only ${due} is recorded.`); paid = due; }
-      if (row.arrears !== undefined && row.arrears !== due - paid) {
-        warnings.push(`Arrears in file is ${row.arrears}, calculated ${due - paid}.`);
+      if (row.arrears !== undefined) {
+        const fromFile = Math.max(0, Math.min(due, due - row.arrears));
+        if (fromFile !== paid) {
+          warnings.push(`Total Paid in file is ${paid}, but Total Due ${due} - Arrears ${row.arrears} = ${fromFile}. Using ${fromFile}.`);
+          paid = fromFile;
+        }
       }
-      plan.push({ row, student, warnings, due });
+      if (paid > due) { warnings.push(`Total Paid ${paid} is more than Total Due ${due}; only ${due} is recorded.`); paid = due; }
+      const gap = due - colSum;
+      let extra = 0;
+      let collapse = false;
+      if (gap > 0) {
+        extra = gap;
+        warnings.push(`Fee columns add up to ${colSum} but Total Due is ${due}. The extra ${gap} is shown as previous arrears.`);
+      } else if (gap < 0) {
+        collapse = true;
+        warnings.push(`Fee columns add up to ${colSum} but Total Due is ${due}. Saved as one balance of ${due}.`);
+      }
+      plan.push({ row, student, warnings, due, paid, extra, collapse });
     }
 
     // 2. remove the old records of these students (the file is the master record)
@@ -2163,20 +2178,22 @@ export class FakeFeeRepository implements FeeRepository {
     let allocSeq = db.paymentAllocations.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0);
 
     // 3. write the new records
-    for (const { row, student, warnings, due } of plan) {
+    for (const { row, student, warnings, due, paid: paidAmt, extra, collapse } of plan) {
       const pre = student.campusId === 'campus_g' ? 'G-' : 'B-';
       const items = new Map<string, FeeVoucherItem[]>(); // month -> items
       const add = (month: string, item: FeeVoucherItem) => items.set(month, [...(items.get(month) ?? []), item]);
       const billedMonths = row.months.filter((m) => m.amount > 0).sort((a, b) => a.month.localeCompare(b.month));
-      if (row.prevArrears > 0) {
-        add(row.arrearsMonth, { feeHeadId: 'fh_arrears', description: 'Previous Arrears', amount: row.prevArrears, waivedAmount: 0, paidAmount: 0 });
+      if (collapse) {
+        if (due > 0) add(row.arrearsMonth, { feeHeadId: 'fh_arrears', description: 'Balance as per fee file', amount: due, waivedAmount: 0, paidAmount: 0 });
+      } else if (row.prevArrears + extra > 0) {
+        add(row.arrearsMonth, { feeHeadId: 'fh_arrears', description: 'Previous Arrears', amount: row.prevArrears + extra, waivedAmount: 0, paidAmount: 0 });
       }
-      billedMonths.forEach((m) =>
+      if (!collapse) billedMonths.forEach((m) =>
         add(m.month, { feeHeadId: 'fh_tuition', description: `Monthly Tuition Fee (${m.month})`, amount: m.amount, waivedAmount: 0, paidAmount: 0 })
       );
       const extraMonth = billedMonths[0]?.month ?? `${row.arrearsMonth.slice(0, 4)}-${String(Number(row.arrearsMonth.slice(5)) % 12 + 1).padStart(2, '0')}`;
-      if (row.admissionFee > 0) add(extraMonth, { feeHeadId: 'fh_admission', description: 'Admission Fee', amount: row.admissionFee, waivedAmount: 0, paidAmount: 0 });
-      if (row.annualCharges > 0) add(extraMonth, { feeHeadId: 'fh_annual', description: 'Annual Charges', amount: row.annualCharges, waivedAmount: 0, paidAmount: 0 });
+      if (!collapse && row.admissionFee > 0) add(extraMonth, { feeHeadId: 'fh_admission', description: 'Admission Fee', amount: row.admissionFee, waivedAmount: 0, paidAmount: 0 });
+      if (!collapse && row.annualCharges > 0) add(extraMonth, { feeHeadId: 'fh_annual', description: 'Annual Charges', amount: row.annualCharges, waivedAmount: 0, paidAmount: 0 });
 
       const vouchers: FeeVoucher[] = [...items.keys()].sort().map((month) => {
         nextVoucher[pre] += 1;
@@ -2187,7 +2204,7 @@ export class FakeFeeRepository implements FeeRepository {
         };
       });
 
-      let remaining = Math.min(row.totalPaid, due);
+      let remaining = paidAmt;
       if (remaining > 0) {
         nextReceipt[pre] += 1;
         const receiptNo = `${pre}R-${String(nextReceipt[pre]).padStart(4, '0')}`;
@@ -2222,7 +2239,7 @@ export class FakeFeeRepository implements FeeRepository {
       }
       byLine.set(row.line, {
         line: row.line, ok: true, error: null, warnings, studentName: student.name, admissionNo: student.admissionNo,
-        due, paid: Math.min(row.totalPaid, due),
+        due, paid: paidAmt,
       });
     }
     if (!dryRun) {
