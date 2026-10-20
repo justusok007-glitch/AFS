@@ -28,6 +28,7 @@ import {
 import {
   AttendanceRecord,
   AttendanceStatus,
+  AttendanceUnlock,
   AttendanceSubmission,
   DayOfWeek,
   Profile,
@@ -847,7 +848,7 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
           <ShimmerPlaceholder lines={3} />
           <ShimmerPlaceholder lines={3} />
         </div>
-      ) : isOffDay ? null : isPastDay && !hasRecordsOnPastDay ? (
+      ) : isOffDay ? null : isPastDay && !hasRecordsOnPastDay && !unlockActive ? (
         <SchoolCard className="py-6 text-center text-xs text-[#6B7385]">
           {stringResource('teacher_att_no_records_past_day')}
         </SchoolCard>

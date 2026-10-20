@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { AccountantDefaultersTab } from '../accountant/AccountantDefaultersTab';
-import { AlertTriangle, ArrowLeft, ArrowRight, Bell, CalendarCheck, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare, Settings as SettingsIcon, Sliders, Users, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Bell, CalendarCheck, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare, Settings as SettingsIcon, Sliders, Unlock, Users, Wallet } from 'lucide-react';
 import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesManager } from '../comms/CommsShared';
 import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
+import { AdminAttendanceUnlock } from './AdminAttendanceUnlock';
 import { AdminAuditCard } from './AdminMoreTab';
 import { useSectionOptions } from './AdminStudentsTab';
 import { StudentSearchPanel } from '../principal/StudentSearchPanel';
@@ -88,7 +89,7 @@ export const AdminOverviewTab: React.FC<{
 };
 
 /** Admin home: shortcut tiles. Overview, corrections, notices, conversations and audit log open from their own tile. */
-type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters' | 'search' | 'feebreak';
+type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters' | 'search' | 'feebreak' | 'unlock';
 
 export const AdminDashboardTab: React.FC<{
   admin: Profile;
@@ -106,6 +107,7 @@ export const AdminDashboardTab: React.FC<{
   if (view === 'attendance') {
     return <AdminAttendanceCorrection admin={admin} sectionOptions={sectionOptions} onBack={back} />;
   }
+  if (view === 'unlock') return <AdminAttendanceUnlock admin={admin} sectionOptions={sectionOptions} onBack={back} />;
   if (view === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={back} />;
   if (view === 'messages') return <MessagesTab user={admin} readOnly onBack={back} />;
   if (view === 'overview' || view === 'audit' || view === 'defaulters' || view === 'search' || view === 'feebreak') {
@@ -129,6 +131,7 @@ export const AdminDashboardTab: React.FC<{
       <HomeTile tone="green" label={t('fb_title')} icon={<Wallet className={ic} />} onClick={() => setView('feebreak')} />
       <HomeTile tone="orange" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => setView('defaulters')} />
       <HomeTile tone="red" label={t('ad_att_btn')} icon={<CalendarCheck className={ic} />} onClick={() => setView('attendance')} />
+      <HomeTile tone="purple" label={t('ad_unlock_title')} icon={<Unlock className={ic} />} onClick={() => setView('unlock')} />
       <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => setView('notices')} />
       <HomeTile tone="indigo" label={t('ms_audit_btn')} icon={<MessageSquare className={ic} />} onClick={() => setView('messages')} />
       <HomeTile tone="teal" label={t('ad_audit_title')} icon={<ClipboardList className={ic} />} onClick={() => setView('audit')} />

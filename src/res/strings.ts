@@ -50,6 +50,17 @@ export type StringKey =
   | 'role_accountant'
   | 'role_attendance_coordinator'
   | 'tab_mark_attendance'
+  | 'ad_unlock_title'
+  | 'ad_unlock_hint'
+  | 'ad_unlock_section'
+  | 'ad_unlock_all'
+  | 'ad_unlock_minutes'
+  | 'ad_unlock_open_btn'
+  | 'ad_unlock_active'
+  | 'ad_unlock_none'
+  | 'ad_unlock_lock_now'
+  | 'ad_unlock_err_minutes'
+  | 'teacher_att_unlocked'
   | 'fb_title'
   | 'fb_collected_at'
   | 'fb_at_boys'
@@ -1046,6 +1057,17 @@ export const stringsEn: Record<StringKey, string> = {
   role_accountant: 'Accountant',
   role_attendance_coordinator: 'Attendance Coordinator',
   tab_mark_attendance: 'Mark',
+  ad_unlock_title: 'Open attendance for editing',
+  ad_unlock_hint: 'Teachers and attendance coordinators assigned to the class can change the attendance of that day, even after the lock time, until the minutes run out. Then it locks again by itself. Everything else about the lock stays the same.',
+  ad_unlock_section: 'Class and section',
+  ad_unlock_all: 'All sections',
+  ad_unlock_minutes: 'Minutes open',
+  ad_unlock_open_btn: 'Open now',
+  ad_unlock_active: 'Open right now',
+  ad_unlock_none: 'Nothing is open. Attendance is locked as usual.',
+  ad_unlock_lock_now: 'Lock now',
+  ad_unlock_err_minutes: 'Enter minutes between 1 and 240.',
+  teacher_att_unlocked: 'Opened by Admin for editing. Time left:',
   fb_title: 'Fee breakdown',
   fb_collected_at: 'Received at which campus counter',
   fb_at_boys: 'Boys campus counter',
@@ -2043,6 +2065,17 @@ export const stringsUr: Record<StringKey, string> = {
   role_accountant: 'اکاؤنٹنٹ',
   role_attendance_coordinator: 'حاضری کوآرڈینیٹر',
   tab_mark_attendance: 'حاضری لگائیں',
+  ad_unlock_title: 'حاضری میں ترمیم کھولیں',
+  ad_unlock_hint: 'کلاس سے منسلک اساتذہ اور حاضری کوآرڈینیٹر اس دن کی حاضری، لاک ٹائم کے بعد بھی، مقررہ منٹ ختم ہونے تک بدل سکتے ہیں۔ اس کے بعد خود بخود دوبارہ لاک ہو جاتی ہے۔ لاک کی باقی تمام شرائط وہی رہتی ہیں۔',
+  ad_unlock_section: 'کلاس اور سیکشن',
+  ad_unlock_all: 'تمام سیکشن',
+  ad_unlock_minutes: 'کھلا رہنے کے منٹ',
+  ad_unlock_open_btn: 'ابھی کھولیں',
+  ad_unlock_active: 'اس وقت کھلی ہوئی',
+  ad_unlock_none: 'کچھ بھی کھلا نہیں۔ حاضری معمول کے مطابق لاک ہے۔',
+  ad_unlock_lock_now: 'ابھی لاک کریں',
+  ad_unlock_err_minutes: '1 سے 240 کے درمیان منٹ لکھیں۔',
+  teacher_att_unlocked: 'ایڈمن نے ترمیم کے لیے کھولی ہے۔ باقی وقت:',
   fb_title: 'فیس کی تفصیل',
   fb_collected_at: 'کس کیمپس کاؤنٹر پر وصول ہوئی',
   fb_at_boys: 'بوائز کیمپس کاؤنٹر',
