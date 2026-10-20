@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
+import { refreshIfIdle } from '../../../data/supabase/sync';
 import {
   checkWeeklyOffOrHoliday,
   subscribeToClock,
@@ -167,10 +168,38 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
     );
 
   const currentSnapshotJson = serializeRows(draftRows);
+  const [unlock, setUnlock] = useState<AttendanceUnlock | null>(null);
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  const activeSectionId = activeSection?.id ?? null;
+  useEffect(() => {
+    if (!activeSectionId) return;
+    let off = false;
+    const check = async () => {
+      await refreshIfIdle(8000);
+      const r = await AppModule.attendanceRepository.getActiveUnlock(activeSectionId, selectedDate);
+      if (!off) {
+        setNowMs(Date.now());
+        setUnlock(r.ok ? r.data : null);
+      }
+    };
+    void check();
+    const id = window.setInterval(() => void check(), 10000);
+    return () => {
+      off = true;
+      window.clearInterval(id);
+    };
+  }, [activeSectionId, selectedDate]);
+  useEffect(() => {
+    if (!unlock) return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [unlock]);
+  const unlockLeft = unlock ? Math.max(0, Math.floor((new Date(unlock.expiresAt).getTime() - nowMs) / 1000)) : 0;
   const isPastDay = selectedDate < currentToday;
   const isPastLockTime =
     selectedDate === currentToday && getCurrentKarachiWallTimeHHMM() > lockTime;
-  const isViewOnly = isPastDay || isPastLockTime || isOffDay;
+  const unlockActive = !!unlock && new Date(unlock.expiresAt).getTime() > nowMs;
+  const isViewOnly = ((isPastDay || isPastLockTime) && !unlockActive) || isOffDay;
 
   const isDirty =
     !isViewOnly &&
@@ -691,6 +720,15 @@ export const TeacherAttendanceTab: React.FC<TeacherAttendanceTabProps> = ({
                 : getWeekdayName(selectedDate, stringResource)}
             </p>
           </div>
+        </div>
+      )}
+
+      {unlockActive && (
+        <div className="p-3.5 rounded-2xl bg-[#2E9E5B]/12 border border-[#2E9E5B]/30 flex items-center justify-between gap-3 text-xs font-semibold text-[#2E9E5B]">
+          <span>{stringResource('teacher_att_unlocked')}</span>
+          <span dir="ltr" className="font-mono text-sm font-bold">
+            {String(Math.floor(unlockLeft / 60)).padStart(2, '0')}:{String(unlockLeft % 60).padStart(2, '0')}
+          </span>
         </div>
       )}
 

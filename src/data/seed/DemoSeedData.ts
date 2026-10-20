@@ -66,6 +66,7 @@ export interface LocalDatabaseSnapshot {
   holidays: SchoolHoliday[];
   attendanceRecords: AttendanceRecord[];
   attendanceSubmissions: AttendanceSubmission[];
+  attendanceUnlocks: AttendanceUnlock[];
   feeHeads: FeeHead[];
   classFeeStructures: ClassFeeStructure[];
   studentConcessions: StudentConcession[];
@@ -1276,6 +1277,7 @@ export function buildInitialDemoDatabase(
     holidays,
     attendanceRecords,
     attendanceSubmissions,
+    attendanceUnlocks: [],
     feeHeads,
     classFeeStructures,
     studentConcessions,

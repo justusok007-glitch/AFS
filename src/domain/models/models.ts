@@ -482,6 +482,17 @@ export interface AttendanceRecord {
   markedBy: string;
 }
 
+/** Admin opened attendance editing for a short time (after the lock time or for a past day). */
+export interface AttendanceUnlock {
+  id: string;
+  /** null = every section */
+  sectionId: string | null;
+  date: string; // the attendance day that may be edited
+  expiresAt: string; // Instant ISO
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface AttendanceSubmission {
   sectionId: string;
   date: string; // LocalDate "YYYY-MM-DD"

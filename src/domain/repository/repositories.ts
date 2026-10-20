@@ -7,6 +7,7 @@ import {
   AttendanceRecord,
   AttendanceStatus,
   AttendanceSubmission,
+  AttendanceUnlock,
   AuditLogEntry,
   Campus,
   CampusModel,
@@ -187,6 +188,15 @@ export interface AttendanceRepository {
     sectionId: string,
     date: string
   ): Promise<AppResult<AttendanceSubmission | null>>;
+  /** The unlock that is open right now for this section and day, if any. */
+  getActiveUnlock(sectionId: string, date: string): Promise<AppResult<AttendanceUnlock | null>>;
+  listActiveUnlocks(): Promise<AppResult<AttendanceUnlock[]>>;
+  /** Admin only: lets the assigned teachers edit that day's attendance for `minutes` minutes. */
+  openUnlock(
+    actor: Profile,
+    input: { sectionId: string | null; date: string; minutes: number }
+  ): Promise<AppResult<AttendanceUnlock>>;
+  closeUnlock(actor: Profile, unlockId: string): Promise<AppResult<void>>;
   submit(
     actor: Profile,
     sectionId: string,

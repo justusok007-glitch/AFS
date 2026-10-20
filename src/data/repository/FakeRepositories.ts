@@ -40,6 +40,7 @@ import {
   AttendanceRecord,
   AttendanceStatus,
   AttendanceSubmission,
+  AttendanceUnlock,
   AuditLogEntry,
   Campus,
   CampusModel,
@@ -172,6 +173,7 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
         Array.isArray(parsed.feeVouchers)
       ) {
         // Older saved data predates exams: add the new tables instead of re-seeding.
+        parsed.attendanceUnlocks ??= [];
         parsed.exams ??= [];
         parsed.examSubjects ??= [];
         parsed.marks ??= [];
@@ -212,6 +214,15 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
   (initial as { cleanStart?: boolean }).cleanStart = true;
   writeLocalJson(STORAGE_KEYS.LOCAL_DB, initial);
   return initial;
+}
+
+/** The admin's open unlock for this section and day, if it has not run out. */
+function activeUnlockFor(db: LocalDatabaseSnapshot, sectionId: string, date: string): AttendanceUnlock | null {
+  const now = Date.now();
+  const hits = (db.attendanceUnlocks ?? []).filter(
+    (u) => u.date === date && (u.sectionId === null || u.sectionId === sectionId) && new Date(u.expiresAt).getTime() > now
+  );
+  return hits.sort((a, b) => b.expiresAt.localeCompare(a.expiresAt))[0] ?? null;
 }
 
 function saveLocalDatabase(db: LocalDatabaseSnapshot): void {
@@ -1724,6 +1735,63 @@ export class FakeAttendanceRepository implements AttendanceRepository {
     );
   }
 
+  async getActiveUnlock(sectionId: string, date: string): Promise<AppResult<AttendanceUnlock | null>> {
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success(activeUnlockFor(db, sectionId, date));
+  }
+
+  async listActiveUnlocks(): Promise<AppResult<AttendanceUnlock[]>> {
+    const db = getOrSeedLocalDatabase();
+    const now = Date.now();
+    return AppResult.success((db.attendanceUnlocks ?? []).filter((u) => new Date(u.expiresAt).getTime() > now));
+  }
+
+  async openUnlock(
+    actor: Profile,
+    input: { sectionId: string | null; date: string; minutes: number }
+  ): Promise<AppResult<AttendanceUnlock>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can open attendance for editing.' });
+    }
+    if (!Number.isFinite(input.minutes) || input.minutes < 1 || input.minutes > 240) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Minutes must be between 1 and 240.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    db.attendanceUnlocks ??= [];
+    const now = Date.now();
+    // forget unlocks that ended more than a day ago
+    db.attendanceUnlocks = db.attendanceUnlocks.filter((u) => new Date(u.expiresAt).getTime() > now - 86400000);
+    const unlock: AttendanceUnlock = {
+      id: `unl_${now}`,
+      sectionId: input.sectionId,
+      date: input.date,
+      expiresAt: new Date(now + input.minutes * 60000).toISOString(),
+      createdBy: actor.id,
+      createdAt: new Date(now).toISOString(),
+    };
+    db.attendanceUnlocks.push(unlock);
+    db.auditLogs.unshift({
+      id: `aud_${now}`, action: 'ATTENDANCE_UNLOCK', tableName: 'attendance_unlocks', recordId: unlock.id,
+      oldValue: null, newValue: `${input.sectionId ?? 'ALL'} ${input.date} ${input.minutes}min`, reason: 'Admin opened attendance for editing',
+      changedBy: actor.id, changedAt: new Date(now).toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(unlock);
+  }
+
+  async closeUnlock(actor: Profile, unlockId: string): Promise<AppResult<void>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can lock attendance.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const u = (db.attendanceUnlocks ?? []).find((x) => x.id === unlockId);
+    if (u) u.expiresAt = new Date().toISOString();
+    saveLocalDatabase(db);
+    return AppResult.success(undefined);
+  }
+
   async getSubmission(
     sectionId: string,
     date: string
@@ -1754,6 +1822,7 @@ export class FakeAttendanceRepository implements AttendanceRepository {
     const todayKarachi = getTodayKarachiIsoDate();
     const lockTime = db.schoolSettings.attendanceLockTime || '23:59';
     const nowTime = getCurrentKarachiTimeHHMM();
+    const unlocked = activeUnlockFor(db, sectionId, date) !== null;
 
     if (actor.role === Role.TEACHER || actor.role === Role.ATTENDANCE_COORDINATOR) {
       // Check assigned section with canMarkAttendance == true
@@ -1773,7 +1842,7 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       }
 
       // Check date == today (Asia/Karachi)
-      if (date !== todayKarachi) {
+      if (date !== todayKarachi && !unlocked) {
         return AppResult.failure({
           kind: 'AttendanceDateLocked',
           date: todayKarachi,
@@ -1795,7 +1864,7 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       }
 
       // Check lock time
-      if (nowTime > lockTime) {
+      if (nowTime > lockTime && !unlocked) {
         return AppResult.failure({
           kind: 'AttendancePastCutoffTime',
           lockTime,
