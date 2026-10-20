@@ -51,6 +51,9 @@ export type StringKey =
   | 'role_attendance_coordinator'
   | 'tab_mark_attendance'
   | 'fb_title'
+  | 'fb_collected_at'
+  | 'fb_at_boys'
+  | 'fb_at_girls'
   | 'fb_this_month'
   | 'fb_other'
   | 'fb_charged'
@@ -1044,6 +1047,9 @@ export const stringsEn: Record<StringKey, string> = {
   role_attendance_coordinator: 'Attendance Coordinator',
   tab_mark_attendance: 'Mark',
   fb_title: 'Fee breakdown',
+  fb_collected_at: 'Received at which campus counter',
+  fb_at_boys: 'Boys campus counter',
+  fb_at_girls: 'Girls campus counter',
   fb_this_month: 'This month\'s fee',
   fb_other: 'Other dues',
   fb_charged: 'Charged',
@@ -1786,7 +1792,7 @@ export const stringsEn: Record<StringKey, string> = {
   fee_imp_title: 'Opening balance (CSV)',
   daily_imp_title: 'Daily fee entries (CSV)',
   daily_imp_btn: 'Daily fee entries (CSV)',
-  daily_imp_hint: 'One line per payment: Receipt No, Payment Date, Adm No, Fee For (a month like Oct-2026, or Previous Arrears) and Amount. Each amount first clears that month\'s monthly fee; anything extra goes to previous arrears. If one receipt covers several fees (monthly fee plus arrears), write each on its own line with the same Receipt No - it is saved as one receipt. A receipt already recorded is skipped, so the same file can be uploaded again safely. The opening balance must be uploaded first.',
+  daily_imp_hint: 'One line per payment: Receipt No, Payment Date, Adm No, Fee For (a month like Oct-2026, or Previous Arrears) and Amount. Each amount first clears that month\'s monthly fee; anything extra goes to previous arrears. If one receipt covers several fees (monthly fee plus arrears), write each on its own line with the same Receipt No - it is saved as one receipt. A receipt already recorded is not added twice; uploading it again only fills in the fee type and the 'Collected At' counter (Boys/Girls). The opening balance must be uploaded first.',
   daily_imp_err_cols: 'The file headings were not recognised. Download the template (Receipt No, Payment Date, Adm No, Fee For, Amount).',
   daily_imp_done: 'Payments recorded.',
   fee_imp_hint: 'One line per student with what the student owes on the day you start: Adm No, Billing Month (e.g. Oct-2026), Monthly Fee, Previous Arrears, Admission Fee Due, Annual Charges Due and Total Due (the sum of those four). Use 0 where nothing is due. A student who already has payments is not changed. After this, record fees with the daily fee sheet.',
@@ -2038,6 +2044,9 @@ export const stringsUr: Record<StringKey, string> = {
   role_attendance_coordinator: 'حاضری کوآرڈینیٹر',
   tab_mark_attendance: 'حاضری لگائیں',
   fb_title: 'فیس کی تفصیل',
+  fb_collected_at: 'کس کیمپس کاؤنٹر پر وصول ہوئی',
+  fb_at_boys: 'بوائز کیمپس کاؤنٹر',
+  fb_at_girls: 'گرلز کیمپس کاؤنٹر',
   fb_this_month: 'اس ماہ کی فیس',
   fb_other: 'دیگر واجبات',
   fb_charged: 'واجب',

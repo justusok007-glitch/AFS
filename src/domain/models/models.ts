@@ -355,6 +355,8 @@ export interface ImportPaymentRow {
   /** "Oct-2026" -> "2026-10", "Previous Arrears" -> 'ARREARS', '' when missing. */
   feeFor: string;
   amount?: number;
+  /** Where the money was received: 'Boys' | 'Girls' | '' (not stated). */
+  collectedAt?: string;
 }
 
 export interface ImportPaymentResult {
@@ -635,6 +637,8 @@ export interface FeeCollectionReport {
   byCategory: Partial<Record<FeeCategory, number>>;
   byDay: Record<string, number>;
   byMethod: Partial<Record<PaymentMethod, number>>;
+  /** Money by the campus counter that received it ('Boys' / 'Girls'). */
+  byCollectedAt?: Record<string, number>;
   receiptsCount: number;
   voidedCount: number;
 }

@@ -2278,6 +2278,15 @@ export class FakeFeeRepository implements FeeRepository {
     const stored = getOrSeedLocalDatabase();
     const db = dryRun ? structuredClone(stored) : stored;
     const results: ImportPaymentResult[] = [];
+    const paymentTags = (ls: ImportPaymentRow[]) => {
+      const by: Record<string, number> = {};
+      ls.forEach((r) => {
+        const k = r.feeFor === 'ARREARS' ? 'ARREARS' : r.feeFor === 'ADMISSION' ? 'ADMISSION' : r.feeFor === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
+        by[k] = (by[k] ?? 0) + (r.amount ?? 0);
+      });
+      const at = ls.find((r) => r.collectedAt)?.collectedAt;
+      return `[by:${Object.entries(by).map(([k, v]) => `${k}=${v}`).join(',')}]${at ? `[at:${at}]` : ''}`;
+    };
     const seenReceipts = new Set(db.feePayments.map((p) => p.receiptNo.toLowerCase()));
     const priority: Record<string, number> = {};
     db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
@@ -2307,7 +2316,6 @@ export class FakeFeeRepository implements FeeRepository {
         );
       const bad = (m: string) => out(false, m, [], head.name);
       if (!head.receiptNo.trim()) { bad('Receipt No is empty.'); continue; }
-      if (seenReceipts.has(head.receiptNo.trim().toLowerCase())) { bad(`Receipt ${head.receiptNo} is already recorded.`); continue; }
       const lineErr = lines.find((r) => !r.date || !r.amount || r.amount <= 0 || !r.feeFor || !r.admissionNo.trim());
       if (lineErr) {
         bad(!lineErr.date ? 'Payment Date is missing or not a valid date (use 02-Oct-2026).'
@@ -2328,6 +2336,20 @@ export class FakeFeeRepository implements FeeRepository {
       const student = matches[0];
       const warnings: string[] = [];
       if (head.name.trim() && norm(head.name) !== norm(student.name)) warnings.push(`Name in file "${head.name}" differs from "${student.name}".`);
+
+      const tags = paymentTags(lines);
+      if (seenReceipts.has(head.receiptNo.trim().toLowerCase())) {
+        // already saved: only fill in the missing fee-type / counter details, never change money
+        const old = db.feePayments.find((x) => x.receiptNo.toLowerCase() === head.receiptNo.trim().toLowerCase());
+        const total = lines.reduce((sum, r) => sum + (r.amount ?? 0), 0);
+        if (old && old.studentId === student.id && old.amount === total && !(old.remarks ?? '').includes('[by:')) {
+          old.remarks = `${old.remarks ?? 'Daily fee file'} ${tags}`;
+          out(true, null, ['Receipt details updated (amounts unchanged).'], student.name);
+        } else {
+          bad(`Receipt ${head.receiptNo} is already recorded.`);
+        }
+        continue;
+      }
 
       const realVouchers = db.feeVouchers.filter((v) => v.studentId === student.id);
       if (realVouchers.length === 0) { bad('This student has no opening balance yet. Upload the opening balance sheet first.'); continue; }
@@ -2421,7 +2443,7 @@ export class FakeFeeRepository implements FeeRepository {
       db.feePayments.push({
         id: paymentId, receiptNo: head.receiptNo.trim(), studentId: student.id, amount, paidOn: head.date,
         method: PaymentMethod.CASH, receivedBy: actor.id, isVoid: false, reference: null,
-        remarks: `Daily fee file (${lines.map((r) => (r.feeFor === 'ARREARS' ? 'Previous Arrears' : r.feeFor)).join(' + ')})`,
+        remarks: `Daily fee file (${lines.map((r) => (r.feeFor === 'ARREARS' ? 'Previous Arrears' : r.feeFor)).join(' + ')}) ${tags}`,
       });
       allocs.forEach((amt, key) => {
         const [voucherId, feeHeadId] = key.split('|');
@@ -3299,6 +3321,7 @@ export class FakeFeeRepository implements FeeRepository {
     const byCategory: Partial<Record<FeeCategory, number>> = {};
     const byDay: Record<string, number> = {};
     const byMethod: Partial<Record<PaymentMethod, number>> = {};
+    const byCollectedAt: Record<string, number> = {};
     let totalCollectedRupees = 0;
     let receiptsCount = 0;
     let voidedCount = 0;
@@ -3324,14 +3347,26 @@ export class FakeFeeRepository implements FeeRepository {
       const pAllocations = allocationsByPaymentId[payment.id] ?? [];
       let paymentMatchedAmount = 0;
 
-      for (const alloc of pAllocations) {
-        const cat = alloc.feeHeadId
-          ? headCategoryMap[alloc.feeHeadId] ?? FeeCategory.OTHER
-          : FeeCategory.OTHER;
-        if (filter.category && cat !== filter.category) continue;
+      // Imported daily-sheet receipts carry the fee type the cashier wrote; use it for the by-type split.
+      const declared = /\[by:([^\]]+)\]/.exec(payment.remarks ?? '');
+      if (declared) {
+        for (const part of declared[1].split(',')) {
+          const [k, v] = part.split('=');
+          const cat = (FeeCategory as Record<string, FeeCategory>)[k] ?? FeeCategory.OTHER;
+          if (filter.category && cat !== filter.category) continue;
+          byCategory[cat] = (byCategory[cat] ?? 0) + Number(v);
+          paymentMatchedAmount += Number(v);
+        }
+      } else {
+        for (const alloc of pAllocations) {
+          const cat = alloc.feeHeadId
+            ? headCategoryMap[alloc.feeHeadId] ?? FeeCategory.OTHER
+            : FeeCategory.OTHER;
+          if (filter.category && cat !== filter.category) continue;
 
-        byCategory[cat] = (byCategory[cat] ?? 0) + alloc.allocatedAmount;
-        paymentMatchedAmount += alloc.allocatedAmount;
+          byCategory[cat] = (byCategory[cat] ?? 0) + alloc.allocatedAmount;
+          paymentMatchedAmount += alloc.allocatedAmount;
+        }
       }
 
       if (paymentMatchedAmount > 0) {
@@ -3341,6 +3376,8 @@ export class FakeFeeRepository implements FeeRepository {
           (byDay[payment.paidOn] ?? 0) + paymentMatchedAmount;
         byMethod[payment.method] =
           (byMethod[payment.method] ?? 0) + paymentMatchedAmount;
+        const at = /\[at:([^\]]+)\]/.exec(payment.remarks ?? '')?.[1] ?? (stu.campusId === 'campus_g' ? 'Girls' : 'Boys');
+        byCollectedAt[at] = (byCollectedAt[at] ?? 0) + paymentMatchedAmount;
       }
     }
 
@@ -3350,6 +3387,7 @@ export class FakeFeeRepository implements FeeRepository {
       byCategory,
       byDay,
       byMethod,
+      byCollectedAt,
       receiptsCount,
       voidedCount,
     });

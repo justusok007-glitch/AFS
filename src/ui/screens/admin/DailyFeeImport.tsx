@@ -27,7 +27,7 @@ export function dateOf(v: string): string {
   return '';
 }
 
-export const DAILY_HEADER = ['Receipt No', 'Payment Date', 'Adm No', 'Student Name', 'Father Name', 'Class', 'Campus', 'Fee For', 'Amount'];
+export const DAILY_HEADER = ['Receipt No', 'Payment Date', 'Adm No', 'Student Name', 'Father Name', 'Class', 'Campus', 'Fee For', 'Amount', 'Collected At'];
 
 export function parseDailyFile(text: string): { rows: ImportPaymentRow[]; fatal: boolean } {
   const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() && !/^[,;\s]*$/.test(l));
@@ -41,6 +41,7 @@ export function parseDailyFile(text: string): { rows: ImportPaymentRow[]; fatal:
   const iCampus = find('campus');
   const iFor = find('feefor', 'paymentfor');
   const iAmt = find('amount', 'amountpaid');
+  const iAt = find('collectedat', 'collectionpoint', 'remarks');
   if (iRec < 0 || iDate < 0 || iNo < 0 || iFor < 0 || iAmt < 0) return { rows: [], fatal: true };
   const rows = lines.slice(1).map((ln, k) => {
     const c = splitCsvLine(ln);
@@ -55,6 +56,7 @@ export function parseDailyFile(text: string): { rows: ImportPaymentRow[]; fatal:
       campus: g(iCampus),
       feeFor: /arrear/i.test(f) ? 'ARREARS' : /admission/i.test(f) ? 'ADMISSION' : /annual/i.test(f) ? 'ANNUAL' : monthOf(f) ?? '',
       amount: money(g(iAmt)),
+      collectedAt: /girl/i.test(g(iAt)) ? 'Girls' : /boy/i.test(g(iAt)) ? 'Boys' : '',
     } as ImportPaymentRow;
   });
   return { rows, fatal: false };
@@ -114,8 +116,8 @@ export const DailyFeeImport: React.FC<{ actor: Profile; onClose: () => void }> =
           onClick={() =>
             downloadCsv('daily-fee-template.csv', [
               DAILY_HEADER,
-              ['R-0001', '02-Oct-2026', '1006', 'Muhammad Zaighum', 'Liaqat Ali', '6', 'Boys', 'Oct-2026', '2000'],
-              ['R-0002', '02-Oct-2026', '1072', 'Talha Azam', 'Azam', '9', 'Boys', 'Previous Arrears', '5000'],
+              ['R-0001', '02-Oct-2026', '1006', 'Muhammad Zaighum', 'Liaqat Ali', '6', 'Boys', 'Oct-2026', '2000', 'Boys'],
+              ['R-0002', '02-Oct-2026', '1072', 'Talha Azam', 'Azam', '9', 'Boys', 'Previous Arrears', '5000', 'Girls'],
             ])
           }
         />

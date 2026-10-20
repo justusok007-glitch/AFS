@@ -121,6 +121,17 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
                 </div>
               ))
             )}
+            {Object.entries(report?.byCollectedAt ?? {}).filter(([, v]) => v > 0).length > 1 && (
+              <div className="pt-1 space-y-1">
+                <div className="text-xs font-bold text-[#14284B]">{t('fb_collected_at')}</div>
+                {Object.entries(report?.byCollectedAt ?? {}).filter(([, v]) => v > 0).map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between text-xs">
+                    <span>{k === 'Girls' ? t('fb_at_girls') : t('fb_at_boys')}</span>
+                    <Money v={v} className="font-semibold" />
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-center justify-between text-xs font-bold border-t border-[#E4E8F0] pt-1">
               <span>{t('fb_total')}</span>
               <Money v={report?.totalCollectedRupees ?? 0} className="text-[#2E9E5B]" />
