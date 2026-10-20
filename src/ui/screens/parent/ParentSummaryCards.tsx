@@ -184,7 +184,7 @@ export const LatestResultSummaryCard: React.FC<{ parent: Profile; child: Student
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded-xl bg-[#F6F8FC] py-2"><div dir="ltr" className="font-heading text-lg font-bold text-[#F28C28]">{card.percentage}%</div><div className="text-[10px] text-[#6B7385]">{t('rs_percentage')}</div></div>
         <div className="rounded-xl bg-[#F6F8FC] py-2"><div dir="ltr" className="font-heading text-lg font-bold text-[#14284B]">{card.grade}</div><div className="text-[10px] text-[#6B7385]">{t('rs_grade')}</div></div>
-        <div className="rounded-xl bg-[#F6F8FC] py-2"><div dir="ltr" className="font-heading text-lg font-bold text-[#14284B]">{card.rankInSection !== null ? `${card.rankInSection}/${card.sectionSize}` : `${card.totalObtainedMarks}/${card.totalMaxMarks}`}</div><div className="text-[10px] text-[#6B7385]">{card.rankInSection !== null ? t('rs_position') : t('rs_grand_total')}</div></div>
+        <div className="rounded-xl bg-[#F6F8FC] py-2"><div dir="ltr" className="font-heading text-lg font-bold text-[#14284B]">{card.totalObtainedMarks}/{card.totalMaxMarks}</div><div className="text-[10px] text-[#6B7385]">{t('rs_obtained_total')}</div></div>
       </div>
     </SchoolCard>
   );

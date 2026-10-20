@@ -893,6 +893,7 @@ export type StringKey =
   | 'rs_position'
   | 'rs_obtained'
   | 'rs_total_marks'
+  | 'rs_obtained_total'
   | 'rs_grand_total'
   | 'rs_midterm'
   | 'rs_subject_chart'
@@ -1846,6 +1847,7 @@ export const stringsEn: Record<StringKey, string> = {
   rs_position: 'Class position',
   rs_obtained: 'Obtained',
   rs_total_marks: 'Total marks',
+  rs_obtained_total: 'Obtained / Total marks',
   rs_grand_total: 'Grand total',
   rs_midterm: 'Mid-term',
   rs_subject_chart: 'Subject-wise percentage',
@@ -2800,6 +2802,7 @@ export const stringsUr: Record<StringKey, string> = {
   rs_position: 'کلاس میں پوزیشن',
   rs_obtained: 'حاصل کردہ',
   rs_total_marks: 'کل نمبر',
+  rs_obtained_total: 'حاصل / کل نمبر',
   rs_grand_total: 'مجموعہ',
   rs_midterm: 'مڈ ٹرم',
   rs_subject_chart: 'مضمون وار فیصد',
