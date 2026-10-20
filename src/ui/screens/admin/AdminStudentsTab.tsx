@@ -165,7 +165,7 @@ export const AdminStudentsTab: React.FC<{
     );
   }
   if (view.kind === 'fees') {
-    return <AdminFeeImport admin={admin} onClose={() => { setTick((n) => n + 1); setView({ kind: 'list' }); }} />;
+    return <AdminFeeImport admin={admin} onClose={() => { lookups.reload(); setTick((n) => n + 1); setView({ kind: 'list' }); }} />;
   }
   if (view.kind === 'bulk') {
     return (
@@ -176,6 +176,7 @@ export const AdminStudentsTab: React.FC<{
           onAddSlip={onAddSlip}
           onPrintSlips={setPrintSlips}
           onClose={() => {
+            lookups.reload();
             setTick((n) => n + 1);
             setView({ kind: 'list' });
           }}
