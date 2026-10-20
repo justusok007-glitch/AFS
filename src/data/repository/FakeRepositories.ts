@@ -4546,6 +4546,15 @@ export class FakeDashboardRepository implements DashboardRepository {
     livePayments
       .filter((p) => p.paidOn >= `${month}-01` && p.paidOn <= `${month}-31`)
       .forEach((p) => {
+        const declared = /\[by:([^\]]+)\]/.exec(p.remarks ?? '');
+        if (declared) {
+          for (const part of declared[1].split(',')) {
+            const [k, v] = part.split('=');
+            const cat = (FeeCategory as Record<string, FeeCategory>)[k] ?? FeeCategory.OTHER;
+            collectionByCategory[cat] = (collectionByCategory[cat] ?? 0) + (Number(v) || 0);
+          }
+          return;
+        }
         (allocsByPayment[p.id] ?? []).forEach((a) => {
           const cat = a.feeHeadId
             ? headCategory[a.feeHeadId] ?? FeeCategory.OTHER
