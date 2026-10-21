@@ -508,3 +508,21 @@ export async function fetchUnlocks(): Promise<void> {
   replaceLocalDatabase(db);
   if (lastSynced) lastSynced.attendanceUnlocks = structuredClone(fresh);
 }
+
+/** Loads one student's attendance of a month from the server (the app only keeps the last weeks locally). */
+export async function fetchStudentMonth(studentId: string, month: string): Promise<void> {
+  if (!readTokens()) return;
+  const [y, m] = month.split('-').map(Number);
+  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const spec = SPECS.find((s) => s.table === 'attendance_records')!;
+  const rows = await selectAll<Row>('attendance_records', `student_id=eq.${encodeURIComponent(studentId)}&date=gte.${month}-01&date=lt.${next}`);
+  const db = getOrSeedLocalDatabase();
+  const have = new Set(db.attendanceRecords.filter((r) => r.studentId === studentId).map((r) => r.date));
+  const fresh = rows
+    .map((r) => fromDbRow(spec, r) as unknown as LocalDatabaseSnapshot['attendanceRecords'][number])
+    .filter((r) => !have.has(r.date));
+  if (fresh.length === 0) return;
+  db.attendanceRecords = [...db.attendanceRecords, ...fresh];
+  replaceLocalDatabase(db);
+  if (lastSynced) lastSynced.attendanceRecords = [...lastSynced.attendanceRecords, ...structuredClone(fresh)];
+}

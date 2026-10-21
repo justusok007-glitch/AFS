@@ -562,6 +562,12 @@ export type StringKey =
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
   | 'pr_chart_daily'
+  | 'adatt_submit_tab'
+  | 'adatt_student_tab'
+  | 'adatt_no_students'
+  | 'adatt_tap_hint'
+  | 'adatt_mark_all'
+  | 'adatt_next_student'
   | 'attimp_btn'
   | 'attimp_title'
   | 'attimp_hint'
@@ -1577,6 +1583,12 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
+  adatt_submit_tab: 'Submit attendance',
+  adatt_student_tab: 'Student by student',
+  adatt_no_students: 'No students in this class.',
+  adatt_tap_hint: 'Tap a day: Present, then Absent, then Leave, then Present again. Saved at once, no lock. Sundays, holidays and future days are greyed out.',
+  adatt_mark_all: 'Mark all present',
+  adatt_next_student: 'Next student',
   attimp_btn: 'Bulk attendance of a month (CSV)',
   attimp_title: 'Monthly attendance upload',
   attimp_hint: 'One row per student. Columns: Admission No, Student Name, Father Name, Class, Campus, Month, Year, then 1 to 31 for the days. Under each day write P (Present), A (Absent), L (Late), Le (Leave) or H (Holiday: nothing is saved). Leave a day empty to skip it. Class and Campus are only checked and a difference shows a note. Students are matched by Admission No. Existing marks for those days are replaced. Future days are skipped.',
@@ -2593,6 +2605,12 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
+  adatt_submit_tab: 'حاضری جمع کریں',
+  adatt_student_tab: 'طالب علم وار',
+  adatt_no_students: 'اس کلاس میں کوئی طالب علم نہیں۔',
+  adatt_tap_hint: 'دن پر دبائیں: حاضر، پھر غیر حاضر، پھر رخصت، پھر دوبارہ حاضر۔ فوراً محفوظ ہوتا ہے، کوئی لاک نہیں۔ اتوار، چھٹیاں اور آنے والے دن بند رہتے ہیں۔',
+  adatt_mark_all: 'سب حاضر لگائیں',
+  adatt_next_student: 'اگلا طالب علم',
   attimp_btn: 'پورے مہینے کی حاضری (CSV)',
   attimp_title: 'ماہانہ حاضری اپ لوڈ',
   attimp_hint: 'ہر طالب علم کی ایک قطار۔ کالم: Admission No, Student Name, Father Name, Class, Campus, Month, Year، پھر دنوں کے لیے 1 سے 31۔ ہر دن کے نیچے P (حاضر)، A (غیر حاضر)، L (لیٹ)، Le (رخصت) یا H (چھٹی، کچھ محفوظ نہیں ہوتا) لکھیں۔ Class اور Campus صرف جانچے جاتے ہیں، فرق ہو تو نوٹ دکھایا جاتا ہے۔ دن چھوڑنا ہو تو خانہ خالی رکھیں۔ طلبہ کو داخلہ نمبر سے ملایا جاتا ہے۔ ان دنوں کی پہلے سے لگی حاضری بدل جائے گی۔ آنے والے دن چھوڑ دیے جاتے ہیں۔',

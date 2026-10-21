@@ -1707,6 +1707,9 @@ export class FakeAttendanceRepository implements AttendanceRepository {
         )
         .map((ta) => ta.sectionId)
     );
+    if (profile?.role === Role.ADMIN) {
+      return AppResult.success([...db.sections]);
+    }
     return AppResult.success(
       db.sections.filter((sec) => assignedSectionIds.has(sec.id))
     );
@@ -1826,9 +1829,9 @@ export class FakeAttendanceRepository implements AttendanceRepository {
     const nowTime = getCurrentKarachiTimeHHMM();
     const unlocked = activeUnlockFor(db, sectionId, date) !== null;
 
-    if (actor.role === Role.TEACHER || actor.role === Role.ATTENDANCE_COORDINATOR) {
-      // Check assigned section with canMarkAttendance == true
-      const isAssigned = db.teacherAssignments.some(
+    if (actor.role === Role.TEACHER || actor.role === Role.ATTENDANCE_COORDINATOR || actor.role === Role.ADMIN) {
+      // Check assigned section with canMarkAttendance == true (the admin may mark any section, under the same lock rules)
+      const isAssigned = actor.role === Role.ADMIN || db.teacherAssignments.some(
         (ta) =>
           ta.teacherId === actor.id &&
           ta.sectionId === sectionId &&
@@ -1873,7 +1876,7 @@ export class FakeAttendanceRepository implements AttendanceRepository {
           message: `Attendance submission is locked after ${lockTime} (Asia/Karachi).`,
         });
       }
-    } else if (actor.role !== Role.ADMIN) {
+    } else {
       return AppResult.failure({
         kind: 'UnauthorizedRole',
         message: `Role ${actor.role} is not permitted to submit attendance.`,
@@ -2033,6 +2036,52 @@ export class FakeAttendanceRepository implements AttendanceRepository {
    * After lock time, or for past days, ONLY ADMIN may change records through adminCorrect,
    * which needs a reason and writes an AuditLogEntry.
    */
+  async adminMarkStudentDays(
+    actor: Profile,
+    studentId: string,
+    changes: { date: string; status: AttendanceStatus | null }[]
+  ): Promise<AppResult<number>> {
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only ADMIN can change attendance this way.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const stu = db.students.find((s) => s.id === studentId);
+    if (!stu) return AppResult.failure({ kind: 'NotFound', entity: 'Student', id: studentId, message: 'Student not found.' });
+    const todayStr = today();
+    const nowIso2 = new Date().toISOString();
+    let n = 0;
+    for (const ch of changes) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ch.date) || ch.date > todayStr) continue;
+      const idx = db.attendanceRecords.findIndex((r) => r.studentId === studentId && r.date === ch.date);
+      if (ch.status === null) {
+        if (idx >= 0) db.attendanceRecords.splice(idx, 1);
+      } else {
+        const rec: AttendanceRecord = { studentId, sectionId: stu.sectionId, date: ch.date, status: ch.status, remarks: null, markedBy: actor.id };
+        if (idx >= 0) db.attendanceRecords[idx] = rec;
+        else db.attendanceRecords.push(rec);
+        if (!db.attendanceSubmissions.some((s) => s.sectionId === stu.sectionId && s.date === ch.date)) {
+          db.attendanceSubmissions.push({ sectionId: stu.sectionId, date: ch.date, submittedBy: actor.id, submittedAt: nowIso2 });
+        }
+      }
+      n += 1;
+    }
+    if (n > 0) {
+      db.auditLogs.unshift({
+        id: `aud_${Date.now()}`,
+        action: 'ADMIN_CORRECT_ATTENDANCE',
+        tableName: 'attendance_records',
+        recordId: `${studentId}_${changes[0].date}`,
+        oldValue: null,
+        newValue: changes.length === 1 ? String(changes[0].status) : `${n} days`,
+        reason: 'Student-by-student calendar',
+        changedBy: actor.id,
+        changedAt: nowIso2,
+      });
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(n);
+  }
+
   async importMonthlyAttendance(
     rows: ImportAttendanceRow[],
     actor: Profile,

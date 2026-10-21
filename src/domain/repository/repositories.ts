@@ -209,6 +209,11 @@ export interface AttendanceRepository {
     studentId: string,
     month: string
   ): Promise<AppResult<ParentAttendanceSummary>>;
+  adminMarkStudentDays(
+    actor: Profile,
+    studentId: string,
+    changes: { date: string; status: AttendanceStatus | null }[]
+  ): Promise<AppResult<number>>;
   importMonthlyAttendance(
     rows: ImportAttendanceRow[],
     actor: Profile,
