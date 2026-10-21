@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Award, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AppModule } from '../../../di/AppModule';
+import { StringKey } from '../../../res/strings';
 import { Exam, ExamAnalytics, ExamStatus, Profile, Student } from '../../../domain/models/models';
 import {
   EmptyState,
@@ -37,7 +38,30 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
     void loadExams();
   }, [loadExams]);
 
-  const exam = exams.find((e) => e.id === examId) ?? exams[0];
+  const exam = exams.find((e) => e.id === examId);
+  const [classExams, setClassExams] = useState<Exam[] | null>(null);
+  useEffect(() => {
+    if (!cls) {
+      setClassExams(null);
+      return;
+    }
+    let off = false;
+    setClassExams(null);
+    const campusOfClass = lookups.classes.find((c) => c.id === cls)?.campusId ?? null;
+    void Promise.all(
+      exams
+        .filter((e) => !e.campusId || !campusOfClass || e.campusId === campusOfClass)
+        .map(async (e) => {
+          const r = await AppModule.examRepository.getExamSubjectsForClass(e.id, cls);
+          return r.ok && r.data.length > 0 ? e : null;
+        })
+    ).then((list) => {
+      if (!off) setClassExams(list.filter((e): e is Exam => e !== null));
+    });
+    return () => {
+      off = true;
+    };
+  }, [cls, exams, lookups.classes]);
 
   useEffect(() => {
     if (!exam || !cls) {
@@ -90,11 +114,7 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
   return (
     <div className="space-y-3">
       <SchoolCard className="space-y-2.5">
-        <select className={selectCls} value={exam?.id ?? ''} onChange={(e) => setExamId(e.target.value)}>
-          {exams.map((e) => (<option key={e.id} value={e.id}>{examName(e, language)}</option>))}
-        </select>
-        {exam && <ExamStatusChip status={exam.status} />}
-        <select className={selectCls} value={cls} onChange={(e) => setCls(e.target.value)}>
+        <select className={selectCls} value={cls} onChange={(e) => { setCls(e.target.value); setExamId(''); }}>
           <option value="">{t('rs_choose_class')}</option>
           {classOptions.map((c) => (<option key={c.id} value={c.id}>{campusLabel(c.campusId)} · {language === 'ur' ? c.nameUr : c.nameEn}</option>))}
         </select>
@@ -102,12 +122,35 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
 
       {!cls ? (
         <EmptyState title={t('rs_pick_class_hint')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />
+      ) : !exam ? (
+        classExams === null ? (
+          <ShimmerPlaceholder lines={3} showHeader />
+        ) : classExams.length === 0 ? (
+          <EmptyState title={t('rs_no_exams')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />
+        ) : (
+          <>
+            <h3 className="text-xs font-bold text-[#14284B] px-1">{t('rs_exams_of_class')}</h3>
+            {classExams.map((e) => (
+              <SchoolCard key={e.id} className="p-3 flex items-center justify-between gap-2" onClick={() => setExamId(e.id)}>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-[#14284B] truncate">{examName(e, language)}</div>
+                  <div className="text-[11px] text-[#6B7385]">{t(`ex_type_${e.type}` as StringKey)}</div>
+                </div>
+                <ExamStatusChip status={e.status} />
+              </SchoolCard>
+            ))}
+          </>
+        )
       ) : loading || !data ? (
-        <ShimmerPlaceholder lines={5} showHeader />
+        <>
+          <ExamBackRow onBack={() => setExamId('')} title={examName(exam, language)} />
+          <ShimmerPlaceholder lines={5} showHeader />
+        </>
       ) : data.studentsCount === 0 && data.incompleteCount === 0 ? (
         <EmptyState title={t('rs_none')} description="" />
       ) : (
         <>
+          <ExamBackRow onBack={() => setExamId('')} title={examName(exam, language)} status={exam.status} />
           <div className="grid grid-cols-2 gap-2.5">
             <Kpi label={t('rs_students')} value={<CountUp value={data.studentsCount} />} />
             <Kpi label={t('rs_avg')} value={<span dir="ltr" style={{ color: percentColor(data.averagePercent) }}>{data.averagePercent}%</span>} />
@@ -164,6 +207,23 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
         </>
       )}
     </div>
+  );
+};
+
+const ExamBackRow: React.FC<{ onBack: () => void; title: string; status?: Exam['status'] }> = ({ onBack, title, status }) => {
+  const { stringResource: t, isRtl } = useStringResource();
+  const Back = isRtl ? ArrowRight : ArrowLeft;
+  return (
+    <SchoolCard className="p-3 flex items-center justify-between gap-2">
+      <button type="button" onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[36px] cursor-pointer shrink-0">
+        <Back className="w-4 h-4" />
+        <span>{t('rs_all_exams')}</span>
+      </button>
+      <div className="min-w-0 flex items-center gap-2">
+        <span className="text-xs font-bold text-[#14284B] truncate">{title}</span>
+        {status && <ExamStatusChip status={status} />}
+      </div>
+    </SchoolCard>
   );
 };
 

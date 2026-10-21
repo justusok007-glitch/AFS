@@ -562,6 +562,8 @@ export type StringKey =
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
   | 'pr_chart_daily'
+  | 'rs_exams_of_class'
+  | 'rs_all_exams'
   | 'attkpi_total'
   | 'attkpi_present'
   | 'attkpi_absent'
@@ -1587,6 +1589,8 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
+  rs_exams_of_class: 'Exams of this class',
+  rs_all_exams: 'All exams',
   attkpi_total: 'Total students',
   attkpi_present: 'Present students',
   attkpi_absent: 'Absent students',
@@ -2613,6 +2617,8 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
+  rs_exams_of_class: 'اس کلاس کے امتحانات',
+  rs_all_exams: 'تمام امتحانات',
   attkpi_total: 'کل طلبہ',
   attkpi_present: 'حاضر طلبہ',
   attkpi_absent: 'غیر حاضر طلبہ',
