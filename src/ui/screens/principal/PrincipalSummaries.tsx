@@ -3,9 +3,12 @@ import {
   AlertCircle,
   AlertTriangle,
   CalendarCheck,
+  CheckCircle2,
+  ClipboardCheck,
   Receipt,
   Users,
   Wallet,
+  XCircle,
 } from 'lucide-react';
 import {
   Bar,
@@ -126,6 +129,47 @@ export const TodayClassTable: React.FC<{ lookups: AccountantLookups; campus: str
         </div>
       )}
     </SchoolCard>
+  );
+};
+
+/** Four headline blocks for the top of every attendance tab. */
+export const AttendanceKpiBlocks: React.FC<{
+  data: PrincipalDashboard;
+  totalSections: number;
+  onSections?: () => void;
+}> = ({ data, totalSections, onSections }) => {
+  const { stringResource: t } = useStringResource();
+  const unmarked = data.unmarkedSections.length;
+  const marked = Math.max(0, totalSections - unmarked);
+  const block = (
+    tone: { bg: string; fg: string },
+    icon: React.ReactNode,
+    label: string,
+    value: React.ReactNode,
+    sub: React.ReactNode,
+    onClick?: () => void
+  ) => (
+    <SchoolCard className="p-3.5 space-y-1.5" onClick={onClick}>
+      <div className="flex items-center gap-2">
+        <span className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${tone.fg}1A`, color: tone.fg }}>{icon}</span>
+        <span className="text-[11px] font-semibold text-[#6B7385] leading-tight">{label}</span>
+      </div>
+      <div dir="ltr" className="font-mono text-3xl font-bold leading-none tabular-nums text-start" style={{ color: tone.fg }}>{value}</div>
+      <div className="text-[11px] text-[#6B7385] min-h-[14px]">{sub}</div>
+    </SchoolCard>
+  );
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      {block({ bg: '', fg: '#14284B' }, <Users className="w-4.5 h-4.5" />, t('attkpi_total'), <CountUp value={data.totalStudents} />,
+        <span dir="ltr">{data.boysCount} / {data.girlsCount} · {t('pr_kpi_boys_girls')}</span>)}
+      {block({ bg: '', fg: '#2E9E5B' }, <CheckCircle2 className="w-4.5 h-4.5" />, t('attkpi_present'), <CountUp value={data.present + data.late} />,
+        <span dir="ltr">{data.attendancePercent}% · {data.late} {t('att_status_late')}</span>)}
+      {block({ bg: '', fg: '#D64545' }, <XCircle className="w-4.5 h-4.5" />, t('attkpi_absent'), <CountUp value={data.absent} />,
+        <span dir="ltr">{data.leave} {t('pr_leave')}</span>)}
+      {block({ bg: '', fg: unmarked > 0 ? '#7A3CE0' : '#2E9E5B' }, <ClipboardCheck className="w-4.5 h-4.5" />, t('attkpi_sections'),
+        <span>{marked}/{totalSections}</span>,
+        unmarked > 0 ? <span>{unmarked} {t('pr_kpi_unmarked')}</span> : <span>{t('pr_all_marked')}</span>, onSections)}
+    </div>
   );
 };
 
@@ -251,19 +295,7 @@ export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }
   return (
     <div className="space-y-3">
       {header}
-      <div className="grid grid-cols-2 gap-2.5">
-        {kpi(<Users className="w-3.5 h-3.5" />, t('pr_kpi_students'), <CountUp value={data.totalStudents} />,
-          <span dir="ltr">{data.boysCount} / {data.girlsCount} · {t('pr_kpi_boys_girls')}</span>,
-          undefined)}
-        {kpi(<CalendarCheck className="w-3.5 h-3.5" />, t('pr_kpi_attendance'),
-          <span style={{ color: percentColor(data.attendancePercent) }}><CountUp value={data.attendancePercent} format={(n) => `${n}%`} /></span>,
-          <span dir="ltr">{data.present + data.late} {t('pr_present')} · {data.absent} {t('pr_absent')} · {data.leave} {t('pr_leave')}</span>,
-          undefined)}
-        {kpi(<AlertTriangle className="w-3.5 h-3.5" />, t('pr_kpi_unmarked'),
-          <CountUp value={data.unmarkedSections.length} />, null,
-          () => setShowUnmarked((v) => !v),
-          data.unmarkedSections.length > 0 ? 'text-[#D64545]' : 'text-[#2E9E5B]')}
-      </div>
+      <AttendanceKpiBlocks data={data} totalSections={Object.values(lookups.sectionsMap).filter((sc) => campus === 'ALL' || lookups.classesMap[sc.classId]?.campusId === campus).length} onSections={() => setShowUnmarked((v) => !v)} />
       {showUnmarked && (
         <SchoolCard className="space-y-2">
           <h3 className="text-xs font-bold text-[#14284B]">{t('pr_kpi_unmarked')}</h3>
