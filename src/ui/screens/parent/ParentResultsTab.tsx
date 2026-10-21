@@ -37,7 +37,7 @@ import { CHART, percentColor } from '../principal/PrincipalShared';
 import { ReportCardPrint } from './ReportCardPrint';
 import { LatestResultSummaryCard } from './ParentSummaryCards';
 
-export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allowPrint?: boolean }> = ({ parent, child, allowPrint = false }) => {
+export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allowPrint?: boolean; initialExamId?: string }> = ({ parent, child, allowPrint = false, initialExamId }) => {
   const { stringResource: t, language } = useStringResource();
   const lookups = useAccountantLookups();
   const subjects = useSubjectsMap();
@@ -45,7 +45,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allow
   const [showPosition, setShowPosition] = useState(true);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialExamId ?? null);
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {

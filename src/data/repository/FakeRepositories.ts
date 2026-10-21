@@ -4062,7 +4062,6 @@ export class FakeExamRepository implements ExamRepository {
       gradeDistribution: order.filter((g) => dist.has(g)).map((g) => ({ grade: g, count: dist.get(g)! })),
       topStudents: [...complete]
         .sort((a, b) => b.percentage - a.percentage)
-        .slice(0, 10)
         .map((c) => ({ student: c.student, percentage: c.percentage, grade: c.grade })),
       subjectAverages: [...subj.entries()].map(([subjectId, v]) => ({ subjectId, averagePercent: roundOne(v.sum / v.n) })),
     });

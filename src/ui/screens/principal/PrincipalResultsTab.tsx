@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Award } from 'lucide-react';
+import { AlertCircle, Award, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AppModule } from '../../../di/AppModule';
-import { Exam, ExamAnalytics, ExamStatus, Profile } from '../../../domain/models/models';
+import { Exam, ExamAnalytics, ExamStatus, Profile, Student } from '../../../domain/models/models';
 import {
   EmptyState,
   PrimaryButton,
@@ -11,11 +11,13 @@ import {
 } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups, StudentNameBlock, studentClassLabel } from '../accountant/AccountantShared';
+import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { examName, ExamStatusChip, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { CHART, CountUp, percentColor, selectCls } from './PrincipalShared';
 
 export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: AccountantLookups }> = ({ principal, lookups }) => {
-  const { stringResource: t, language } = useStringResource();
+  const { stringResource: t, language, isRtl } = useStringResource();
+  const [openStudent, setOpenStudent] = useState<Student | null>(null);
   const subjects = useSubjectsMap();
   const [exams, setExams] = useState<Exam[]>([]);
   const [examId, setExamId] = useState('');
@@ -71,6 +73,18 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
     return c ? (language === 'ur' ? c.nameUr : c.nameEn) : '';
   };
   const classOptions = lookups.classes;
+  if (openStudent) {
+    const Back = isRtl ? ArrowRight : ArrowLeft;
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={() => setOpenStudent(null)} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          <Back className="w-4 h-4" />
+          <span>{t('back_button_label')}</span>
+        </button>
+        <ParentResultsTab parent={principal} child={openStudent} initialExamId={exam?.id} />
+      </div>
+    );
+  }
   const gradeColors = [CHART.green, CHART.blue, CHART.navy, CHART.amber, CHART.orange, CHART.red, CHART.grey];
 
   return (
@@ -140,7 +154,7 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
           <SchoolCard className="space-y-2">
             <div className="font-heading text-xs font-bold text-[#14284B]">{t('rs_top10')}</div>
             {data.topStudents.map((s, i) => (
-              <div key={s.student.id} className="flex items-center gap-2 border-t border-[#E4E8F0] pt-1.5">
+              <div key={s.student.id} role="button" tabIndex={0} onClick={() => setOpenStudent(s.student)} className="flex items-center gap-2 border-t border-[#E4E8F0] pt-1.5 cursor-pointer active:bg-[#F7F8FB]">
                 <span dir="ltr" className="w-5 text-xs font-bold text-[#F28C28]">{i + 1}</span>
                 <div className="flex-1 min-w-0"><StudentNameBlock student={s.student} classLabel={studentClassLabel(s.student, lookups, language)} /></div>
                 <span dir="ltr" className="text-xs font-bold text-[#14284B]">{s.percentage}% · {s.grade}</span>
