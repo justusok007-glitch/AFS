@@ -4,6 +4,8 @@ import {
   Award,
   Bell,
   CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   GraduationCap,
   MessageSquare,
@@ -22,8 +24,29 @@ import { Profile } from '../../../domain/models/models';
 import { NoticesCard } from '../comms/CommsShared';
 import { MoreView } from './PrincipalMoreTab';
 
+/** Card that behaves like a button: press feedback, arrow, keyboard focus. */
+const TapCard: React.FC<{ onClick: () => void; hint: string; children: React.ReactNode }> = ({ onClick, hint, children }) => {
+  const { isRtl } = useStringResource();
+  const Arrow = isRtl ? ChevronLeft : ChevronRight;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      className="relative cursor-pointer rounded-2xl transition-transform active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F28C28]"
+    >
+      {children}
+      <div className="absolute top-3 end-3 flex items-center gap-0.5 text-[10px] font-semibold text-[#F28C28] pointer-events-none">
+        <span>{hint}</span>
+        <Arrow className="w-3.5 h-3.5" />
+      </div>
+    </div>
+  );
+};
+
 /** Today's school-wide attendance and fee collection, shown above the shortcut tiles. */
-const TodayCards: React.FC<{ showCollection: boolean }> = ({ showCollection }) => {
+const TodayCards: React.FC<{ showCollection: boolean; onOpenAttendance: () => void; onOpenFees: () => void }> = ({ showCollection, onOpenAttendance, onOpenFees }) => {
   const { stringResource: t } = useStringResource();
   const [d, setD] = useState<PrincipalDashboard | null>(null);
   useEffect(() => {
@@ -48,6 +71,7 @@ const TodayCards: React.FC<{ showCollection: boolean }> = ({ showCollection }) =
   );
   return (
     <>
+      <TapCard onClick={onOpenAttendance} hint={t('pr_tap_open')}>
       <SchoolCard className="space-y-3">
         <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#E4E8F0]">
           <div className="min-w-0">
@@ -71,7 +95,8 @@ const TodayCards: React.FC<{ showCollection: boolean }> = ({ showCollection }) =
           <AttendanceProgressRing percentage={d.attendancePercent} size={104} strokeWidth={9} subtitle={`${d.totalStudents}`} />
         </div>
       </SchoolCard>
-      {showCollection && <SchoolCard className="flex items-center justify-between gap-3">
+      </TapCard>
+      {showCollection && <TapCard onClick={onOpenFees} hint={t('pr_tap_open')}><SchoolCard className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-heading text-xs font-bold text-[#14284B]">
             <Wallet className="w-4 h-4 text-[#F28C28] shrink-0" />
@@ -83,7 +108,7 @@ const TodayCards: React.FC<{ showCollection: boolean }> = ({ showCollection }) =
           <div className="text-[11px] text-[#6B7385]">{t('pr_kpi_collected_month')}</div>
           <div dir="ltr" className="font-mono text-sm font-bold text-[#2E9E5B]">{formatRupees(d.feeCollectedMonthRupees)}</div>
         </div>
-      </SchoolCard>}
+      </SchoolCard></TapCard>}
     </>
   );
 };
@@ -100,7 +125,7 @@ export const PrincipalDashboardTab: React.FC<{
   const ic = 'w-6 h-6';
   return (
     <div className="space-y-3">
-      <TodayCards showCollection={!vice} />
+      <TodayCards showCollection={!vice} onOpenAttendance={() => onSwitchTab(1)} onOpenFees={() => onSwitchTab(2)} />
       <NoticesCard user={principal} />
       <div className="grid grid-cols-3 gap-3">
         <HomeTile tone="red" label={t('tab_attendance')} icon={<CalendarCheck className={ic} />} onClick={() => onSwitchTab(1)} />

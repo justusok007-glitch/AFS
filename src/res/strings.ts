@@ -561,6 +561,8 @@ export type StringKey =
   | 'pr_chart_trend30'
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
+  | 'pr_chart_daily'
+  | 'pr_tap_open'
   | 'pr_chart_category'
   | 'pr_chart_campus_att'
   | 'pr_chart_campus_fee'
@@ -1568,6 +1570,8 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_trend30: 'Attendance trend (30 days)',
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
+  pr_chart_daily: 'Daily collection',
+  pr_tap_open: 'Tap to open',
   pr_chart_category: 'Collection by fee category (this month)',
   pr_chart_campus_att: 'Campus comparison: attendance %',
   pr_chart_campus_fee: 'Campus comparison: collected this month',
@@ -2576,6 +2580,8 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_trend30: 'حاضری کا رجحان (30 دن)',
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
+  pr_chart_daily: 'روزانہ وصولی',
+  pr_tap_open: 'کھولنے کے لیے دبائیں',
   pr_chart_category: 'فیس کی قسم کے لحاظ سے وصولی (اس ماہ)',
   pr_chart_campus_att: 'کیمپس کا موازنہ: حاضری فیصد',
   pr_chart_campus_fee: 'کیمپس کا موازنہ: اس ماہ کی وصولی',

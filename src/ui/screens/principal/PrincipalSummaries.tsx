@@ -274,6 +274,45 @@ export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }
   );
 };
 
+/** Vertical bars: money collected on each day of the month of `date` (every day of the month on the x axis). */
+const DailyCollectionChart: React.FC<{ date: string; campus: string }> = ({ date, campus }) => {
+  const { stringResource: t } = useStringResource();
+  const [byDay, setByDay] = useState<Record<string, number> | null>(null);
+  const month = date.slice(0, 7);
+  useEffect(() => {
+    let off = false;
+    const [y, m] = month.split('-').map(Number);
+    const last = new Date(y, m, 0).getDate();
+    void AppModule.feeRepository
+      .getCollectionReport({ fromDate: `${month}-01`, toDate: `${month}-${String(last).padStart(2, '0')}`, campusId: campus === 'ALL' ? null : campus })
+      .then((r) => {
+        if (!off) setByDay(r.ok ? r.data.byDay : {});
+      });
+    return () => {
+      off = true;
+    };
+  }, [month, campus]);
+  const [y, m] = month.split('-').map(Number);
+  const days = new Date(y, m, 0).getDate();
+  const rows = Array.from({ length: days }, (_, i) => {
+    const d = i + 1;
+    return { d: String(d), value: byDay?.[`${month}-${String(d).padStart(2, '0')}`] ?? 0 };
+  });
+  const total = rows.reduce((a, r) => a + r.value, 0);
+  const short = (v: number) => (v >= 100000 ? `${(v / 100000).toFixed(1)}L` : v >= 1000 ? `${Math.round(v / 1000)}k` : String(v));
+  return (
+    <ChartCard title={`${t('pr_chart_daily')} · ${month}`} empty={byDay !== null && total === 0}>
+      <BarChart data={rows} margin={{ left: 0, right: 4 }} barCategoryGap={1}>
+        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+        <XAxis dataKey="d" tick={{ fontSize: 8 }} interval={0} tickMargin={2} />
+        <YAxis tick={{ fontSize: 10 }} width={40} tickFormatter={short} />
+        <Tooltip formatter={(v) => formatRupees(Number(v))} labelFormatter={(l) => `${month}-${String(l).padStart(2, '0')}`} />
+        <Bar dataKey="value" fill={CHART.green} radius={[3, 3, 0, 0]} />
+      </BarChart>
+    </ChartCard>
+  );
+};
+
 export const PrincipalFeesSummary: React.FC<{ lookups: AccountantLookups }> = ({ lookups }) => {
   const { stringResource: t, language } = useStringResource();
   const [campus, setCampus] = useState('ALL');
@@ -383,11 +422,6 @@ export const PrincipalFeesSummary: React.FC<{ lookups: AccountantLookups }> = ({
 
   const trendData = data.attendanceTrend30.map((p) => ({ day: p.label.slice(5), value: p.value }));
   const monthlyData = data.monthlyCollection12.map((p) => ({ m: shortMonth(p.label), value: p.value }));
-  const evcData = data.expectedVsCollected6.map((p) => ({
-    m: shortMonth(p.month),
-    expected: p.expected,
-    collected: p.collected,
-  }));
   const campusAtt = data.campusComparison.map((c) => ({ name: campusName(c.campusId), value: c.attendancePercent }));
   const campusFee = data.campusComparison.map((c) => ({ name: campusName(c.campusId), value: c.collectedThisMonthRupees }));
   const classData = data.classAttendance.map((c) => ({ name: className(c.classId), value: c.percent }));
@@ -419,17 +453,7 @@ export const PrincipalFeesSummary: React.FC<{ lookups: AccountantLookups }> = ({
         </BarChart>
       </ChartCard>
 
-      <ChartCard title={t('pr_chart_expected')} empty={evcData.every((d) => d.expected === 0 && d.collected === 0)}>
-        <BarChart data={evcData}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-          <XAxis dataKey="m" tick={{ fontSize: 10 }} />
-          <YAxis tick={{ fontSize: 10 }} width={40} tickFormatter={rupeesShort} />
-          <Tooltip formatter={(v) => formatRupees(Number(v))} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Bar dataKey="expected" name={t('pr_chart_expected_label')} fill={CHART.navy} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="collected" name={t('pr_chart_collected_label')} fill={CHART.green} radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ChartCard>
+      <DailyCollectionChart date={date} campus={campus} />
 
       <ChartCard title={t('pr_chart_category')} empty={catData.length === 0}>
         <PieChart>
