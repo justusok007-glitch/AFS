@@ -68,6 +68,67 @@ const ChartCard: React.FC<{ title: string; empty?: boolean; children: React.Reac
   );
 };
 
+/** Class / section table for one day (Students, Present, Absent, %), shown above the 30-day trend. */
+export const TodayClassTable: React.FC<{ lookups: AccountantLookups; campus: string; date: string }> = ({ lookups, campus, date }) => {
+  const { stringResource: t, language } = useStringResource();
+  const [rows, setRows] = useState<{ sectionId: string; students: number; present: number; late: number; absent: number; percent: number }[] | null>(null);
+  useEffect(() => {
+    let off = false;
+    setRows(null);
+    void AppModule.dashboardRepository
+      .getAttendanceReport({ campusId: campus === 'ALL' ? null : campus, classId: null, sectionId: null, fromDate: date, toDate: date })
+      .then((r) => {
+        if (!off) setRows(r.ok ? r.data.sectionRows : []);
+      });
+    return () => {
+      off = true;
+    };
+  }, [campus, date]);
+  const label = (secId: string) => {
+    const s = lookups.sectionsMap[secId];
+    const c = s ? lookups.classesMap[s.classId] : undefined;
+    return s ? `${c ? (language === 'ur' ? c.nameUr : c.nameEn) : s.classId} - ${s.name}` : secId;
+  };
+  return (
+    <SchoolCard className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-xs font-bold text-[#14284B]">{t('pr_class_table')}</h3>
+        <span dir="ltr" className="text-[11px] font-mono text-[#6B7385]">{formatSchoolDate(date)}</span>
+      </div>
+      {rows === null ? (
+        <ShimmerPlaceholder lines={3} />
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-[#6B7385] py-4 text-center">{t('pr_chart_no_data')}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse min-w-[300px]">
+            <thead>
+              <tr className="text-[#6B7385] text-[11px]">
+                <th className="text-start font-semibold py-1">{t('acc_class_col')}</th>
+                <th className="font-semibold">{t('pr_students_col')}</th>
+                <th className="font-semibold">{t('pr_present')}</th>
+                <th className="font-semibold">{t('pr_absent')}</th>
+                <th className="font-semibold">{t('pr_percent_col')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...rows].sort((a, b) => label(a.sectionId).localeCompare(label(b.sectionId), undefined, { numeric: true })).map((r) => (
+                <tr key={r.sectionId} className="border-t border-[#E4E8F0] text-center">
+                  <td className="py-1.5 text-start font-semibold text-[#14284B]">{label(r.sectionId)}</td>
+                  <td dir="ltr">{r.students}</td>
+                  <td dir="ltr">{r.present + r.late}</td>
+                  <td dir="ltr">{r.absent}</td>
+                  <td dir="ltr" className="font-bold" style={{ color: percentColor(r.percent) }}>{r.percent}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SchoolCard>
+  );
+};
+
 export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }> = ({ lookups }) => {
   const { stringResource: t, language } = useStringResource();
   const [campus, setCampus] = useState('ALL');
@@ -226,6 +287,8 @@ export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }
           )}
         </SchoolCard>
       )}
+
+      <TodayClassTable lookups={lookups} campus={campus} date={date} />
 
       <ChartCard title={t('pr_chart_trend30')} empty={trendData.length === 0}>
         <BarChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap={1}>

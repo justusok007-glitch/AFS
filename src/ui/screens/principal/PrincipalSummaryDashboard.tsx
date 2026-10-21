@@ -38,6 +38,7 @@ import {
 } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
+import { TodayClassTable } from './PrincipalSummaries';
 import {
   CATEGORY_COLORS,
   CHART,
@@ -247,6 +248,8 @@ export const PrincipalSummaryDashboard: React.FC<{
           )}
         </SchoolCard>
       )}
+
+      <TodayClassTable lookups={lookups} campus={campus} date={date} />
 
       <ChartCard title={t('pr_chart_trend30')} empty={trendData.length === 0}>
         <BarChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap={1}>
