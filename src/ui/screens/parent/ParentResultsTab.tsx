@@ -204,11 +204,11 @@ const ReportCard: React.FC<CardProps & { onBack: () => void; onPrint?: () => voi
 
       <SchoolCard className="space-y-2">
         <div className="font-heading text-xs font-bold text-[#14284B]">{t('rs_subject_chart')}</div>
-        <div dir="ltr" className="w-full h-52">
+        <div dir="ltr" className="w-full h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} margin={{ top: 20, right: 8, left: -16, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
-              <XAxis dataKey="name" tick={{ fill: '#1B2233', fontSize: 9 }} axisLine={{ stroke: CHART.grid }} tickLine={false} interval={0} />
+              <XAxis dataKey="name" tick={{ fill: '#1B2233', fontSize: 10 }} axisLine={{ stroke: CHART.grid }} tickLine={false} interval={0} angle={-45} textAnchor="end" height={80} />
               <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: CHART.grey, fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v: unknown) => [`${Number(v)}%`, t('rs_percentage')]} contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.grid}`, fontSize: 12 }} />
               <Bar dataKey="pct" radius={[8, 8, 0, 0]} maxBarSize={40}>
