@@ -228,13 +228,17 @@ export const PrincipalAttendanceSummary: React.FC<{ lookups: AccountantLookups }
       )}
 
       <ChartCard title={t('pr_chart_trend30')} empty={trendData.length === 0}>
-        <LineChart data={trendData}>
-          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-          <XAxis dataKey="day" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+        <BarChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap={1}>
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
+          <XAxis dataKey="day" tick={{ fontSize: 8 }} interval={0} angle={-60} textAnchor="end" height={44} tickMargin={2} />
           <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={32} />
           <Tooltip formatter={(v) => `${v}%`} />
-          <Line type="monotone" dataKey="value" stroke={CHART.navy} strokeWidth={2} dot={false} />
-        </LineChart>
+          <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+            {trendData.map((d, i) => (
+              <Cell key={i} fill={d.value < 60 ? CHART.red : d.value < 70 ? CHART.orange : CHART.green} />
+            ))}
+          </Bar>
+        </BarChart>
       </ChartCard>
 
       <ChartCard title={t('pr_chart_campus_att')} empty={campusAtt.every((d) => d.value === 0)}>
