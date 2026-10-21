@@ -8,6 +8,8 @@ import {
   AttendanceStatus,
   AttendanceSubmission,
   AttendanceUnlock,
+  ImportAttendanceResult,
+  ImportAttendanceRow,
   AuditLogEntry,
   Campus,
   CampusModel,
@@ -207,6 +209,11 @@ export interface AttendanceRepository {
     studentId: string,
     month: string
   ): Promise<AppResult<ParentAttendanceSummary>>;
+  importMonthlyAttendance(
+    rows: ImportAttendanceRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportAttendanceResult[]>>;
   adminCorrect(
     actor: Profile,
     studentId: string,

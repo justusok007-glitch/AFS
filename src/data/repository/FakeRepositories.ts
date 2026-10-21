@@ -41,6 +41,8 @@ import {
   AttendanceStatus,
   AttendanceSubmission,
   AttendanceUnlock,
+  ImportAttendanceResult,
+  ImportAttendanceRow,
   AuditLogEntry,
   Campus,
   CampusModel,
@@ -2031,6 +2033,86 @@ export class FakeAttendanceRepository implements AttendanceRepository {
    * After lock time, or for past days, ONLY ADMIN may change records through adminCorrect,
    * which needs a reason and writes an AuditLogEntry.
    */
+  async importMonthlyAttendance(
+    rows: ImportAttendanceRow[],
+    actor: Profile,
+    dryRun: boolean
+  ): Promise<AppResult<ImportAttendanceResult[]>> {
+    await simulateLocalDelay();
+    if (actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only ADMIN can import attendance.' });
+    }
+    const db = getOrSeedLocalDatabase();
+    const todayStr = today();
+    const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const byNo = new Map(db.students.map((s) => [norm(s.admissionNo), s]));
+    const codes: Record<string, AttendanceStatus> = {
+      p: AttendanceStatus.PRESENT,
+      a: AttendanceStatus.ABSENT,
+      l: AttendanceStatus.LATE,
+      le: AttendanceStatus.LEAVE,
+    };
+    const out: ImportAttendanceResult[] = [];
+    const nowIso = new Date().toISOString();
+    for (const row of rows) {
+      const res: ImportAttendanceResult = { line: row.line, ok: false, studentName: row.name, daysMarked: 0, error: null, warnings: [] };
+      out.push(res);
+      const stu = byNo.get(norm(row.admissionNo));
+      if (!row.admissionNo.trim()) { res.error = 'Admission No is empty.'; continue; }
+      if (!stu) { res.error = `No student with Admission No ${row.admissionNo}.`; continue; }
+      res.studentName = stu.name;
+      if (!(row.month >= 1 && row.month <= 12) || !(row.year >= 2000 && row.year <= 2100)) { res.error = 'Month or Year is not readable.'; continue; }
+      if (row.name.trim() && norm(row.name) !== norm(stu.name)) res.warnings.push(`File name "${row.name}" differs from "${stu.name}"; matched by Admission No.`);
+      const dim = new Date(row.year, row.month, 0).getDate();
+      const mm = `${row.year}-${String(row.month).padStart(2, '0')}`;
+      const todo: { date: string; status: AttendanceStatus }[] = [];
+      let bad: string | null = null;
+      let future = 0;
+      for (const [dayStr, raw] of Object.entries(row.cells)) {
+        const v = raw.trim();
+        if (!v) continue;
+        const day = Number(dayStr);
+        const status = codes[v.toLowerCase()];
+        if (!status) { bad = `Day ${day}: "${v}" is not P, A, L or Le.`; break; }
+        if (day < 1 || day > dim) { bad = `Day ${day} does not exist in ${mm}.`; break; }
+        const date = `${mm}-${String(day).padStart(2, '0')}`;
+        if (date > todayStr) { future += 1; continue; }
+        todo.push({ date, status });
+      }
+      if (bad) { res.error = bad; continue; }
+      if (future) res.warnings.push(`${future} future day(s) skipped.`);
+      if (todo.length === 0) { res.error = 'No attendance marks in this row.'; continue; }
+      res.ok = true;
+      res.daysMarked = todo.length;
+      if (dryRun) continue;
+      for (const { date, status } of todo) {
+        const rec: AttendanceRecord = { studentId: stu.id, sectionId: stu.sectionId, date, status, remarks: null, markedBy: actor.id };
+        const idx = db.attendanceRecords.findIndex((r) => r.studentId === stu.id && r.date === date);
+        if (idx >= 0) db.attendanceRecords[idx] = rec;
+        else db.attendanceRecords.push(rec);
+        if (!db.attendanceSubmissions.some((s) => s.sectionId === stu.sectionId && s.date === date)) {
+          db.attendanceSubmissions.push({ sectionId: stu.sectionId, date, submittedBy: actor.id, submittedAt: nowIso });
+        }
+      }
+    }
+    if (!dryRun) {
+      const done = out.filter((r) => r.ok);
+      db.auditLogs.unshift({
+        id: `aud_${Date.now()}`,
+        action: 'ADMIN_IMPORT_ATTENDANCE',
+        tableName: 'attendance_records',
+        recordId: `import_${nowIso}`,
+        oldValue: null,
+        newValue: `${done.length} students, ${done.reduce((a, r) => a + r.daysMarked, 0)} days`,
+        reason: 'Monthly attendance CSV import',
+        changedBy: actor.id,
+        changedAt: nowIso,
+      });
+      saveLocalDatabase(db);
+    }
+    return AppResult.success(out);
+  }
+
   async adminCorrect(
     actor: Profile,
     studentId: string,

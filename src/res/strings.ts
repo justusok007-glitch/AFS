@@ -562,6 +562,12 @@ export type StringKey =
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
   | 'pr_chart_daily'
+  | 'attimp_btn'
+  | 'attimp_title'
+  | 'attimp_hint'
+  | 'attimp_err_cols'
+  | 'attimp_days'
+  | 'attimp_done'
   | 'pr_tap_open'
   | 'pr_chart_category'
   | 'pr_chart_campus_att'
@@ -1571,6 +1577,12 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
+  attimp_btn: 'Bulk attendance of a month (CSV)',
+  attimp_title: 'Monthly attendance upload',
+  attimp_hint: 'One row per student. Columns: Admission No, Student Name, Father Name, Month, Year, then 1 to 31 for the days. Under each day write P (Present), A (Absent), L (Late) or Le (Leave). Leave a day empty to skip it. Students are matched by Admission No. Existing marks for those days are replaced. Future days are skipped.',
+  attimp_err_cols: 'The file needs the columns Admission No, Month, Year and the days 1 to 31.',
+  attimp_days: 'days',
+  attimp_done: 'Attendance saved',
   pr_tap_open: 'Tap to open',
   pr_chart_category: 'Collection by fee category (this month)',
   pr_chart_campus_att: 'Campus comparison: attendance %',
@@ -2581,6 +2593,12 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
+  attimp_btn: 'پورے مہینے کی حاضری (CSV)',
+  attimp_title: 'ماہانہ حاضری اپ لوڈ',
+  attimp_hint: 'ہر طالب علم کی ایک قطار۔ کالم: Admission No, Student Name, Father Name, Month, Year، پھر دنوں کے لیے 1 سے 31۔ ہر دن کے نیچے P (حاضر)، A (غیر حاضر)، L (لیٹ) یا Le (رخصت) لکھیں۔ دن چھوڑنا ہو تو خانہ خالی رکھیں۔ طلبہ کو داخلہ نمبر سے ملایا جاتا ہے۔ ان دنوں کی پہلے سے لگی حاضری بدل جائے گی۔ آنے والے دن چھوڑ دیے جاتے ہیں۔',
+  attimp_err_cols: 'فائل میں Admission No، Month، Year اور 1 سے 31 تک کے دنوں کے کالم ضروری ہیں۔',
+  attimp_days: 'دن',
+  attimp_done: 'حاضری محفوظ ہو گئی',
   pr_tap_open: 'کھولنے کے لیے دبائیں',
   pr_chart_category: 'فیس کی قسم کے لحاظ سے وصولی (اس ماہ)',
   pr_chart_campus_att: 'کیمپس کا موازنہ: حاضری فیصد',

@@ -482,6 +482,26 @@ export interface AttendanceRecord {
   markedBy: string;
 }
 
+/** One student's whole month of attendance from a CSV row. cells: day number -> P / A / L / Le. */
+export interface ImportAttendanceRow {
+  line: number;
+  admissionNo: string;
+  name: string;
+  fatherName: string;
+  year: number;
+  month: number; // 1-12
+  cells: Record<number, string>;
+}
+
+export interface ImportAttendanceResult {
+  line: number;
+  ok: boolean;
+  studentName: string;
+  daysMarked: number;
+  error: string | null;
+  warnings: string[];
+}
+
 /** Admin opened attendance editing for a short time (after the lock time or for a past day). */
 export interface AttendanceUnlock {
   id: string;
