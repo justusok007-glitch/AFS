@@ -2900,6 +2900,60 @@ export class FakeFeeRepository implements FeeRepository {
     return AppResult.success(createdVouchers);
   }
 
+  async deleteUnpaidVouchers(
+    campusId: string | null,
+    classId: string | null,
+    billingMonth: string,
+    dryRun: boolean,
+    actorId: string
+  ): Promise<AppResult<{ willDelete: number; keptWithPayments: number }>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    if (!/^\d{4}-\d{2}$/.test(billingMonth)) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Choose a month.' });
+    }
+    const paidVoucherIds = new Set(
+      db.paymentAllocations
+        .filter((a) => {
+          const p = db.feePayments.find((x) => x.id === a.paymentId);
+          return p && !p.isVoid && a.allocatedAmount > 0;
+        })
+        .map((a) => a.voucherId)
+    );
+    const inScope = db.feeVouchers.filter((v) => {
+      if (v.billingMonth !== billingMonth) return false;
+      if (campusId && v.campusId !== campusId) return false;
+      if (classId) {
+        const stu = db.students.find((s) => s.id === v.studentId);
+        const sec = stu ? db.sections.find((s) => s.id === stu.sectionId) : undefined;
+        if (!sec || sec.classId !== classId) return false;
+      }
+      return true;
+    });
+    const deletable = inScope.filter((v) => !paidVoucherIds.has(v.id) && v.status === VoucherStatus.UNPAID);
+    const result = { willDelete: deletable.length, keptWithPayments: inScope.length - deletable.length };
+    if (dryRun || deletable.length === 0) return AppResult.success(result);
+    const gone = new Set(deletable.map((v) => v.id));
+    const goneNos = new Set(deletable.map((v) => v.voucherNo));
+    db.feeVouchers = db.feeVouchers.filter((v) => !gone.has(v.id));
+    db.paymentAllocations = db.paymentAllocations.filter((a) => !gone.has(a.voucherId));
+    // the "New fee voucher ..." alerts that parents already received
+    db.notifications = db.notifications.filter((n) => !(n.type === NotificationType.FEE && [...goneNos].some((no) => n.title === `New fee voucher ${no}`)));
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'DELETE_VOUCHERS',
+      tableName: 'fee_vouchers',
+      recordId: billingMonth,
+      oldValue: `${deletable.length} vouchers`,
+      newValue: null,
+      reason: `Unpaid vouchers of ${billingMonth} deleted`,
+      changedBy: actorId,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success(result);
+  }
+
   /**
    * Dry run of generateMonthlyVouchers: same eligibility rules, saves nothing.
    */
