@@ -2052,6 +2052,8 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       l: AttendanceStatus.LATE,
       le: AttendanceStatus.LEAVE,
     };
+    // H = holiday / off day: nothing is saved for that day
+    const HOLIDAY = 'h';
     const out: ImportAttendanceResult[] = [];
     const nowIso = new Date().toISOString();
     for (const row of rows) {
@@ -2063,6 +2065,20 @@ export class FakeAttendanceRepository implements AttendanceRepository {
       res.studentName = stu.name;
       if (!(row.month >= 1 && row.month <= 12) || !(row.year >= 2000 && row.year <= 2100)) { res.error = 'Month or Year is not readable.'; continue; }
       if (row.name.trim() && norm(row.name) !== norm(stu.name)) res.warnings.push(`File name "${row.name}" differs from "${stu.name}"; matched by Admission No.`);
+      const sec = db.sections.find((x) => x.id === stu.sectionId);
+      const cls = sec ? db.classes.find((c) => c.id === sec.classId) : undefined;
+      const campus = db.campuses.find((c) => c.id === stu.campusId);
+      if (row.className?.trim() && cls) {
+        const given = norm(row.className.replace(/^class\s*/i, ''));
+        const ok = [cls.nameEn, `${cls.nameEn}${sec?.name ?? ''}`, sec?.name ?? ''].some((x) => norm(x.replace(/^class\s*/i, '')) === given);
+        if (!ok) res.warnings.push(`Class "${row.className}" differs from ${cls.nameEn}${sec ? `-${sec.name}` : ''} in the app.`);
+      }
+      if (row.campus?.trim() && campus) {
+        const c = norm(row.campus);
+        if (!(norm(campus.nameEn).includes(c) || c.includes(norm(campus.nameEn).slice(0, 4)) || (c[0] === campus.code.toLowerCase() && c.length <= 2))) {
+          res.warnings.push(`Campus "${row.campus}" differs from ${campus.nameEn} in the app.`);
+        }
+      }
       const dim = new Date(row.year, row.month, 0).getDate();
       const mm = `${row.year}-${String(row.month).padStart(2, '0')}`;
       const todo: { date: string; status: AttendanceStatus }[] = [];
@@ -2072,8 +2088,9 @@ export class FakeAttendanceRepository implements AttendanceRepository {
         const v = raw.trim();
         if (!v) continue;
         const day = Number(dayStr);
+        if (v.toLowerCase() === HOLIDAY) continue;
         const status = codes[v.toLowerCase()];
-        if (!status) { bad = `Day ${day}: "${v}" is not P, A, L or Le.`; break; }
+        if (!status) { bad = `Day ${day}: "${v}" is not P, A, L, Le or H.`; break; }
         if (day < 1 || day > dim) { bad = `Day ${day} does not exist in ${mm}.`; break; }
         const date = `${mm}-${String(day).padStart(2, '0')}`;
         if (date > todayStr) { future += 1; continue; }

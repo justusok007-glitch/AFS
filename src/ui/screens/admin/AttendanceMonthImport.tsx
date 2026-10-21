@@ -25,6 +25,8 @@ export function parseAttendanceFile(text: string): { rows: ImportAttendanceRow[]
   const iNo = find('admissionno', 'admno', 'admissionnumber');
   const iName = find('studentname', 'name');
   const iFather = find('fathername', 'father');
+  const iClass = find('class', 'classname', 'classsection');
+  const iCampus = find('campus');
   const iMonth = find('month');
   const iYear = find('year');
   const dayCols: { day: number; idx: number }[] = [];
@@ -39,7 +41,7 @@ export function parseAttendanceFile(text: string): { rows: ImportAttendanceRow[]
     dayCols.forEach(({ day, idx }) => {
       cells[day] = (c[idx] ?? '').trim();
     });
-    return { line: k + 2, admissionNo: g(iNo), name: g(iName), fatherName: g(iFather), year: Number(g(iYear)), month: monthNo(g(iMonth)), cells };
+    return { line: k + 2, admissionNo: g(iNo), name: g(iName), fatherName: g(iFather), className: g(iClass), campus: g(iCampus), year: Number(g(iYear)), month: monthNo(g(iMonth)), cells };
   });
   return { rows, fatal: false };
 }
@@ -85,8 +87,8 @@ export const AttendanceMonthImport: React.FC<{ actor: Profile; onClose: () => vo
     setChecked(null);
   };
 
-  const header = ['Admission No', 'Student Name', 'Father Name', 'Month', 'Year', ...Array.from({ length: 31 }, (_, i) => String(i + 1))];
-  const sample = (no: string, name: string, father: string, pattern: string[]) => [no, name, father, 'October', '2026', ...Array.from({ length: 31 }, (_, i) => pattern[i % pattern.length])];
+  const header = ['Admission No', 'Student Name', 'Father Name', 'Class', 'Campus', 'Month', 'Year', ...Array.from({ length: 31 }, (_, i) => String(i + 1))];
+  const sample = (no: string, name: string, father: string, cls: string, campus: string, pattern: string[]) => [no, name, father, cls, campus, 'October', '2026', ...Array.from({ length: 31 }, (_, i) => pattern[i % pattern.length])];
 
   return (
     <SchoolCard className="space-y-3">
@@ -100,8 +102,8 @@ export const AttendanceMonthImport: React.FC<{ actor: Profile; onClose: () => vo
           onClick={() =>
             downloadCsv('monthly-attendance-template.csv', [
               header,
-              sample('1001', 'Hasham Ashraf', 'Ashraf Ali', ['P', 'P', 'P', 'A', 'P', 'P', 'Le']),
-              sample('1002', 'Muhammad Abdullah', 'Abdul Rehman', ['P', 'L', 'P', 'P', 'P', 'A']),
+              sample('1001', 'Hasham Ashraf', 'Ashraf Ali', '6-B', 'Boys', ['P', 'P', 'P', 'A', 'P', 'P', 'H']),
+              sample('1002', 'Muhammad Abdullah', 'Abdul Rehman', '6-B', 'Boys', ['P', 'L', 'P', 'Le', 'P', 'A']),
             ])
           }
         />

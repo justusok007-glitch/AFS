@@ -488,6 +488,8 @@ export interface ImportAttendanceRow {
   admissionNo: string;
   name: string;
   fatherName: string;
+  className?: string;
+  campus?: string;
   year: number;
   month: number; // 1-12
   cells: Record<number, string>;
