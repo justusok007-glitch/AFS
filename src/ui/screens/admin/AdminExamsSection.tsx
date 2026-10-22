@@ -14,6 +14,7 @@ import {
 } from '../../components/SchoolComposables';
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
+import { SchoolDialog } from '../../components/SchoolComposables';
 import { examName, ExamStatusChip, MarksEntryGrid, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { ExamMarksUpload } from './ExamMarksUpload';
 import { selectCls } from '../principal/PrincipalShared';
@@ -246,6 +247,7 @@ const ExamDetail: React.FC<{
   const [notice, setNotice] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<{ sectionId: string; subjectId: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const reloadExam = useCallback(async () => {
     const [ex, pr] = await Promise.all([
@@ -311,6 +313,14 @@ const ExamDetail: React.FC<{
     void reloadExam();
   };
 
+  const removeExam = async () => {
+    setConfirmDelete(false);
+    setError(null);
+    const r = await AppModule.examRepository.deleteExam(examId, admin.id);
+    if (!r.ok) return setError(r.error.message);
+    onBack();
+  };
+
   const setStatus = async (status: ExamStatus) => {
     setError(null);
     const r = await AppModule.examRepository.updateExamStatus(examId, status, admin.id);
@@ -353,7 +363,17 @@ const ExamDetail: React.FC<{
         {exam.status === ExamStatus.MARKS_ENTRY && <PrimaryButton text={t('ex_btn_publish')} variant="orange" onClick={() => void setStatus(ExamStatus.PUBLISHED)} />}
         {exam.status === ExamStatus.PUBLISHED && <PrimaryButton text={t('ex_btn_unpublish')} variant="outline" onClick={() => void setStatus(ExamStatus.MARKS_ENTRY)} />}
         {error && <p className="text-xs font-medium text-[#D64545]">{error}</p>}
+        <button type="button" onClick={() => setConfirmDelete(true)} className="w-full min-h-[44px] rounded-2xl border border-[#D64545]/40 text-[#D64545] text-sm font-semibold cursor-pointer">{t('ex_delete_btn')}</button>
       </SchoolCard>
+      <SchoolDialog
+        open={confirmDelete}
+        title={t('ex_delete_title')}
+        message={`${examName(exam, language)} — ${t('ex_delete_body')}`}
+        confirmText={t('ex_delete_btn')}
+        cancelText={t('acc_cancel_btn')}
+        onConfirm={() => void removeExam()}
+        onDismiss={() => setConfirmDelete(false)}
+      />
 
       <SchoolCard className="space-y-2.5">
         <h3 className="text-xs font-bold text-[#14284B]">{t('ex_subjects_heading')}</h3>

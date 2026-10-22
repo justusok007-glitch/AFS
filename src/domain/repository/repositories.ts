@@ -381,6 +381,8 @@ export interface ExamRepository {
     dryRun: boolean
   ): Promise<AppResult<ImportMarksResult[]>>;
   getAllExamSubjects(): Promise<AppResult<ExamSubject[]>>;
+  /** Admin only: deletes an unpublished exam with its subjects, marks and submissions. */
+  deleteExam(examId: string, actorId: string): Promise<AppResult<{ marksRemoved: number }>>;
 
   getExams(campusId: string | null): Promise<AppResult<Exam[]>>;
   createExam(exam: Exam, actorId: string): Promise<AppResult<Exam>>;

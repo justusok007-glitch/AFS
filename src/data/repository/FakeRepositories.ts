@@ -3784,6 +3784,28 @@ function examAudit(
 }
 
 export class FakeExamRepository implements ExamRepository {
+  async deleteExam(examId: string, actorId: string): Promise<AppResult<{ marksRemoved: number }>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const actor = db.profiles.find((p) => p.id === actorId);
+    if (!actor || actor.role !== Role.ADMIN) {
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can delete an exam.' });
+    }
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) return AppResult.failure({ kind: 'NotFound', entity: 'Exam', id: examId, message: 'Exam not found.' });
+    if (exam.status === ExamStatus.PUBLISHED) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'This exam is published. Unpublish it first, then delete it.' });
+    }
+    const marksRemoved = db.marks.filter((m) => m.examId === examId).length;
+    db.marks = db.marks.filter((m) => m.examId !== examId);
+    db.markSubmissions = db.markSubmissions.filter((m) => m.examId !== examId);
+    db.examSubjects = db.examSubjects.filter((m) => m.examId !== examId);
+    db.exams = db.exams.filter((e) => e.id !== examId);
+    examAudit(db, actorId, 'DELETE_EXAM', examId, `${exam.nameEn} (${marksRemoved} marks)`, null, 'Exam deleted by Admin');
+    saveLocalDatabase(db);
+    return AppResult.success({ marksRemoved });
+  }
+
   async getAllExamSubjects(): Promise<AppResult<ExamSubject[]>> {
     const db = getOrSeedLocalDatabase();
     return AppResult.success([...db.examSubjects]);

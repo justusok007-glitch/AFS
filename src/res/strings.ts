@@ -562,6 +562,9 @@ export type StringKey =
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
   | 'pr_chart_daily'
+  | 'ex_delete_btn'
+  | 'ex_delete_title'
+  | 'ex_delete_body'
   | 'ex_class_label'
   | 'ex_err_choose_class'
   | 'ex_err_no_subject'
@@ -1606,6 +1609,9 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
+  ex_delete_btn: 'Delete this exam',
+  ex_delete_title: 'Delete exam?',
+  ex_delete_body: 'its subjects and all marks entered for it will be deleted. This cannot be undone.',
   ex_class_label: 'Class of this exam',
   ex_err_choose_class: 'Choose the class of this exam.',
   ex_err_no_subject: 'Tick at least one subject.',
@@ -2651,6 +2657,9 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
+  ex_delete_btn: 'یہ امتحان حذف کریں',
+  ex_delete_title: 'امتحان حذف کریں؟',
+  ex_delete_body: 'اس کے مضامین اور درج کیے گئے تمام نمبر حذف ہو جائیں گے۔ یہ واپس نہیں ہو سکتا۔',
   ex_class_label: 'اس امتحان کی کلاس',
   ex_err_choose_class: 'امتحان کی کلاس منتخب کریں۔',
   ex_err_no_subject: 'کم از کم ایک مضمون منتخب کریں۔',
