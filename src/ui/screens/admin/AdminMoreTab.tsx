@@ -84,12 +84,12 @@ export const AdminMoreTab: React.FC<{
   const sectionOptions = useSectionOptions(lookups);
   const [showAtt, setShowAtt] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
+  const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
   useBackHandler(showAtt || showRemove || comms !== null, () => {
     if (comms) setComms(null);
     else if (showRemove) setShowRemove(false);
     else setShowAtt(false);
   });
-  const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
 
   if (comms === 'messages') return <MessagesTab user={admin} readOnly onBack={() => setComms(null)} />;
   if (comms === 'notices') return <NoticesManager actor={admin} lookups={lookups} onBack={() => setComms(null)} />;
