@@ -17,7 +17,7 @@ import {
   SupabaseError,
   updateOwnPassword,
 } from './client';
-import { forgetCloudData, hasUnsavedChanges, markPulled, pullAll, pushNow } from './sync';
+import { forgetCloudData, hasUnsavedChanges, markPulled, pullAll, pushNow, restoreUnsentEdits } from './sync';
 
 function buildSession(profile: Profile, authenticatedAtIso?: string): UserSession {
   const session: UserSession = {
@@ -95,7 +95,7 @@ export class SupabaseAuthRepository implements AuthRepository {
     const cached = getOrSeedLocalDatabase().profiles.find((p) => p.id === tokens.userId);
     try {
       await getAccessToken(); // refreshes the sign-in if it expired
-      if (!hasUnsavedChanges()) {
+      if (!hasUnsavedChanges() && !(await restoreUnsentEdits(tokens.userId))) {
         const snap = await pullAll(tokens.userId);
         markPulled();
         const fresh = snap.profiles.find((p) => p.id === tokens.userId);

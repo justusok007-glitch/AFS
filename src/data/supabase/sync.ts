@@ -16,6 +16,7 @@ import {
   upsertRows,
 } from './client';
 import { cloudHooks } from './mode';
+import { clearBaseline, loadBaseline, saveBaseline } from './baselineStore';
 
 type Row = Record<string, unknown>;
 
@@ -211,6 +212,7 @@ export async function pullAll(userId: string): Promise<LocalDatabaseSnapshot> {
 
   if (versionAtStart !== editVersion) return currentLocal(); // user edited while loading: keep their edit
   lastSynced = structuredClone(snap);
+  void saveBaseline(userId, lastSynced);
   if (dropJunkSubjects(snap)) {
     replaceLocalDatabase(snap);
     schedulePush(); // removes the junk subjects on the server too
@@ -242,6 +244,7 @@ function dropJunkSubjects(snap: LocalDatabaseSnapshot): boolean {
 
 export function forgetCloudData() {
   lastSynced = null;
+  void clearBaseline();
   myRole = null;
   clearLocalDatabase();
   setStatus({ state: 'idle', message: '' });
@@ -445,6 +448,8 @@ async function flush() {
     }
   } finally {
     running = false;
+    const t = readTokens();
+    if (t && lastSynced) void saveBaseline(t.userId, lastSynced);
   }
 }
 
@@ -473,6 +478,22 @@ export async function discardAndReload(): Promise<void> {
   const t = readTokens();
   if (!t) return;
   await pullAll(t.userId);
+}
+
+/**
+ * Called when the app starts with a saved sign-in. If the app was closed with edits that were never sent,
+ * the saved baseline lets us send them now (and keep them) instead of replacing them with the server's data.
+ * Returns true when unsent edits were found and a send was started.
+ */
+export async function restoreUnsentEdits(userId: string): Promise<boolean> {
+  if (lastSynced) return false;
+  const base = await loadBaseline(userId);
+  if (!base) return false;
+  const local = currentLocal();
+  if (JSON.stringify(local) === JSON.stringify(base)) return false;
+  lastSynced = structuredClone(base);
+  schedulePush();
+  return true;
 }
 
 /** Pulls fresh data unless there are unsaved edits. */
