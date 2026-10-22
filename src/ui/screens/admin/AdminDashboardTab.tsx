@@ -1,9 +1,10 @@
 import { useBackHandler } from '../../navigation/backStack';
+import { PrincipalResultsTab } from '../principal/PrincipalResultsTab';
 import { AdminBackup } from './AdminBackup';
 import { DiaryTab } from '../diary/DiaryTab';
 import React, { useEffect, useState } from 'react';
 import { AccountantDefaultersTab } from '../accountant/AccountantDefaultersTab';
-import { AlertTriangle, ArrowLeft, ArrowRight, Bell, BookOpen, Download, CalendarCheck, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare, Settings as SettingsIcon, Activity, Sliders, Unlock, Users, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Award, Bell, BookOpen, Download, CalendarCheck, ClipboardList, GraduationCap, LayoutDashboard, MessageSquare, Settings as SettingsIcon, Activity, Sliders, Unlock, Users, Wallet } from 'lucide-react';
 import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesManager } from '../comms/CommsShared';
 import { AdminAttendanceCorrection } from './AdminAttendanceCorrection';
@@ -93,7 +94,7 @@ export const AdminOverviewTab: React.FC<{
 };
 
 /** Admin home: shortcut tiles. Overview, corrections, notices, conversations and audit log open from their own tile. */
-type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters' | 'search' | 'feebreak' | 'unlock' | 'activity' | 'diary' | 'backup';
+type DashView = 'menu' | 'overview' | 'attendance' | 'notices' | 'messages' | 'audit' | 'defaulters' | 'search' | 'feebreak' | 'unlock' | 'activity' | 'diary' | 'backup' | 'results';
 
 export const AdminDashboardTab: React.FC<{
   admin: Profile;
@@ -111,6 +112,17 @@ export const AdminDashboardTab: React.FC<{
 
   if (view === 'attendance') {
     return <AdminAttendanceCorrection admin={admin} sectionOptions={sectionOptions} onBack={back} />;
+  }
+  if (view === 'results') {
+    return (
+      <div className="space-y-3">
+        <button type="button" onClick={back} className="flex items-center gap-1.5 text-sm font-semibold text-[#14284B] min-h-[40px] cursor-pointer">
+          <BackIcon className="w-4 h-4" />
+          <span>{t('back_button_label')}</span>
+        </button>
+        <PrincipalResultsTab principal={admin} lookups={lookups} overview />
+      </div>
+    );
   }
   if (view === 'backup') return <AdminBackup onBack={back} />;
   if (view === 'diary') return <DiaryTab user={admin} onBack={back} />;
@@ -139,6 +151,7 @@ export const AdminDashboardTab: React.FC<{
       <HomeTile tone="green" label={t('fb_title')} icon={<Wallet className={ic} />} onClick={() => setView('feebreak')} />
       <HomeTile tone="orange" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => setView('defaulters')} />
       <HomeTile tone="red" label={t('ad_att_btn')} icon={<CalendarCheck className={ic} />} onClick={() => setView('attendance')} />
+      <HomeTile tone="purple" label={t('ad_results_tile')} icon={<Award className={ic} />} onClick={() => setView('results')} />
       <HomeTile tone="orange" label={t('tab_diary')} icon={<BookOpen className={ic} />} onClick={() => setView('diary')} />
       <HomeTile tone="green" label={t('bk_title')} icon={<Download className={ic} />} onClick={() => setView('backup')} />
       <HomeTile tone="teal" label={t('act_title')} icon={<Activity className={ic} />} onClick={() => setView('activity')} />

@@ -17,7 +17,7 @@ import { ParentResultsTab } from '../parent/ParentResultsTab';
 import { examName, ExamStatusChip, subjectName, useSubjectsMap } from '../exams/ExamShared';
 import { CHART, CountUp, percentColor, selectCls } from './PrincipalShared';
 
-export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: AccountantLookups }> = ({ principal, lookups }) => {
+export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: AccountantLookups; overview?: boolean }> = ({ principal, lookups, overview = false }) => {
   const { stringResource: t, language, isRtl } = useStringResource();
   const [openStudent, setOpenStudent] = useState<Student | null>(null);
   const subjects = useSubjectsMap();
@@ -38,8 +38,8 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
   const loadExams = useCallback(async () => {
     const r = await AppModule.examRepository.getExams(null);
     if (!r.ok) return setFailed(true);
-    setExams(r.data.filter((e) => e.status !== ExamStatus.DRAFT));
-  }, []);
+    setExams(overview ? r.data : r.data.filter((e) => e.status !== ExamStatus.DRAFT));
+  }, [overview]);
   useEffect(() => {
     void loadExams();
   }, [loadExams]);
@@ -126,7 +126,9 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
         </select>
       </SchoolCard>
 
-      {!cls ? (
+      {!cls && overview ? (
+        <ResultsOverview exams={exams} lookups={lookups} onOpen={(classId, eid) => { setCls(classId); setExamId(eid); }} />
+      ) : !cls ? (
         <EmptyState title={t('rs_pick_class_hint')} description="" icon={<Award className="w-6 h-6 text-[#F28C28]" />} />
       ) : !exam ? (
         classExams === null ? (
@@ -239,3 +241,117 @@ const Kpi: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value
     <div className="text-[11px] text-[#6B7385]">{label}</div>
   </SchoolCard>
 );
+
+interface OverviewRow {
+  classId: string;
+  label: string;
+  a: ExamAnalytics;
+}
+
+/** Admin: one exam, every class side by side (average, pass rate, incomplete). Tap a class for its full analysis. */
+const ResultsOverview: React.FC<{ exams: Exam[]; lookups: AccountantLookups; onOpen: (classId: string, examId: string) => void }> = ({ exams, lookups, onOpen }) => {
+  const { stringResource: t, language } = useStringResource();
+  const [examId, setExamId] = useState('');
+  const [rows, setRows] = useState<OverviewRow[] | null>(null);
+
+  useEffect(() => {
+    const exam = exams.find((e) => e.id === examId);
+    if (!exam) {
+      setRows(null);
+      return;
+    }
+    let off = false;
+    setRows(null);
+    void Promise.all(
+      lookups.classes
+        .filter((c) => !exam.campusId || c.campusId === exam.campusId)
+        .map(async (c) => {
+          const subs = await AppModule.examRepository.getExamSubjectsForClass(exam.id, c.id);
+          if (!subs.ok || subs.data.length === 0) return null;
+          const a = await AppModule.examRepository.getExamAnalytics(exam.id, c.campusId, c.id);
+          if (!a.ok) return null;
+          const camp = lookups.campuses.find((x) => x.id === c.campusId);
+          const campLabel = camp ? (language === 'ur' ? camp.nameUr : camp.nameEn) : '';
+          return { classId: c.id, label: `${campLabel ? campLabel + ' · ' : ''}${language === 'ur' ? c.nameUr : c.nameEn}`, a: a.data } as OverviewRow;
+        })
+    ).then((list) => {
+      if (!off) setRows(list.filter((x): x is OverviewRow => x !== null));
+    });
+    return () => {
+      off = true;
+    };
+  }, [examId, exams, lookups.classes, lookups.campuses, language]);
+
+  const withData = (rows ?? []).filter((r) => r.a.studentsCount > 0);
+  const totalStudents = withData.reduce((n, r) => n + r.a.studentsCount, 0);
+  const wAvg = totalStudents ? Math.round(withData.reduce((n, r) => n + r.a.averagePercent * r.a.studentsCount, 0) / totalStudents) : 0;
+  const wPass = totalStudents ? Math.round(withData.reduce((n, r) => n + r.a.passPercent * r.a.studentsCount, 0) / totalStudents) : 0;
+
+  return (
+    <div className="space-y-3">
+      <SchoolCard className="space-y-2">
+        <div className="font-heading text-sm font-bold text-[#14284B]">{t('rs_ov_title')}</div>
+        <select className={selectCls} value={examId} onChange={(e) => setExamId(e.target.value)}>
+          <option value="">{t('rs_ov_pick_exam')}</option>
+          {exams.map((e) => (<option key={e.id} value={e.id}>{examName(e, language)}</option>))}
+        </select>
+      </SchoolCard>
+
+      {!examId ? null : rows === null ? (
+        <ShimmerPlaceholder lines={4} showHeader />
+      ) : withData.length === 0 ? (
+        <EmptyState title={t('rs_ov_none')} description="" />
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2.5">
+            <Kpi label={t('rs_students')} value={<CountUp value={totalStudents} />} />
+            <Kpi label={t('rs_avg')} value={<span dir="ltr" style={{ color: percentColor(wAvg) }}>{wAvg}%</span>} />
+            <Kpi label={t('rs_pass_rate')} value={<span dir="ltr" style={{ color: percentColor(wPass) }}>{wPass}%</span>} />
+          </div>
+
+          <SchoolCard className="space-y-2">
+            <div className="font-heading text-xs font-bold text-[#14284B]">{t('rs_avg')} · {t('rs_ov_all')}</div>
+            <div dir="ltr" className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={withData.map((r) => ({ name: r.label, pct: r.a.averagePercent }))} margin={{ top: 20, right: 8, left: -16, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.grid} />
+                  <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} tick={{ fill: '#1B2233', fontSize: 10 }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
+                  <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: CHART.grey, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v: unknown) => [`${Number(v)}%`, t('rs_avg')]} contentStyle={{ borderRadius: 12, border: `1px solid ${CHART.grid}`, fontSize: 12 }} />
+                  <Bar dataKey="pct" radius={[8, 8, 0, 0]} maxBarSize={40}>
+                    {withData.map((r, i) => (<Cell key={i} fill={percentColor(r.a.averagePercent)} />))}
+                    <LabelList dataKey="pct" position="top" style={{ fontSize: 10, fill: '#1B2233' }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SchoolCard>
+
+          <SchoolCard className="space-y-1.5">
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 text-[11px] font-bold text-[#6B7385]">
+              <span>{t('rs_ov_class')}</span>
+              <span dir="ltr" className="text-end">{t('rs_students')}</span>
+              <span dir="ltr" className="text-end">{t('rs_avg')}</span>
+              <span dir="ltr" className="text-end">{t('rs_pass_rate')}</span>
+            </div>
+            {withData.map((r) => (
+              <div
+                key={r.classId}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpen(r.classId, examId)}
+                className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center border-t border-[#E4E8F0] pt-1.5 text-xs cursor-pointer active:bg-[#F7F8FB]"
+              >
+                <span className="font-semibold text-[#14284B] truncate">{r.label}</span>
+                <span dir="ltr" className="text-end">{r.a.studentsCount}{r.a.incompleteCount ? ` (+${r.a.incompleteCount})` : ''}</span>
+                <span dir="ltr" className="text-end font-bold" style={{ color: percentColor(r.a.averagePercent) }}>{r.a.averagePercent}%</span>
+                <span dir="ltr" className="text-end font-bold" style={{ color: percentColor(r.a.passPercent) }}>{r.a.passPercent}%</span>
+              </div>
+            ))}
+            <p className="text-[10px] text-[#6B7385] pt-1">{t('rs_ov_tap')}</p>
+          </SchoolCard>
+        </>
+      )}
+    </div>
+  );
+};

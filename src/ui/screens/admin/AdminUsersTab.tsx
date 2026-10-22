@@ -41,6 +41,7 @@ import {
 } from '../accountant/AccountantShared';
 import { selectCls } from '../principal/PrincipalShared';
 import { CredentialDialog, CredentialSlip } from './AdminShared';
+import { AdminMergeParents } from './AdminMergeParents';
 
 const ROLES: Role[] = [Role.PARENT, Role.TEACHER, Role.PRINCIPAL, Role.VICE_PRINCIPAL, Role.ACCOUNTANT, Role.ATTENDANCE_COORDINATOR, Role.ADMIN];
 const roleKey = (r: Role) => `role_${r.toLowerCase()}` as StringKey;
@@ -66,8 +67,10 @@ export const AdminUsersTab: React.FC<{
   const [credential, setCredential] = useState<CredentialSlip | null>(null);
   const [printSlips, setPrintSlips] = useState<CredentialSlip[] | null>(null);
   const [showSlips, setShowSlips] = useState(false);
-  useBackHandler(!!selectedId || creating || showSlips, () => {
-    if (selectedId) setSelectedId(null);
+  const [merging, setMerging] = useState(false);
+  useBackHandler(!!selectedId || creating || showSlips || merging, () => {
+    if (merging) setMerging(false);
+    else if (selectedId) setSelectedId(null);
     else if (showSlips) setShowSlips(false);
     else setCreating(false);
   });
@@ -139,6 +142,10 @@ export const AdminUsersTab: React.FC<{
     }
   }
 
+  if (merging) {
+    return <AdminMergeParents admin={admin} onBack={() => setMerging(false)} onMerged={() => void load()} />;
+  }
+
   return (
     <div className="space-y-3">
       {credentialOverlay}
@@ -147,6 +154,8 @@ export const AdminUsersTab: React.FC<{
         <PrimaryButton text={t('ad_users_new_btn')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setCreating((v) => !v)} />
         <PrimaryButton text={`${t('ad_slips_btn')} (${slips.length})`} variant="outline" icon={<Printer className="w-4 h-4 text-[#F28C28]" />} onClick={() => setShowSlips((v) => !v)} />
       </div>
+
+      <PrimaryButton text={t('mg_btn')} variant="outline" onClick={() => setMerging(true)} />
 
       {showSlips && (
         <SchoolCard className="space-y-2">

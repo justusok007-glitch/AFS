@@ -564,6 +564,27 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'rs_ov_title'
+  | 'rs_ov_pick_exam'
+  | 'rs_ov_class'
+  | 'rs_ov_none'
+  | 'rs_ov_tap'
+  | 'rs_ov_all'
+  | 'ad_results_tile'
+  | 'mg_title'
+  | 'mg_hint'
+  | 'mg_suggested'
+  | 'mg_none'
+  | 'mg_choose_these'
+  | 'mg_manual'
+  | 'mg_keep'
+  | 'mg_remove'
+  | 'mg_result'
+  | 'mg_merge'
+  | 'mg_confirm'
+  | 'mg_done'
+  | 'mg_no_children'
+  | 'mg_btn'
   | 'pn_title'
   | 'pn_hint'
   | 'pn_enable'
@@ -1691,6 +1712,27 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  rs_ov_title: 'All classes at a glance',
+  rs_ov_pick_exam: 'Choose an exam to compare all classes',
+  rs_ov_class: 'Class',
+  rs_ov_none: 'No class has marks for this exam yet.',
+  rs_ov_tap: 'Tap a class to see its full result analysis.',
+  rs_ov_all: 'All classes',
+  ad_results_tile: 'Results',
+  mg_title: 'Merge duplicate parent accounts',
+  mg_hint: 'When one parent has two accounts, choose the account to keep and the duplicate. Children, chats and notifications move to the kept account and the duplicate account is deleted.',
+  mg_suggested: 'Accounts that look like duplicates (same phone or same name)',
+  mg_none: 'No obvious duplicates found. You can still choose two accounts below.',
+  mg_choose_these: 'Choose these',
+  mg_manual: 'Choose accounts yourself',
+  mg_keep: 'Account to keep',
+  mg_remove: 'Duplicate account to delete',
+  mg_result: 'After merging, {keep} will have: {kids}. {dup} will be deleted and can no longer log in.',
+  mg_merge: 'Merge accounts',
+  mg_confirm: 'Delete account {dup} and move everything to {keep}? This cannot be undone.',
+  mg_done: 'Merged. {c} child link(s) and {m} chat(s) moved.',
+  mg_no_children: 'no children linked',
+  mg_btn: 'Merge duplicate parents',
   pn_title: 'Notifications on this phone',
   pn_hint: 'Get an alert for results, new fee vouchers, the daily diary, and when your child is absent, late or on leave.',
   pn_enable: 'Turn on notifications',
@@ -2819,6 +2861,27 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  rs_ov_title: 'تمام کلاسز ایک نظر میں',
+  rs_ov_pick_exam: 'تمام کلاسز کا موازنہ دیکھنے کے لیے امتحان چنیں',
+  rs_ov_class: 'کلاس',
+  rs_ov_none: 'اس امتحان کے لیے ابھی کسی کلاس کے نمبر نہیں ہیں۔',
+  rs_ov_tap: 'کلاس کا مکمل تجزیہ دیکھنے کے لیے اس پر ٹیپ کریں۔',
+  rs_ov_all: 'تمام کلاسز',
+  ad_results_tile: 'نتائج',
+  mg_title: 'ڈپلیکیٹ والدین اکاؤنٹس ضم کریں',
+  mg_hint: 'جب ایک والد/والدہ کے دو اکاؤنٹ ہوں تو رکھنے والا اکاؤنٹ اور ڈپلیکیٹ چنیں۔ بچے، چیٹس اور اطلاعات رکھے جانے والے اکاؤنٹ میں منتقل ہوں گی اور ڈپلیکیٹ اکاؤنٹ حذف ہو جائے گا۔',
+  mg_suggested: 'ڈپلیکیٹ لگنے والے اکاؤنٹس (ایک فون یا ایک نام)',
+  mg_none: 'کوئی واضح ڈپلیکیٹ نہیں ملا۔ آپ نیچے سے دو اکاؤنٹ خود چن سکتے ہیں۔',
+  mg_choose_these: 'انہیں چنیں',
+  mg_manual: 'اکاؤنٹس خود چنیں',
+  mg_keep: 'رکھنے والا اکاؤنٹ',
+  mg_remove: 'حذف ہونے والا ڈپلیکیٹ اکاؤنٹ',
+  mg_result: 'ضم کے بعد {keep} کے ساتھ یہ بچے ہوں گے: {kids}۔ {dup} حذف ہو جائے گا اور لاگ اِن نہیں کر سکے گا۔',
+  mg_merge: 'اکاؤنٹس ضم کریں',
+  mg_confirm: 'اکاؤنٹ {dup} حذف کر کے سب کچھ {keep} میں منتقل کریں؟ یہ واپس نہیں ہو سکتا۔',
+  mg_done: 'ضم ہو گیا۔ {c} بچے اور {m} چیٹ منتقل ہوئیں۔',
+  mg_no_children: 'کوئی بچہ منسلک نہیں',
+  mg_btn: 'ڈپلیکیٹ والدین ضم کریں',
   pn_title: 'اس فون پر اطلاعات',
   pn_hint: 'نتائج، نئے فیس واؤچر، روزانہ ڈائری، اور بچے کی غیر حاضری، تاخیر یا رخصت کی اطلاع حاصل کریں۔',
   pn_enable: 'اطلاعات آن کریں',

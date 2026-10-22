@@ -556,7 +556,17 @@ export interface DashboardRepository {
 // 9. SETTINGS REPOSITORY
 // ============================================================================
 
+export interface MergeParentsResult {
+  childrenMoved: number;
+  chatsMoved: number;
+}
+
 export interface SettingsRepository {
+  /**
+   * Admin only: moves everything of the duplicate parent account (children links, chats, notifications)
+   * to the account to keep, then deletes the duplicate account (its login stops working).
+   */
+  mergeParentAccounts(keepId: string, removeId: string, actor: Profile): Promise<AppResult<MergeParentsResult>>;
   getSchoolSettings(): Promise<AppResult<SchoolSettings>>;
   updateSchoolSettings(
     settings: SchoolSettings,

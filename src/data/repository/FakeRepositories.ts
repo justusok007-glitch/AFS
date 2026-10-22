@@ -98,6 +98,7 @@ import {
   AuthRepository,
   DashboardRepository,
   RoleActionRow,
+  MergeParentsResult,
   ExamRepository,
   FeeRepository,
   MessageRepository,
@@ -5788,6 +5789,75 @@ export class FakeSettingsRepository implements SettingsRepository {
     }
     saveLocalDatabase(db);
     return AppResult.success(assignment);
+  }
+
+  async mergeParentAccounts(
+    keepId: string,
+    removeId: string,
+    actor: Profile
+  ): Promise<AppResult<MergeParentsResult>> {
+    await simulateLocalDelay();
+    const fail = (message: string) => AppResult.failure({ kind: 'ValidationFailed', message });
+    if (actor.role !== Role.ADMIN) return fail('Only the Admin can merge accounts.');
+    if (keepId === removeId) return fail('Choose two different accounts.');
+    const db = getOrSeedLocalDatabase();
+    const keep = db.profiles.find((p) => p.id === keepId);
+    const dup = db.profiles.find((p) => p.id === removeId);
+    if (!keep || !dup) return fail('Account not found.');
+    if (keep.role !== Role.PARENT || dup.role !== Role.PARENT) return fail('Only parent accounts can be merged.');
+
+    // children
+    let childrenMoved = 0;
+    const keepKids = new Set(db.parentStudents.filter((l) => l.parentId === keepId).map((l) => l.studentId));
+    for (const l of db.parentStudents.filter((x) => x.parentId === removeId)) {
+      if (!keepKids.has(l.studentId)) {
+        db.parentStudents.push({ parentId: keepId, studentId: l.studentId, relation: l.relation });
+        keepKids.add(l.studentId);
+        childrenMoved++;
+      }
+    }
+    db.parentStudents = db.parentStudents.filter((l) => l.parentId !== removeId);
+
+    // chats: move them; when the account to keep already has a chat with the same teacher about the same child, join them
+    let chatsMoved = 0;
+    for (const c of db.conversations.filter((x) => x.parentId === removeId)) {
+      const twin = db.conversations.find(
+        (x) => x.parentId === keepId && x.studentId === c.studentId && x.teacherId === c.teacherId
+      );
+      if (twin) {
+        db.messages.forEach((m) => {
+          if (m.conversationId === c.id) m.conversationId = twin.id;
+        });
+        if (c.lastMessageAt > twin.lastMessageAt) twin.lastMessageAt = c.lastMessageAt;
+        db.conversations = db.conversations.filter((x) => x.id !== c.id);
+      } else {
+        c.parentId = keepId;
+      }
+      chatsMoved++;
+    }
+    db.messages.forEach((m) => {
+      if (m.senderId === removeId) m.senderId = keepId;
+    });
+    db.notifications.forEach((n) => {
+      if (n.userId === removeId) n.userId = keepId;
+    });
+
+    // the duplicate account itself
+    db.profiles = db.profiles.filter((p) => p.id !== removeId);
+    delete db.passwordsByUserId[removeId];
+    db.auditLogs.unshift({
+      id: auditId(),
+      action: 'MERGE_PARENT_ACCOUNTS',
+      tableName: 'profiles',
+      recordId: removeId,
+      oldValue: `${dup.loginId} (${dup.fullName})`,
+      newValue: `${keep.loginId} (${keep.fullName})`,
+      reason: `Duplicate parent account merged; ${childrenMoved} child link(s) and ${chatsMoved} chat(s) moved`,
+      changedBy: actor.id,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success({ childrenMoved, chatsMoved });
   }
 
   async deleteTeacherAssignment(
