@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { FeeStatusSummaryCard } from './ParentSummaryCards';
 import {
@@ -71,6 +72,7 @@ export const ParentFeesTab: React.FC<ParentFeesTabProps> = ({
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(
     null
   );
+  useBackHandler(selectedVoucherId !== null, () => setSelectedVoucherId(null));
 
   // Print preview modal (Voucher or Receipt)
   const [printDoc, setPrintDoc] = useState<PrintDocumentSpec | null>(null);

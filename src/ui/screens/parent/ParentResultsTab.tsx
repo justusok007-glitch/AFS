@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Award, Printer } from 'lucide-react';
 import {
@@ -46,6 +47,7 @@ export const ParentResultsTab: React.FC<{ parent: Profile; child: Student; allow
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [openId, setOpenId] = useState<string | null>(initialExamId ?? null);
+  useBackHandler(openId !== null, () => setOpenId(null));
   const [printing, setPrinting] = useState(false);
 
   useEffect(() => {

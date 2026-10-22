@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
@@ -96,6 +97,7 @@ export const AdminStudentsTab: React.FC<{
   const { stringResource: t, language } = useStringResource();
   const sectionOptions = useSectionOptions(lookups);
   const [view, setView] = useState<View>({ kind: 'list' });
+  useBackHandler(view.kind !== 'list', () => setView({ kind: 'list' }));
   const [credential, setCredential] = useState<CredentialSlip | null>(null);
   const [printSlips, setPrintSlips] = useState<CredentialSlip[] | null>(null);
 

@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ClipboardList, Layers, Medal, Plus, School, Trash2, Upload, Wallet } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -32,6 +33,7 @@ type SetupTab = 'school' | 'classes' | 'fees' | 'exams' | 'holidays' | 'grading'
 export const AdminSetupTab: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
   const { stringResource: t, isRtl } = useStringResource();
   const [tab, setTab] = useState<SetupTab | null>(null);
+  useBackHandler(tab !== null, () => setTab(null));
   const Chevron = isRtl ? ChevronLeft : ChevronRight;
   const Back = isRtl ? ArrowRight : ArrowLeft;
   const items: { id: SetupTab; label: string; icon: React.ReactNode }[] = [

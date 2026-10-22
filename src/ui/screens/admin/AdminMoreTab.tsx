@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, LogOut, Settings } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -83,6 +84,11 @@ export const AdminMoreTab: React.FC<{
   const sectionOptions = useSectionOptions(lookups);
   const [showAtt, setShowAtt] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
+  useBackHandler(showAtt || showRemove || comms !== null, () => {
+    if (comms) setComms(null);
+    else if (showRemove) setShowRemove(false);
+    else setShowAtt(false);
+  });
   const [comms, setComms] = useState<'messages' | 'notices' | null>(null);
 
   if (comms === 'messages') return <MessagesTab user={admin} readOnly onBack={() => setComms(null)} />;

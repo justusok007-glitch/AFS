@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import { AdminBackup } from './AdminBackup';
 import { DiaryTab } from '../diary/DiaryTab';
 import React, { useEffect, useState } from 'react';
@@ -102,6 +103,7 @@ export const AdminDashboardTab: React.FC<{
 }> = ({ admin, lookups, onSwitchTab, onOpenSettings }) => {
   const { stringResource: t, isRtl } = useStringResource();
   const [view, setView] = useState<DashView>('menu');
+  useBackHandler(view !== 'menu', () => setView('menu'));
   const sectionOptions = useSectionOptions(lookups);
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
   const ic = 'w-6 h-6';

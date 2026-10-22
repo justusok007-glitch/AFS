@@ -1,3 +1,4 @@
+import { runBackHandlers } from './ui/navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Calendar, X } from 'lucide-react';
 import { AppModule } from './di/AppModule';
@@ -71,6 +72,8 @@ const MainShell: React.FC<{
     if (exitedToLauncher) {
       return;
     }
+    // an open inner screen (sub-page, form, viewer) or the previous tab takes the Back press first
+    if (runBackHandlers()) return;
     if (devDestination) {
       setDevDestination(null);
       return;

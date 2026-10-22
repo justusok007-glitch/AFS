@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
@@ -217,6 +218,7 @@ export const NoticesManager: React.FC<{ actor: Profile; lookups: AccountantLooku
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [creating, setCreating] = useState(false);
+  useBackHandler(creating, () => setCreating(false));
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<NoticeAudience>(NoticeAudience.ALL);

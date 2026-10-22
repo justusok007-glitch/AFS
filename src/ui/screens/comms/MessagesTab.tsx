@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, MessageSquare, Plus, Search, Send } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -34,6 +35,10 @@ export const MessagesTab: React.FC<{
   const { stringResource: t, language, isRtl } = useStringResource();
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
   const [view, setView] = useState<View>({ kind: 'list' });
+  useBackHandler(view.kind !== 'list', () => {
+    setView({ kind: 'list' });
+    void load();
+  });
   const [rows, setRows] = useState<ConvRow[]>([]);
   const [people, setPeople] = useState<Record<string, Profile>>({});
   const [students, setStudents] = useState<Record<string, Student>>({});

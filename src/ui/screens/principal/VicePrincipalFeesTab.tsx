@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Search } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -14,6 +15,7 @@ export const VicePrincipalFeesTab: React.FC<{ lookups: AccountantLookups }> = ({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Student[]>([]);
   const [selected, setSelected] = useState<Student | null>(null);
+  useBackHandler(!!selected, () => setSelected(null));
 
   useEffect(() => {
     const q = query.trim();

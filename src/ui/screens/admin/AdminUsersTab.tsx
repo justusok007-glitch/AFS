@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
@@ -65,6 +66,11 @@ export const AdminUsersTab: React.FC<{
   const [credential, setCredential] = useState<CredentialSlip | null>(null);
   const [printSlips, setPrintSlips] = useState<CredentialSlip[] | null>(null);
   const [showSlips, setShowSlips] = useState(false);
+  useBackHandler(!!selectedId || creating || showSlips, () => {
+    if (selectedId) setSelectedId(null);
+    else if (showSlips) setShowSlips(false);
+    else setCreating(false);
+  });
 
   const load = useCallback(async () => {
     setLoading(true);

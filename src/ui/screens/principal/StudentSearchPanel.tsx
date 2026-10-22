@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useEffect, useState } from 'react';
 import { Phone, Search } from 'lucide-react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -20,6 +21,7 @@ export const StudentSearchPanel: React.FC<{ user: Profile; lookups: AccountantLo
   const [results, setResults] = useState<Student[]>([]);
   const [searchFailed, setSearchFailed] = useState(false);
   const [profile, setProfile] = useState<Student | null>(null);
+  useBackHandler(!!profile, () => setProfile(null));
   const [fees, setFees] = useState<StudentFeeSummary | null>(null);
   const [att, setAtt] = useState<ParentAttendanceSummary | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);

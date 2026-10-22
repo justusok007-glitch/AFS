@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, ClipboardCheck } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -30,6 +31,7 @@ export const TeacherMarksTab: React.FC<{ teacher: Profile }> = ({ teacher }) => 
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState<Pair | null>(null);
+  useBackHandler(!!open, () => setOpen(null));
 
   const load = useCallback(async () => {
     setLoading(true);

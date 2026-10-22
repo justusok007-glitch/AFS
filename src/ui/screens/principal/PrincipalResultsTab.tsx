@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, Award, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -28,6 +29,11 @@ export const PrincipalResultsTab: React.FC<{ principal: Profile; lookups: Accoun
   const [failed, setFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  useBackHandler(!!openStudent || !!examId || !!cls, () => {
+    if (openStudent) setOpenStudent(null);
+    else if (examId) setExamId('');
+    else setCls('');
+  });
 
   const loadExams = useCallback(async () => {
     const r = await AppModule.examRepository.getExams(null);

@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
@@ -55,6 +56,7 @@ export const TeacherMoreTab: React.FC<TeacherMoreTabProps> = ({
 }) => {
   const { stringResource, language, isRtl } = useStringResource();
   const [viewStudent, setViewStudent] = useState<Student | null>(null);
+  useBackHandler(!!viewStudent, () => setViewStudent(null));
 
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -27,6 +28,10 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   const [creating, setCreating] = useState(false);
   const [classOfExam, setClassOfExam] = useState<Record<string, string[]>>({});
   const [openId, setOpenId] = useState<string | null>(null);
+  useBackHandler(!!openId || creating, () => {
+    if (openId) setOpenId(null);
+    else setCreating(false);
+  });
 
   const load = useCallback(async () => {
     setLoading(true);

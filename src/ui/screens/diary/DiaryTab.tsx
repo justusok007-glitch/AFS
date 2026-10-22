@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Camera, Trash2 } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -58,6 +59,10 @@ export const DiaryTab: React.FC<{
   const [limit, setLimit] = useState(15);
   const [composing, setComposing] = useState(false);
   const [viewer, setViewer] = useState<string | null>(null);
+  useBackHandler(composing || !!viewer, () => {
+    if (viewer) setViewer(null);
+    else setComposing(false);
+  });
 
   const canPost = user.role === Role.TEACHER || user.role === Role.VICE_PRINCIPAL || user.role === Role.ADMIN;
   const canDeleteAny = user.role === Role.ADMIN || user.role === Role.VICE_PRINCIPAL;

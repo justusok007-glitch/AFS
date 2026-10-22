@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
@@ -93,6 +94,12 @@ export const StudentFeeAccount: React.FC<StudentFeeAccountProps> = ({
   const [printSpec, setPrintSpec] = useState<PrintSpec | null>(null);
   const isAdmin = accountant.role === Role.ADMIN;
   const [adminAction, setAdminAction] = useState<AdminAction | null>(null);
+  useBackHandler(true, () => {
+    if (adminAction) setAdminAction(null);
+    else if (selectedVoucherId) setSelectedVoucherId(null);
+    else if (view !== 'account') setView('account');
+    else onBack();
+  });
 
   // payment form
   const [amountText, setAmountText] = useState('');

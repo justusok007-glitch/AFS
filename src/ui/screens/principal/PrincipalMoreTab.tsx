@@ -1,3 +1,4 @@
+import { useBackHandler } from '../../navigation/backStack';
 import { DiaryTab } from '../diary/DiaryTab';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, Bell, BookOpen, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Settings } from 'lucide-react';
@@ -46,6 +47,7 @@ export const PrincipalMoreTab: React.FC<{
 }> = ({ principal, lookups, view, onViewChange, onOpenSettings, onLogout }) => {
   const { stringResource: t, language, isRtl } = useStringResource();
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+  useBackHandler(view !== 'menu', () => onViewChange('menu'));
 
   // compliance
   const [range, setRange] = useState<Range>('month');

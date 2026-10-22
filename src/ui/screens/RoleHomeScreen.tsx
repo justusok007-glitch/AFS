@@ -1,3 +1,4 @@
+import { useBackHandler } from '../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
@@ -265,7 +266,7 @@ export interface RoleHomeScreenProps {
 export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   session,
   activeTabIndex,
-  onTabChange,
+  onTabChange: onTabChangeRaw,
   selectedCampus,
   onCampusChange,
   onOpenSettings,
@@ -282,6 +283,17 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     }))
   );
   const currentTab = roleTabs[activeTabIndex] ?? roleTabs[0];
+
+  // tab history, so the phone's Back button returns to the tab you came from
+  const tabStack = React.useRef<number[]>([]);
+  const onTabChange = (idx: number) => {
+    if (idx === 0) tabStack.current = [];
+    else if (idx !== activeTabIndex) {
+      tabStack.current.push(activeTabIndex);
+      if (tabStack.current.length > 20) tabStack.current.shift();
+    }
+    onTabChangeRaw(idx);
+  };
   const isMarkTab = currentTab.id === 'attendance' || currentTab.id.startsWith('sec:');
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -321,6 +333,24 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     | { type: 'logout' }
     | null
   >(null);
+
+  useBackHandler(
+    activeTabIndex !== 0,
+    () => {
+      let target = tabStack.current.pop();
+      if (target === undefined || target === activeTabIndex) target = 0;
+      if (
+        (session.role === UserRole.TEACHER || session.role === UserRole.ATTENDANCE_COORDINATOR) &&
+        isMarkTab &&
+        teacherAttendanceDirty
+      ) {
+        setPendingLeaveAction({ type: 'tab', index: target });
+        return;
+      }
+      onTabChangeRaw(target);
+    },
+    0
+  );
 
   // ---- refresh: pull down on any tab, plus a quiet refresh when the app comes back or every few minutes
   const [refreshTick, setRefreshTick] = useState(0);
