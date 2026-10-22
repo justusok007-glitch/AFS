@@ -137,6 +137,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 export async function simulateLocalDelay(): Promise<number> {
+  if (CLOUD_ENABLED) return 0; // real data: no artificial waiting (the delay only imitates a network in the offline demo)
   const ms = Math.floor(200 + Math.random() * 201);
   await new Promise((resolve) => setTimeout(resolve, ms));
   return ms;
@@ -152,7 +153,16 @@ function readLocalJson<T>(key: string, fallback: T): T {
   }
 }
 
+/** The parsed school data is kept in memory, so screens do not re-read and re-parse several MB on every call. */
+let dbCache: LocalDatabaseSnapshot | null = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEYS.LOCAL_DB) dbCache = null; // changed by another tab
+  });
+}
+
 export function writeLocalJson<T>(key: string, value: T): void {
+  if (key === STORAGE_KEYS.LOCAL_DB) dbCache = value as unknown as LocalDatabaseSnapshot;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -164,6 +174,7 @@ export function writeLocalJson<T>(key: string, value: T): void {
  * Seeds the local database automatically on first launch only (version 2 with Attendance & Fees).
  */
 export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
+  if (dbCache) return dbCache;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS.LOCAL_DB);
     if (raw) {
@@ -206,6 +217,7 @@ export function getOrSeedLocalDatabase(): LocalDatabaseSnapshot {
           (parsed as { cleanStart?: boolean }).cleanStart = true;
           writeLocalJson(STORAGE_KEYS.LOCAL_DB, parsed);
         }
+        dbCache = parsed;
         return parsed;
       }
     }
@@ -239,6 +251,7 @@ export function replaceLocalDatabase(db: LocalDatabaseSnapshot): void {
 }
 
 export function clearLocalDatabase(): void {
+  dbCache = null;
   try {
     window.localStorage.removeItem(STORAGE_KEYS.LOCAL_DB);
     window.localStorage.removeItem(STORAGE_KEYS.SESSION);
