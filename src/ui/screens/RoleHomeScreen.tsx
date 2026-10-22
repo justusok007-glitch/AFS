@@ -64,6 +64,8 @@ import { MessagesTab } from './comms/MessagesTab';
 import { DiaryTab } from './diary/DiaryTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
 import { startHeartbeat } from '../../data/supabase/activity';
+import { forceRefresh, refreshIfIdle, subscribeDataRefreshed } from '../../data/supabase/sync';
+import { CLOUD_ENABLED } from '../../data/supabase/mode';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
@@ -303,6 +305,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   // lets the admin see who is using the app (one tiny request about every 5 minutes while the app is open)
   useEffect(() => startHeartbeat(), []);
 
+
   const [classesMap, setClassesMap] = useState<Record<string, SchoolClass>>({});
   const [sectionsMap, setSectionsMap] = useState<Record<string, Section>>({});
 
@@ -318,6 +321,85 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     | { type: 'logout' }
     | null
   >(null);
+
+  // ---- refresh: pull down on any tab, plus a quiet refresh when the app comes back or every few minutes
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [pull, setPull] = useState(0);
+  const [refreshNote, setRefreshNote] = useState<string>('');
+  const [refreshing, setRefreshing] = useState(false);
+  const pullStart = React.useRef<number | null>(null);
+  const pullRef = React.useRef(0);
+  const dirtyRef = React.useRef(false);
+  dirtyRef.current = teacherAttendanceDirty;
+  const tabIdRef = React.useRef('');
+  tabIdRef.current = currentTab.id;
+  const roleRef = React.useRef(session.role);
+  roleRef.current = session.role;
+
+  useEffect(() => {
+    if (!CLOUD_ENABLED) return;
+    return subscribeDataRefreshed((src) => {
+      refreshUnread();
+      refreshMessages();
+      if (src === 'manual') {
+        setRefreshTick((n) => n + 1);
+        return;
+      }
+      // quiet refresh: reload the screen only where nobody can be in the middle of typing
+      const el = document.activeElement as HTMLElement | null;
+      const typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      const safeTab =
+        roleRef.current === UserRole.PARENT
+          ? tabIdRef.current !== 'messages'
+          : tabIdRef.current === 'home' || tabIdRef.current === 'dashboard';
+      if (safeTab && !typing && !dirtyRef.current) setRefreshTick((n) => n + 1);
+    });
+  }, [refreshUnread, refreshMessages]);
+
+  useEffect(() => {
+    if (!CLOUD_ENABLED) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshIfIdle(150000);
+    }, 180000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const doManualRefresh = async () => {
+    if (dirtyRef.current && !window.confirm(stringResource('rf_attendance_warn'))) return;
+    setRefreshing(true);
+    const r = await forceRefresh();
+    setRefreshing(false);
+    setRefreshNote(r === 'ok' ? stringResource('rf_done') : r === 'unsaved' ? stringResource('rf_unsaved') : stringResource('rf_failed'));
+    window.setTimeout(() => setRefreshNote(''), 2200);
+  };
+  const PULL_TRIGGER = 70;
+  const onPullStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const box = e.currentTarget;
+    const target = e.target as HTMLElement;
+    if (box.scrollTop > 0 || refreshing || target.closest('[data-no-pull]')) {
+      pullStart.current = null;
+      return;
+    }
+    pullStart.current = e.touches[0].clientY;
+  };
+  const onPullMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (pullStart.current === null) return;
+    const dy = e.touches[0].clientY - pullStart.current;
+    if (dy <= 0 || e.currentTarget.scrollTop > 0) {
+      pullRef.current = 0;
+      setPull(0);
+      return;
+    }
+    pullRef.current = Math.min(110, dy * 0.5);
+    setPull(pullRef.current);
+  };
+  const onPullEnd = () => {
+    const reached = pullRef.current >= PULL_TRIGGER;
+    pullStart.current = null;
+    pullRef.current = 0;
+    setPull(0);
+    if (reached) void doManualRefresh();
+  };
 
   const loadRoleContext = useCallback(async () => {
     setLoading(true);
@@ -882,7 +964,24 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       </header>
 
       {/* Main Scrollable Tab Body */}
-      <div className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role !== UserRole.PARENT ? 'ps-doodle' : ''}`}>
+      <div
+        className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role !== UserRole.PARENT ? 'ps-doodle' : ''}`}
+        style={{ overscrollBehaviorY: 'contain' }}
+        onTouchStart={onPullStart}
+        onTouchMove={onPullMove}
+        onTouchEnd={onPullEnd}
+        onTouchCancel={onPullEnd}
+      >
+        {(pull > 8 || refreshing || refreshNote) && (
+          <div className="flex justify-center -mt-1" style={{ height: refreshing || refreshNote ? 28 : Math.max(0, pull - 6) }}>
+            <span className="px-3 py-1 rounded-full bg-[#14284B] text-white text-[11px] font-semibold self-center">
+              {refreshing
+                ? stringResource('rf_refreshing')
+                : refreshNote || (pull >= PULL_TRIGGER ? stringResource('rf_release') : stringResource('rf_pull'))}
+            </span>
+          </div>
+        )}
+        <React.Fragment key={refreshTick}>
         {session.role === UserRole.PARENT ? (
           renderParentTabBody()
         ) : session.role === UserRole.TEACHER ? (
@@ -995,6 +1094,7 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
             )}
           </>
         )}
+        </React.Fragment>
       </div>
 
       {/* Role Bottom Navigation Bar (5 Tabs, Orange #F28C28 Selected State) */}

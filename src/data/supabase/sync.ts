@@ -496,6 +496,32 @@ export async function restoreUnsentEdits(userId: string): Promise<boolean> {
   return true;
 }
 
+type RefreshSource = 'auto' | 'manual';
+const refreshListeners = new Set<(src: RefreshSource) => void>();
+/** Called after fresh data from the server has replaced the local copy (screens can then reload). */
+export function subscribeDataRefreshed(l: (src: RefreshSource) => void): () => void {
+  refreshListeners.add(l);
+  return () => refreshListeners.delete(l);
+}
+
+/** Pull-to-refresh: sends unsent edits first, then loads the latest data. */
+export async function forceRefresh(): Promise<'ok' | 'unsaved' | 'failed'> {
+  const t = readTokens();
+  if (!t || !lastSynced) return 'failed';
+  if (hasUnsavedChanges()) {
+    await pushNow().catch(() => undefined);
+    if (hasUnsavedChanges()) return 'unsaved';
+  }
+  try {
+    await pullAll(t.userId);
+    lastPullAt = Date.now();
+    refreshListeners.forEach((l) => l('manual'));
+    return 'ok';
+  } catch {
+    return 'failed';
+  }
+}
+
 /** Pulls fresh data unless there are unsaved edits. */
 let lastPullAt = 0;
 export async function refreshIfIdle(minGapMs = 30000): Promise<boolean> {
@@ -505,6 +531,7 @@ export async function refreshIfIdle(minGapMs = 30000): Promise<boolean> {
   lastPullAt = Date.now();
   try {
     await pullAll(t.userId);
+    refreshListeners.forEach((l) => l('auto'));
     return true;
   } catch {
     return false;

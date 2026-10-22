@@ -564,6 +564,13 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'rf_pull'
+  | 'rf_release'
+  | 'rf_refreshing'
+  | 'rf_done'
+  | 'rf_unsaved'
+  | 'rf_failed'
+  | 'rf_attendance_warn'
   | 'bk_restore'
   | 'bk_restore_file'
   | 'bk_restore_hint'
@@ -1667,6 +1674,13 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  rf_pull: 'Pull down to refresh',
+  rf_release: 'Release to refresh',
+  rf_refreshing: 'Refreshing...',
+  rf_done: 'Updated',
+  rf_unsaved: 'Your changes are not saved yet. Try again after they are saved.',
+  rf_failed: 'Could not refresh. Check internet.',
+  rf_attendance_warn: 'You have unsaved attendance marks. Refresh anyway? They will be lost.',
   bk_restore: 'Restore',
   bk_restore_file: 'Restore from a backup file',
   bk_restore_hint: 'Choose a backup file you downloaded earlier. All school data (students, attendance, fees, results, notices, messages, diary) is replaced by the file. Login accounts and passwords stay as they are.',
@@ -2771,6 +2785,13 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  rf_pull: 'تازہ کرنے کے لیے نیچے کھینچیں',
+  rf_release: 'تازہ کرنے کے لیے چھوڑ دیں',
+  rf_refreshing: 'تازہ ہو رہا ہے...',
+  rf_done: 'تازہ ہو گیا',
+  rf_unsaved: 'آپ کی تبدیلیاں ابھی محفوظ نہیں ہوئیں۔ محفوظ ہونے کے بعد دوبارہ کوشش کریں۔',
+  rf_failed: 'تازہ نہیں ہو سکا۔ انٹرنیٹ چیک کریں۔',
+  rf_attendance_warn: 'آپ کی حاضری ابھی محفوظ نہیں ہوئی۔ پھر بھی تازہ کریں؟ وہ ضائع ہو جائے گی۔',
   bk_restore: 'بحال کریں',
   bk_restore_file: 'بیک اپ فائل سے بحال کریں',
   bk_restore_hint: 'پہلے ڈاؤن لوڈ کی ہوئی بیک اپ فائل چنیں۔ اسکول کا تمام ڈیٹا (طلبہ، حاضری، فیس، نتائج، نوٹس، پیغامات، ڈائری) فائل کے مطابق بدل جائے گا۔ لاگ اِن اکاؤنٹس اور پاس ورڈ جوں کے توں رہیں گے۔',
