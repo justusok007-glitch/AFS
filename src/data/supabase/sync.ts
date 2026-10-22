@@ -512,6 +512,13 @@ export function subscribeDataRefreshed(l: (src: RefreshSource) => void): () => v
   return () => refreshListeners.delete(l);
 }
 
+const touchListeners = new Set<() => void>();
+/** Fires after EVERY successful refresh (even when nothing changed) so screens that load their own data, like the diary, can reload quietly. */
+export function subscribeRefreshTouched(l: () => void): () => void {
+  touchListeners.add(l);
+  return () => touchListeners.delete(l);
+}
+
 /** Pull-to-refresh: sends unsent edits first, then loads the latest data. */
 export async function forceRefresh(): Promise<'ok' | 'unsaved' | 'failed'> {
   const t = readTokens();
@@ -524,6 +531,7 @@ export async function forceRefresh(): Promise<'ok' | 'unsaved' | 'failed'> {
     await pullAll(t.userId);
     lastPullAt = Date.now();
     if (lastPullChanged) refreshListeners.forEach((l) => l('manual'));
+    touchListeners.forEach((l) => l());
     return 'ok';
   } catch {
     return 'failed';
@@ -540,6 +548,7 @@ export async function refreshIfIdle(minGapMs = 30000): Promise<boolean> {
   try {
     await pullAll(t.userId);
     if (lastPullChanged) refreshListeners.forEach((l) => l('auto'));
+    touchListeners.forEach((l) => l());
     return true;
   } catch {
     return false;

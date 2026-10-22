@@ -13,6 +13,7 @@ import {
   postDiary,
   purgeOldDiaryPhotos,
 } from '../../../data/supabase/diary';
+import { subscribeRefreshTouched } from '../../../data/supabase/sync';
 import { today } from '../../../domain/clock';
 import { Profile, Role, SchoolClass, Section } from '../../../domain/models/models';
 import { EmptyState, SchoolCard, ShimmerPlaceholder } from '../../components/SchoolComposables';
@@ -67,9 +68,11 @@ export const DiaryTab: React.FC<{
   const canPost = user.role === Role.TEACHER || user.role === Role.VICE_PRINCIPAL || user.role === Role.ADMIN;
   const canDeleteAny = user.role === Role.ADMIN || user.role === Role.VICE_PRINCIPAL;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setFailed(false);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setFailed(false);
+    }
     try {
       const [list, sec, cls] = await Promise.all([
         listDiary(80),
@@ -84,13 +87,15 @@ export const DiaryTab: React.FC<{
         setClassesMap(m);
       }
     } catch {
-      setFailed(true);
+      if (!silent) setFailed(true);
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, []);
   useEffect(() => {
     void load();
   }, [load]);
+  // pull-to-refresh, coming back to the app and the 5-minute refresh all reload the diary quietly
+  useEffect(() => subscribeRefreshTouched(() => void load(true)), [load]);
   useEffect(() => {
     if (user.role === Role.ADMIN) void purgeOldDiaryPhotos().catch(() => undefined);
   }, [user.role]);
@@ -159,7 +164,7 @@ export const DiaryTab: React.FC<{
       {loading ? (
         <ShimmerPlaceholder lines={4} showHeader />
       ) : failed ? (
-        <EmptyState title={t('dy_failed')} subtitle="" actionLabel={t('retry_button')} onAction={load} />
+        <EmptyState title={t('dy_failed')} subtitle="" actionLabel={t('retry_button')} onAction={() => void load()} />
       ) : visible.length === 0 ? (
         <EmptyState title={t('dy_empty')} subtitle="" />
       ) : (

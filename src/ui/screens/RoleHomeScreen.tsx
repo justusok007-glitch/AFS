@@ -1,4 +1,4 @@
-import { syncPushRegistration } from '../../data/supabase/push';
+import { onOpenTabRequest, syncPushRegistration, takePendingTab } from '../../data/supabase/push';
 import { useBackHandler } from '../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -319,6 +319,21 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   useEffect(() => startHeartbeat(), []);
   useEffect(() => {
     void syncPushRegistration();
+  }, []);
+
+  // a tapped notification opens the matching tab (diary, fees, results, attendance)
+  const roleTabsRef = React.useRef(roleTabs);
+  roleTabsRef.current = roleTabs;
+  const onTabChangeRef = React.useRef(onTabChange);
+  onTabChangeRef.current = onTabChange;
+  useEffect(() => {
+    const open = (tab: string) => {
+      const idx = roleTabsRef.current.findIndex((x) => x.id === tab);
+      if (idx >= 0) onTabChangeRef.current(idx);
+    };
+    const first = takePendingTab();
+    if (first) open(first);
+    return onOpenTabRequest(open);
   }, []);
 
 
