@@ -564,6 +564,16 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'bk_title'
+  | 'bk_hint'
+  | 'bk_download_now'
+  | 'bk_preparing'
+  | 'bk_stored'
+  | 'bk_download'
+  | 'bk_none'
+  | 'bk_done'
+  | 'bk_failed'
+  | 'bk_not_installed'
   | 'dy_title'
   | 'dy_new'
   | 'dy_target'
@@ -1650,6 +1660,16 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  bk_title: 'Backup',
+  bk_hint: 'A copy of all school data is saved automatically every day and kept for 7 days. You can also download a fresh copy as a file and keep it safe.',
+  bk_download_now: 'Download backup now',
+  bk_preparing: 'Preparing...',
+  bk_stored: 'Saved daily copies',
+  bk_download: 'Download',
+  bk_none: 'No copies yet.',
+  bk_done: 'Done. The file is saved on this device.',
+  bk_failed: 'Could not complete. Check internet and try again.',
+  bk_not_installed: 'Backup is not set up yet. Run 008_backup.sql in Supabase.',
   dy_title: 'Diary',
   dy_new: '+ New diary',
   dy_target: 'Send to',
@@ -2737,6 +2757,16 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  bk_title: 'بیک اپ',
+  bk_hint: 'تمام اسکول ڈیٹا کی کاپی روزانہ خودکار محفوظ ہوتی ہے اور 7 دن رکھی جاتی ہے۔ آپ نئی کاپی فائل کی صورت میں ڈاؤن لوڈ کر کے محفوظ بھی رکھ سکتے ہیں۔',
+  bk_download_now: 'ابھی بیک اپ ڈاؤن لوڈ کریں',
+  bk_preparing: 'تیار ہو رہا ہے...',
+  bk_stored: 'محفوظ روزانہ کاپیاں',
+  bk_download: 'ڈاؤن لوڈ',
+  bk_none: 'ابھی کوئی کاپی نہیں۔',
+  bk_done: 'مکمل۔ فائل اس ڈیوائس میں محفوظ ہو گئی۔',
+  bk_failed: 'مکمل نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔',
+  bk_not_installed: 'بیک اپ ابھی سیٹ نہیں۔ Supabase میں 008_backup.sql چلائیں۔',
   dy_title: 'ڈائری',
   dy_new: '+ نئی ڈائری',
   dy_target: 'کس کو بھیجیں',
