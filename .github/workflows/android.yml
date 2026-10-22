@@ -22,14 +22,21 @@ jobs:
           npx cap sync android
       - name: Icons, version, permissions
         run: |
-          RES=android/app/src/main/res
-          rm -rf $RES/mipmap-anydpi-v26
-          for s in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-            d=${s%%:*}; px=${s##*:}
-            for n in ic_launcher ic_launcher_round ic_launcher_foreground; do
-              convert public/school-launcher-icon.png -resize ${px}x${px} $RES/mipmap-$d/$n.png
-            done
-          done
+          pip install pillow
+          python3 - <<'PY'
+          from PIL import Image
+          import os
+          res = 'android/app/src/main/res'
+          src = Image.open('public/school-launcher-icon.png').convert('RGBA')
+          for d, px in {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}.items():
+              folder = f'{res}/mipmap-{d}'
+              os.makedirs(folder, exist_ok=True)
+              for n in ('ic_launcher', 'ic_launcher_round', 'ic_launcher_foreground'):
+                  src.resize((px, px), Image.LANCZOS).save(f'{folder}/{n}.png')
+          import shutil
+          shutil.rmtree(f'{res}/mipmap-anydpi-v26', ignore_errors=True)
+          PY
+          ls android/app/src/main/res
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
       - name: Build release APK
         working-directory: android
