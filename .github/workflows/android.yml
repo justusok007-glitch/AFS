@@ -85,6 +85,11 @@ jobs:
           }
           """ % pkg)
           PY
+      - name: Diagnostics
+        run: |
+          echo "::notice title=gradle::$(grep -nE 'versionCode|versionName|targetSdk|compileSdk' android/app/build.gradle android/variables.gradle | tr '\n' '|')"
+          echo "::notice title=main::$(ls android/app/src/main/java/pk/alfurqan/okara/ | tr '\n' ' ') $(head -c 300 android/app/src/main/java/pk/alfurqan/okara/MainActivity.java | tr '\n' ' ')"
+          echo "::notice title=styles::$(cat android/app/src/main/res/values/styles.xml | tr '\n' ' ')"
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
