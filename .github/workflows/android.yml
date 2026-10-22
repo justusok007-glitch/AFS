@@ -40,6 +40,51 @@ jobs:
           PY
           ls android/app/src/main/res
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+      - name: Keep app below status bar and above gesture bar
+        run: |
+          python3 - <<'PY'
+          import glob
+          f = glob.glob('android/app/src/main/java/**/MainActivity.java', recursive=True)[0]
+          pkg = 'pk.alfurqan.okara'
+          open(f, 'w').write("""package %s;
+
+          import android.graphics.Color;
+          import android.graphics.drawable.ClipDrawable;
+          import android.graphics.drawable.ColorDrawable;
+          import android.graphics.drawable.LayerDrawable;
+          import android.os.Bundle;
+          import android.view.Gravity;
+          import android.view.View;
+          import androidx.core.graphics.Insets;
+          import androidx.core.view.ViewCompat;
+          import androidx.core.view.WindowCompat;
+          import androidx.core.view.WindowInsetsCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+                  ClipDrawable top = new ClipDrawable(new ColorDrawable(Color.parseColor("#2E6FD8")), Gravity.TOP, ClipDrawable.VERTICAL);
+                  top.setLevel(2500);
+                  getWindow().setBackgroundDrawable(new LayerDrawable(new android.graphics.drawable.Drawable[]{new ColorDrawable(Color.parseColor("#F6F8FC")), top}));
+                  getWindow().setStatusBarColor(Color.TRANSPARENT);
+                  getWindow().setNavigationBarColor(Color.TRANSPARENT);
+                  WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                  c.setAppearanceLightStatusBars(false);
+                  c.setAppearanceLightNavigationBars(true);
+                  View content = findViewById(android.R.id.content);
+                  ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+                      Insets i = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                      v.setPadding(i.left, i.top, i.right, i.bottom);
+                      return WindowInsetsCompat.CONSUMED;
+                  });
+              }
+          }
+          """ % pkg)
+          PY
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
