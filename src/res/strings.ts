@@ -564,6 +564,17 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'pn_title'
+  | 'pn_hint'
+  | 'pn_enable'
+  | 'pn_on'
+  | 'pn_blocked'
+  | 'pn_unsupported'
+  | 'pn_failed'
+  | 'pn_test'
+  | 'pn_test_sent'
+  | 'pn_disable'
+  | 'pn_off_done'
   | 'login_card_title'
   | 'login_campuses'
   | 'login_year'
@@ -1680,6 +1691,17 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  pn_title: 'Notifications on this phone',
+  pn_hint: 'Get an alert for results, new fee vouchers, the daily diary, and when your child is absent, late or on leave.',
+  pn_enable: 'Turn on notifications',
+  pn_on: 'Notifications are on for this phone.',
+  pn_blocked: 'Notifications are blocked. Allow notifications for this app in the phone or browser settings, then try again.',
+  pn_unsupported: 'This browser cannot show notifications. Use Chrome on Android. On iPhone, add the app to the Home Screen first.',
+  pn_failed: 'Could not complete. Check internet and try again.',
+  pn_test: 'Send test notification',
+  pn_test_sent: 'Test sent. It should arrive in a few seconds.',
+  pn_disable: 'Turn off',
+  pn_off_done: 'Notifications are off for this phone.',
   login_card_title: 'Login to Your Account',
   login_campuses: 'Boys & Girls Campuses',
   login_year: 'Academic Year 2026 - 27',
@@ -2797,6 +2819,17 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  pn_title: 'اس فون پر اطلاعات',
+  pn_hint: 'نتائج، نئے فیس واؤچر، روزانہ ڈائری، اور بچے کی غیر حاضری، تاخیر یا رخصت کی اطلاع حاصل کریں۔',
+  pn_enable: 'اطلاعات آن کریں',
+  pn_on: 'اس فون پر اطلاعات آن ہیں۔',
+  pn_blocked: 'اطلاعات بلاک ہیں۔ فون یا براؤزر کی سیٹنگ میں اس ایپ کے لیے اطلاعات کی اجازت دے کر دوبارہ کوشش کریں۔',
+  pn_unsupported: 'یہ براؤزر اطلاعات نہیں دکھا سکتا۔ اینڈرائیڈ پر کروم استعمال کریں۔ آئی فون پر پہلے ایپ کو ہوم اسکرین میں شامل کریں۔',
+  pn_failed: 'مکمل نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔',
+  pn_test: 'ٹیسٹ اطلاع بھیجیں',
+  pn_test_sent: 'ٹیسٹ بھیج دی گئی۔ چند سیکنڈ میں آ جانی چاہیے۔',
+  pn_disable: 'بند کریں',
+  pn_off_done: 'اس فون پر اطلاعات بند ہو گئیں۔',
   login_card_title: 'اپنے اکاؤنٹ میں لاگ اِن کریں',
   login_campuses: 'بوائز اور گرلز کیمپس',
   login_year: 'تعلیمی سال 2026 - 27',

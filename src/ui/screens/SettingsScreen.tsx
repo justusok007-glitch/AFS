@@ -1,3 +1,4 @@
+import { PushCard } from '../components/PushCard';
 import React, { useState } from 'react';
 import {
   ArrowLeft,
@@ -113,6 +114,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       />
 
       <div className="px-4 pt-4 space-y-4">
+        <PushCard />
+
         {/* Active Account Summary */}
         <SchoolCard className="space-y-2.5">
           <div className="flex items-center justify-between gap-2">

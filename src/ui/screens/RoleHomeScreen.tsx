@@ -1,3 +1,4 @@
+import { syncPushRegistration } from '../../data/supabase/push';
 import { useBackHandler } from '../navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -316,6 +317,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
   // lets the admin see who is using the app (one tiny request about every 5 minutes while the app is open)
   useEffect(() => startHeartbeat(), []);
+  useEffect(() => {
+    void syncPushRegistration();
+  }, []);
 
 
   const [classesMap, setClassesMap] = useState<Record<string, SchoolClass>>({});

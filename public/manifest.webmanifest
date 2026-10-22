@@ -2,23 +2,24 @@
   "name": "Al Furqan School Okara",
   "short_name": "Al Furqan",
   "description": "School management web application for Al Furqan School Okara (Boys & Girls Campuses) with English and Urdu support.",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFFFFF",
   "theme_color": "#14284B",
   "icons": [
     {
-      "src": "/school-launcher-icon.png",
+      "src": "./school-launcher-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/school-logo.png",
+      "src": "./school-logo.png",
       "sizes": "512x431",
       "type": "image/png",
       "purpose": "any"
     }
-  ]
+  ],
+  "scope": "./"
 }

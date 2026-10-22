@@ -1,3 +1,4 @@
+import { forgetPushOnLogout, registerServiceWorker } from './data/supabase/push';
 import { runBackHandlers } from './ui/navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Calendar, X } from 'lucide-react';
@@ -67,6 +68,10 @@ const MainShell: React.FC<{
 
   // Exited state when Back is pressed from a role's first tab
   const [exitedToLauncher, setExitedToLauncher] = useState<boolean>(false);
+
+  useEffect(() => {
+    void registerServiceWorker();
+  }, []);
 
   const handleBackNavigation = useCallback(() => {
     if (exitedToLauncher) {
@@ -295,6 +300,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    await forgetPushOnLogout();
     await AppModule.authRepository.logout();
     setSession(null);
   };

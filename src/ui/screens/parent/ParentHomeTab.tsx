@@ -1,3 +1,4 @@
+import { PushCard } from '../../components/PushCard';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Award,
@@ -109,6 +110,8 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
           ))
         )}
       </SchoolCard>
+
+      <PushCard compact />
 
       <NoticesCard user={parentProfile} />
 
