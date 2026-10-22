@@ -1,4 +1,5 @@
 import { forgetPushOnLogout, registerServiceWorker } from './data/supabase/push';
+import { IS_NATIVE_APP } from './data/nativeFiles';
 import { runBackHandlers } from './ui/navigation/backStack';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Calendar, X } from 'lucide-react';
@@ -99,6 +100,28 @@ const MainShell: React.FC<{
     // From Login screen, Back also exits the app
     setExitedToLauncher(true);
   }, [devDestination, exitedToLauncher, roleTabIndex, session, settingsOpen]);
+
+  // Android app: the phone's Back button (leaves the app from the first screen)
+  const backRef = React.useRef(handleBackNavigation);
+  backRef.current = handleBackNavigation;
+  useEffect(() => {
+    if (!IS_NATIVE_APP) return;
+    let remove: (() => void) | null = null;
+    void import('@capacitor/app').then(({ App: CapApp }) => {
+      void CapApp.addListener('backButton', () => {
+        backRef.current();
+      }).then((h) => {
+        remove = () => void h.remove();
+      });
+    });
+    return () => remove?.();
+  }, []);
+  useEffect(() => {
+    if (IS_NATIVE_APP && exitedToLauncher) {
+      setExitedToLauncher(false);
+      void import('@capacitor/app').then(({ App: CapApp }) => CapApp.exitApp());
+    }
+  }, [exitedToLauncher]);
 
   // Wire browser back navigation (popstate)
   useEffect(() => {

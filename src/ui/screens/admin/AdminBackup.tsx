@@ -41,7 +41,7 @@ export const AdminBackup: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     try {
       const data = await getData(); // read the chosen backup before the safety copy refreshes today's snapshot
       await pushNow().catch(() => undefined);
-      saveJson(await rpc('backup_now', {}), `afs-before-restore-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`);
+      await saveJson(await rpc('backup_now', {}), `afs-before-restore-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`);
       await restoreBackup(data);
       await discardAndReload();
       setMsg(t('bk_restore_done'));

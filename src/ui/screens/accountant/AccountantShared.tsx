@@ -1,3 +1,4 @@
+import { saveBlobFile } from '../../../data/nativeFiles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer, X } from 'lucide-react';
@@ -83,14 +84,7 @@ export function downloadCsv(
 ): void {
   const text = rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
   const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  void saveBlobFile(filename, blob);
 }
 
 /** 0300-1234567 / +92 300 1234567 -> 923001234567 (digits only, for wa.me). */

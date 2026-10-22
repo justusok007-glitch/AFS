@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { disablePush, enablePush, PUSH_SUPPORTED, pushPermission, sendTestPush } from '../../data/supabase/push';
+import { IS_NATIVE_APP } from '../../data/nativeFiles';
 import { CLOUD_ENABLED } from '../../data/supabase/mode';
 import { SchoolCard } from './SchoolComposables';
 import { useStringResource } from '../theme/LocaleContext';
@@ -12,7 +13,7 @@ export const PushCard: React.FC<{ compact?: boolean }> = ({ compact = false }) =
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (!CLOUD_ENABLED) return null;
+  if (!CLOUD_ENABLED || IS_NATIVE_APP) return null;
   if (compact && (perm === 'granted' || perm === 'denied')) return null;
   if (compact && !PUSH_SUPPORTED) return null;
 
