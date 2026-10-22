@@ -945,10 +945,10 @@ export class FakeAuthRepository implements AuthRepository {
         message: 'Current password is incorrect.',
       });
     }
-    if (newPassword.trim().length < 4) {
+    if (newPassword.trim().length < 6) {
       return AppResult.failure({
         kind: 'ValidationFailed',
-        message: 'New password must be at least 4 characters.',
+        message: 'New password must be at least 6 characters.',
       });
     }
     db.passwordsByUserId[userId] = newPassword;

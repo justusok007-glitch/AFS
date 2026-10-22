@@ -133,8 +133,8 @@ export class SupabaseAuthRepository implements AuthRepository {
     if (!profile) {
       return AppResult.failure({ kind: 'NotFound', entity: 'Profile', id: userId, message: 'User profile not found.' });
     }
-    if (newPassword.trim().length < 4) {
-      return AppResult.failure({ kind: 'ValidationFailed', message: 'New password must be at least 4 characters.' });
+    if (newPassword.trim().length < 6) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'New password must be at least 6 characters.' });
     }
     try {
       await signInWithPassword(profile.loginId, oldPassword); // proves the old password (also refreshes tokens)

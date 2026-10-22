@@ -57,7 +57,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       setPasswordErrorKey('settings_password_wrong_old');
       return;
     }
-    if (newPassword.trim().length < 4) {
+    if (newPassword.trim().length < 6) {
       setPasswordErrorKey('settings_password_short');
       return;
     }
