@@ -155,6 +155,7 @@ export function subscribeSyncStatus(l: (s: SyncStatus) => void): () => void {
 
 // ---------------------------------------------------------------- pull
 let lastSynced: LocalDatabaseSnapshot | null = null;
+let lastPullChanged = true;
 let editVersion = 0;
 let myRole: string | null = null;
 
@@ -211,6 +212,13 @@ export async function pullAll(userId: string): Promise<LocalDatabaseSnapshot> {
   (snap as unknown as { cleanStart: boolean }).cleanStart = true;
 
   if (versionAtStart !== editVersion) return currentLocal(); // user edited while loading: keep their edit
+  // nothing new on the server: skip the heavy work (saving copies on the phone) and do not reload any screen
+  if (lastSynced && JSON.stringify(snap) === JSON.stringify(lastSynced)) {
+    lastPullChanged = false;
+    setStatus({ state: 'idle', message: '' });
+    return currentLocal();
+  }
+  lastPullChanged = true;
   lastSynced = structuredClone(snap);
   void saveBaseline(userId, lastSynced);
   if (dropJunkSubjects(snap)) {
@@ -515,7 +523,7 @@ export async function forceRefresh(): Promise<'ok' | 'unsaved' | 'failed'> {
   try {
     await pullAll(t.userId);
     lastPullAt = Date.now();
-    refreshListeners.forEach((l) => l('manual'));
+    if (lastPullChanged) refreshListeners.forEach((l) => l('manual'));
     return 'ok';
   } catch {
     return 'failed';
@@ -531,7 +539,7 @@ export async function refreshIfIdle(minGapMs = 30000): Promise<boolean> {
   lastPullAt = Date.now();
   try {
     await pullAll(t.userId);
-    refreshListeners.forEach((l) => l('auto'));
+    if (lastPullChanged) refreshListeners.forEach((l) => l('auto'));
     return true;
   } catch {
     return false;

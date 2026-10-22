@@ -324,11 +324,20 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
   // ---- refresh: pull down on any tab, plus a quiet refresh when the app comes back or every few minutes
   const [refreshTick, setRefreshTick] = useState(0);
-  const [pull, setPull] = useState(0);
-  const [refreshNote, setRefreshNote] = useState<string>('');
-  const [refreshing, setRefreshing] = useState(false);
   const pullStart = React.useRef<number | null>(null);
   const pullRef = React.useRef(0);
+  const indRef = React.useRef<HTMLDivElement>(null);
+  const busyRef = React.useRef(false);
+  // the pull bar is moved directly in the DOM, so dragging never re-renders the whole screen
+  const showInd = (offset: number, text: string, visible: boolean) => {
+    const el = indRef.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    el.style.top = `${box.getBoundingClientRect().top + offset}px`;
+    el.style.opacity = visible ? '1' : '0';
+    const sp = el.firstElementChild as HTMLElement | null;
+    if (sp && sp.textContent !== text) sp.textContent = text;
+  };
   const dirtyRef = React.useRef(false);
   dirtyRef.current = teacherAttendanceDirty;
   const tabIdRef = React.useRef('');
@@ -359,24 +368,28 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   useEffect(() => {
     if (!CLOUD_ENABLED) return;
     const id = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void refreshIfIdle(150000);
-    }, 180000);
+      if (document.visibilityState === 'visible') void refreshIfIdle(240000);
+    }, 300000);
     return () => window.clearInterval(id);
   }, []);
 
   const doManualRefresh = async () => {
+    if (busyRef.current) return;
     if (dirtyRef.current && !window.confirm(stringResource('rf_attendance_warn'))) return;
-    setRefreshing(true);
+    busyRef.current = true;
+    showInd(10, stringResource('rf_refreshing'), true);
     const r = await forceRefresh();
-    setRefreshing(false);
-    setRefreshNote(r === 'ok' ? stringResource('rf_done') : r === 'unsaved' ? stringResource('rf_unsaved') : stringResource('rf_failed'));
-    window.setTimeout(() => setRefreshNote(''), 2200);
+    showInd(10, r === 'ok' ? stringResource('rf_done') : r === 'unsaved' ? stringResource('rf_unsaved') : stringResource('rf_failed'), true);
+    window.setTimeout(() => {
+      showInd(10, '', false);
+      busyRef.current = false;
+    }, 1400);
   };
   const PULL_TRIGGER = 70;
   const onPullStart = (e: React.TouchEvent<HTMLDivElement>) => {
     const box = e.currentTarget;
     const target = e.target as HTMLElement;
-    if (box.scrollTop > 0 || refreshing || target.closest('[data-no-pull]')) {
+    if (box.scrollTop > 0 || busyRef.current || target.closest('[data-no-pull]')) {
       pullStart.current = null;
       return;
     }
@@ -386,19 +399,21 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     if (pullStart.current === null) return;
     const dy = e.touches[0].clientY - pullStart.current;
     if (dy <= 0 || e.currentTarget.scrollTop > 0) {
+      if (pullRef.current !== 0) showInd(0, '', false);
       pullRef.current = 0;
-      setPull(0);
       return;
     }
     pullRef.current = Math.min(110, dy * 0.5);
-    setPull(pullRef.current);
+    if (pullRef.current > 8) {
+      showInd(pullRef.current - 24, pullRef.current >= PULL_TRIGGER ? stringResource('rf_release') : stringResource('rf_pull'), true);
+    }
   };
   const onPullEnd = () => {
     const reached = pullRef.current >= PULL_TRIGGER;
     pullStart.current = null;
     pullRef.current = 0;
-    setPull(0);
     if (reached) void doManualRefresh();
+    else showInd(0, '', false);
   };
 
   const loadRoleContext = useCallback(async () => {
@@ -965,22 +980,16 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
       {/* Main Scrollable Tab Body */}
       <div
-        className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 ${session.role !== UserRole.PARENT ? 'ps-doodle' : ''}`}
+        className={`flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-4 [&>:nth-child(2)]:!mt-0 ${session.role !== UserRole.PARENT ? 'ps-doodle' : ''}`}
         style={{ overscrollBehaviorY: 'contain' }}
         onTouchStart={onPullStart}
         onTouchMove={onPullMove}
         onTouchEnd={onPullEnd}
         onTouchCancel={onPullEnd}
       >
-        {(pull > 8 || refreshing || refreshNote) && (
-          <div className="flex justify-center -mt-1" style={{ height: refreshing || refreshNote ? 28 : Math.max(0, pull - 6) }}>
-            <span className="px-3 py-1 rounded-full bg-[#14284B] text-white text-[11px] font-semibold self-center">
-              {refreshing
-                ? stringResource('rf_refreshing')
-                : refreshNote || (pull >= PULL_TRIGGER ? stringResource('rf_release') : stringResource('rf_pull'))}
-            </span>
-          </div>
-        )}
+        <div ref={indRef} className="fixed inset-x-0 z-[70] flex justify-center pointer-events-none" style={{ opacity: 0, transition: 'opacity 150ms' }}>
+          <span className="px-3 py-1 rounded-full bg-[#14284B] text-white text-[11px] font-semibold shadow" />
+        </div>
         <React.Fragment key={refreshTick}>
         {session.role === UserRole.PARENT ? (
           renderParentTabBody()
