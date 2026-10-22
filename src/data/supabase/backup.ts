@@ -20,7 +20,7 @@ export async function listBackups(): Promise<BackupRow[]> {
   return (rows ?? []).map((r) => ({ day: r.day, takenAt: r.taken_at, sizeKb: r.size_kb }));
 }
 
-function saveJson(data: unknown, name: string) {
+export function saveJson(data: unknown, name: string) {
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -42,4 +42,16 @@ export async function downloadStoredBackup(day: string): Promise<void> {
   const data = await rpc('get_backup', { p_day: day });
   if (!data) throw new Error('empty');
   saveJson(data, `afs-backup-${day}.json`);
+}
+
+/** Reads one stored day (without changing anything). */
+export async function fetchStoredBackup(day: string): Promise<unknown> {
+  const data = await rpc('get_backup', { p_day: day });
+  if (!data) throw new Error('empty');
+  return data;
+}
+
+/** Replaces the school data with the backup. Server side it is all-or-nothing. */
+export async function restoreBackup(data: unknown): Promise<Record<string, number>> {
+  return rpc<Record<string, number>>('restore_backup', { p_data: data });
 }

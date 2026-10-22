@@ -564,6 +564,13 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'bk_restore'
+  | 'bk_restore_file'
+  | 'bk_restore_hint'
+  | 'bk_restore_warn'
+  | 'bk_restore_type'
+  | 'bk_restore_done'
+  | 'bk_restore_failed'
   | 'bk_title'
   | 'bk_hint'
   | 'bk_download_now'
@@ -1660,6 +1667,13 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  bk_restore: 'Restore',
+  bk_restore_file: 'Restore from a backup file',
+  bk_restore_hint: 'Choose a backup file you downloaded earlier. All school data (students, attendance, fees, results, notices, messages, diary) is replaced by the file. Login accounts and passwords stay as they are.',
+  bk_restore_warn: 'This will REPLACE all current school data with the backup. A safety copy of the current data will be downloaded first. Continue?',
+  bk_restore_type: 'Type RESTORE to confirm.',
+  bk_restore_done: 'Restored. The app will reload.',
+  bk_restore_failed: 'Restore failed. Nothing was changed.',
   bk_title: 'Backup',
   bk_hint: 'A copy of all school data is saved automatically every day and kept for 7 days. You can also download a fresh copy as a file and keep it safe.',
   bk_download_now: 'Download backup now',
@@ -2757,6 +2771,13 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  bk_restore: 'بحال کریں',
+  bk_restore_file: 'بیک اپ فائل سے بحال کریں',
+  bk_restore_hint: 'پہلے ڈاؤن لوڈ کی ہوئی بیک اپ فائل چنیں۔ اسکول کا تمام ڈیٹا (طلبہ، حاضری، فیس، نتائج، نوٹس، پیغامات، ڈائری) فائل کے مطابق بدل جائے گا۔ لاگ اِن اکاؤنٹس اور پاس ورڈ جوں کے توں رہیں گے۔',
+  bk_restore_warn: 'یہ موجودہ تمام اسکول ڈیٹا کو بیک اپ سے بدل دے گا۔ پہلے موجودہ ڈیٹا کی حفاظتی کاپی ڈاؤن لوڈ ہو گی۔ جاری رکھیں؟',
+  bk_restore_type: 'تصدیق کے لیے RESTORE لکھیں۔',
+  bk_restore_done: 'بحال ہو گیا۔ ایپ دوبارہ کھلے گی۔',
+  bk_restore_failed: 'بحالی ناکام۔ کچھ نہیں بدلا۔',
   bk_title: 'بیک اپ',
   bk_hint: 'تمام اسکول ڈیٹا کی کاپی روزانہ خودکار محفوظ ہوتی ہے اور 7 دن رکھی جاتی ہے۔ آپ نئی کاپی فائل کی صورت میں ڈاؤن لوڈ کر کے محفوظ بھی رکھ سکتے ہیں۔',
   bk_download_now: 'ابھی بیک اپ ڈاؤن لوڈ کریں',
