@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Supabase Edge Function "send-push": turns the messages sent by the database triggers into phone notifications.
 // Secrets needed: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, PUSH_SECRET (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are added automatically).
 // Deploy with "Verify JWT" switched OFF (the database calls it with the shared secret instead).

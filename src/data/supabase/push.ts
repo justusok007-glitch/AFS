@@ -30,7 +30,7 @@ async function currentSubscription(create: boolean): Promise<PushSubscription | 
   if (!reg) return null;
   const existing = await reg.pushManager.getSubscription();
   if (existing || !create) return existing;
-  return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) });
+  return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) as unknown as BufferSource });
 }
 
 async function saveToServer(sub: PushSubscription): Promise<void> {
