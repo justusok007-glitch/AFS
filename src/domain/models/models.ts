@@ -381,25 +381,22 @@ export interface ImportFeeResult {
   paid: number;
 }
 
-/** One student line of the exam team's results file. */
-export interface ImportResultRow {
+/** One student line of an exam marks CSV: cells map subjectId -> raw text (number, A for absent, blank = clear). */
+export interface ImportMarksRow {
   line: number;
   admissionNo: string;
-  campus: string;
-  examName: string;
-  /** Subjects from the heading "English/80"; value null = blank, absent = marked A/AB. */
-  marks: { subject: string; total: number; obtained: number | null; absent: boolean; bad: boolean }[];
+  name: string;
+  cells: Record<string, string>;
 }
 
-export interface ImportResultResult {
+export interface ImportMarksResult {
   line: number;
   ok: boolean;
-  error: string | null;
-  warnings: string[];
   studentName: string;
   admissionNo: string;
-  examName: string;
-  subjectsCount: number;
+  entries: number;
+  error: string | null;
+  warnings: string[];
 }
 
 export interface ImportClassResult {

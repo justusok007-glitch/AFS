@@ -32,8 +32,8 @@ import {
   ImportClassRow,
   ImportClassResult,
   ImportFeeResult,
-  ImportResultResult,
-  ImportResultRow,
+  ImportMarksResult,
+  ImportMarksRow,
   ImportFeeRow,
   ImportPaymentResult,
   ImportPaymentRow,
@@ -370,14 +370,17 @@ export interface FeeRepository {
 
 export interface ExamRepository {
   /**
-   * Stores the marks of a results file (one exam per line). Creates the exam (published) and its subjects/totals
-   * when missing, matches students by admission no. + campus, replaces the marks of the listed students. Admin only.
+   * Marks CSV of ONE exam and ONE class: matches students by admission no., replaces the marks of the listed
+   * subjects (blank = cleared, A = absent). Admin only, exam must not be published. dryRun only checks.
    */
-  importResultFile(
-    rows: ImportResultRow[],
+  importExamMarks(
     actor: Profile,
+    examId: string,
+    classId: string,
+    rows: ImportMarksRow[],
     dryRun: boolean
-  ): Promise<AppResult<ImportResultResult[]>>;
+  ): Promise<AppResult<ImportMarksResult[]>>;
+  getAllExamSubjects(): Promise<AppResult<ExamSubject[]>>;
 
   getExams(campusId: string | null): Promise<AppResult<Exam[]>>;
   createExam(exam: Exam, actorId: string): Promise<AppResult<Exam>>;

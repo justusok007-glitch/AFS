@@ -13,8 +13,8 @@ import {
   ImportStudentResult,
   ImportStudentRow,
   ImportFeeResult,
-  ImportResultResult,
-  ImportResultRow,
+  ImportMarksResult,
+  ImportMarksRow,
   ImportFeeRow,
   ImportPaymentResult,
   ImportPaymentRow,
@@ -3784,113 +3784,93 @@ function examAudit(
 }
 
 export class FakeExamRepository implements ExamRepository {
-  async importResultFile(
-    rows: ImportResultRow[],
+  async getAllExamSubjects(): Promise<AppResult<ExamSubject[]>> {
+    const db = getOrSeedLocalDatabase();
+    return AppResult.success([...db.examSubjects]);
+  }
+
+  async importExamMarks(
     actor: Profile,
+    examId: string,
+    classId: string,
+    rows: ImportMarksRow[],
     dryRun: boolean
-  ): Promise<AppResult<ImportResultResult[]>> {
+  ): Promise<AppResult<ImportMarksResult[]>> {
     await simulateLocalDelay();
     if (actor.role !== Role.ADMIN) {
-      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can import results.' });
+      return AppResult.failure({ kind: 'UnauthorizedRole', message: 'Only the Admin can upload marks.' });
     }
-    const stored = getOrSeedLocalDatabase();
-    const db = dryRun ? structuredClone(stored) : stored;
-    const nm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]/g, '');
-    const results = new Map<number, ImportResultResult>();
-    const bad = (row: ImportResultRow, error: string): ImportResultResult => ({
-      line: row.line, ok: false, error, warnings: [], studentName: '', admissionNo: row.admissionNo, examName: row.examName, subjectsCount: 0,
-    });
-    let examSeq = 0;
+    const db = getOrSeedLocalDatabase();
+    const exam = db.exams.find((e) => e.id === examId);
+    if (!exam) return AppResult.failure({ kind: 'NotFound', entity: 'Exam', id: examId, message: 'Exam not found.' });
+    if (exam.status === ExamStatus.PUBLISHED) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'This exam is published. Unpublish it before uploading marks.' });
+    }
+    const subjects = db.examSubjects.filter((es) => es.examId === examId && es.classId === classId);
+    if (subjects.length === 0) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Set the subjects and total marks of this exam for the class first.' });
+    }
+    const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const sectionIds = new Set(db.sections.filter((x) => x.classId === classId).map((x) => x.id));
+    const students = db.students.filter((x) => sectionIds.has(x.sectionId) && x.status === StudentStatus.ACTIVE);
+    const byNo = new Map(students.map((x) => [norm(x.admissionNo), x]));
+    const out: ImportMarksResult[] = [];
+    const plan: { studentId: string; sectionId: string; ops: { subjectId: string; mark: Mark | null }[] }[] = [];
     const seen = new Set<string>();
-    const touchedSections = new Set<string>(); // examId|sectionId|subjectId
-
     for (const row of rows) {
-      const no = row.admissionNo.trim().toLowerCase();
-      if (!no) { results.set(row.line, bad(row, 'Adm No is empty.')); continue; }
-      if (!row.examName.trim()) { results.set(row.line, bad(row, 'Exam name is empty.')); continue; }
-      const campus = row.campus.trim() ? findCampusByText(db, row.campus) : undefined;
-      if (row.campus.trim() && !campus) { results.set(row.line, bad(row, `Campus "${row.campus}" not found (use Boys or Girls).`)); continue; }
-      const found = db.students.filter((s) => s.admissionNo.toLowerCase() === no && (!campus || s.campusId === campus.id));
-      if (found.length === 0) { results.set(row.line, bad(row, `No student with Adm No ${row.admissionNo}. Import students first.`)); continue; }
-      if (found.length > 1) { results.set(row.line, bad(row, `Adm No ${row.admissionNo} exists in both campuses - add the Campus column.`)); continue; }
-      const student = found[0];
-      const dupKey = `${student.id}|${nm(row.examName)}`;
-      if (seen.has(dupKey)) { results.set(row.line, bad(row, `Adm No ${row.admissionNo} appears twice for this exam.`)); continue; }
-      seen.add(dupKey);
-      const section = db.sections.find((x) => x.id === student.sectionId);
-      const classId = section?.classId;
-      if (!section || !classId) { results.set(row.line, bad(row, 'Student has no class.')); continue; }
-      const problem = row.marks.find((m) => m.bad);
-      if (problem) { results.set(row.line, bad(row, `Marks for ${problem.subject} are not a number.`)); continue; }
-      const over = row.marks.find((m) => m.obtained !== null && !m.absent && (m.obtained < 0 || m.obtained > m.total));
-      if (over) { results.set(row.line, bad(row, `${over.subject}: ${over.obtained} is more than the total ${over.total}.`)); continue; }
-
-      const warnings: string[] = [];
-      // exam
-      let exam = db.exams.find((e) => nm(e.nameEn) === nm(row.examName) && (!e.campusId || e.campusId === student.campusId));
-      if (!exam) {
-        const lower = row.examName.toLowerCase();
-        exam = {
-          id: `exam_imp_${Date.now().toString(36)}_${++examSeq}`,
-          nameEn: row.examName.trim(), nameUr: row.examName.trim(),
-          type: lower.includes('final') ? ExamType.FINAL_TERM : lower.includes('mid') ? ExamType.MID_TERM : ExamType.MONTHLY_TEST,
-          status: ExamStatus.PUBLISHED, campusId: student.campusId, startDate: null, endDate: null,
-        };
-        db.exams.push(exam);
-        warnings.push(`New exam created and published: ${exam.nameEn}`);
-      } else if (exam.status !== ExamStatus.PUBLISHED) {
-        warnings.push(`Exam "${exam.nameEn}" is not published - parents cannot see these results yet.`);
-      }
-      const examId = exam.id;
-
-      for (const m of row.marks) {
-        if (m.obtained === null && !m.absent) {
-          // blank cell: no mark for this subject
-          const sub0 = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject));
-          if (sub0) db.marks = db.marks.filter((k) => !(k.examId === examId && k.studentId === student.id && k.subjectId === sub0.id));
+      const res: ImportMarksResult = { line: row.line, ok: false, studentName: row.name, admissionNo: row.admissionNo, entries: 0, error: null, warnings: [] };
+      out.push(res);
+      const stu = byNo.get(norm(row.admissionNo));
+      if (!row.admissionNo.trim()) { res.error = 'Admission No is empty.'; continue; }
+      if (!stu) { res.error = `Admission No ${row.admissionNo} is not an active student of this class.`; continue; }
+      if (seen.has(stu.id)) { res.error = 'This student appears twice in the file.'; continue; }
+      seen.add(stu.id);
+      res.studentName = stu.name;
+      if (row.name.trim() && norm(row.name) !== norm(stu.name)) res.warnings.push(`File name "${row.name}" differs from "${stu.name}"; matched by Admission No.`);
+      const ops: { subjectId: string; mark: Mark | null }[] = [];
+      let bad: string | null = null;
+      for (const es of subjects) {
+        const raw = row.cells[es.subjectId];
+        if (raw === undefined) continue; // column not in the file: leave as it is
+        const subj = db.subjects.find((x) => x.id === es.subjectId);
+        const label = subj?.nameEn ?? es.subjectId;
+        const v = raw.trim();
+        if (v === '' || /^[-—–]+$/.test(v)) { ops.push({ subjectId: es.subjectId, mark: null }); continue; }
+        if (/^(a|ab|abs|absent)$/i.test(v)) {
+          ops.push({ subjectId: es.subjectId, mark: { examId, studentId: stu.id, subjectId: es.subjectId, obtained: 0, isAbsent: true } });
           continue;
         }
-        let sub = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject));
-        if (!sub || !db.classSubjects.some((cs) => cs.classId === classId && cs.subjectId === sub!.id)) {
-          addSubjectsToClass(db, classId, [m.subject]);
-          sub = db.subjects.find((x) => nm(x.nameEn) === nm(m.subject))!;
-          const w = `Subject ${m.subject} added to the class.`;
-          if (!warnings.includes(w)) warnings.push(w);
-        }
-        const existing = db.examSubjects.find((es) => es.examId === examId && es.classId === classId && es.subjectId === sub!.id);
-        const pass = Math.ceil(m.total * 0.33);
-        if (!existing) {
-          db.examSubjects.push({ examId, classId, subjectId: sub.id, totalMarks: m.total, passMarks: pass });
-        } else if (existing.totalMarks !== m.total) {
-          warnings.push(`${m.subject} total changed ${existing.totalMarks} -> ${m.total}.`);
-          existing.totalMarks = m.total;
-          existing.passMarks = Math.min(existing.passMarks, m.total);
-        }
-        db.marks = db.marks.filter((k) => !(k.examId === examId && k.studentId === student.id && k.subjectId === sub!.id));
-        db.marks.push({ examId, studentId: student.id, subjectId: sub.id, obtained: m.absent ? 0 : (m.obtained ?? 0), isAbsent: m.absent });
-        touchedSections.add(`${examId}|${section.id}|${sub.id}`);
+        const n = Number(v.replace(/,/g, ''));
+        if (!Number.isFinite(n)) { bad = `${label}: "${v}" is not a number (use A for absent).`; break; }
+        if (n < 0 || n > es.totalMarks) { bad = `${label}: ${n} is outside 0 to ${es.totalMarks}.`; break; }
+        if (Math.round(n * 2) !== n * 2) { bad = `${label}: use whole or half marks only.`; break; }
+        ops.push({ subjectId: es.subjectId, mark: { examId, studentId: stu.id, subjectId: es.subjectId, obtained: n, isAbsent: false } });
       }
-      results.set(row.line, {
-        line: row.line, ok: true, error: null, warnings, studentName: student.name, admissionNo: student.admissionNo,
-        examName: exam.nameEn, subjectsCount: row.marks.filter((m) => m.obtained !== null || m.absent).length,
-      });
+      if (bad) { res.error = bad; continue; }
+      if (ops.length === 0) { res.error = 'No subject columns found for this exam.'; continue; }
+      res.ok = true;
+      res.entries = ops.filter((o) => o.mark !== null).length;
+      plan.push({ studentId: stu.id, sectionId: stu.sectionId, ops });
     }
-
-    if (!dryRun) {
-      touchedSections.forEach((k) => {
-        const [examId, sectionId, subjectId] = k.split('|');
-        if (!db.markSubmissions.some((x) => x.examId === examId && x.sectionId === sectionId && x.subjectId === subjectId)) {
-          db.markSubmissions.push({ examId, sectionId, subjectId, submittedBy: actor.id, submittedAt: new Date().toISOString() });
-        }
-      });
-      db.auditLogs.unshift({
-        id: `aud_${Date.now()}`, action: 'IMPORT_RESULTS', tableName: 'marks', recordId: 'bulk',
-        oldValue: null, newValue: `${[...results.values()].filter((r) => r.ok).length} students`,
-        reason: 'Results file imported by Admin', changedBy: actor.id, changedAt: new Date().toISOString(),
-      });
-      saveLocalDatabase(db);
+    if (dryRun || plan.length === 0) return AppResult.success(out);
+    const touched = new Set<string>(); // sectionId|subjectId
+    for (const p of plan) {
+      for (const op of p.ops) {
+        db.marks = db.marks.filter((m) => !(m.examId === examId && m.studentId === p.studentId && m.subjectId === op.subjectId));
+        if (op.mark) db.marks.push(op.mark);
+        touched.add(`${p.sectionId}|${op.subjectId}`);
+      }
     }
-    return AppResult.success(rows.map((r) => results.get(r.line)).filter((x): x is ImportResultResult => !!x));
+    for (const key of touched) {
+      const [sectionId, subjectId] = key.split('|');
+      const secStudents = students.filter((x) => x.sectionId === sectionId);
+      const complete = secStudents.length > 0 && secStudents.every((x) => db.marks.some((m) => m.examId === examId && m.studentId === x.id && m.subjectId === subjectId));
+      db.markSubmissions = db.markSubmissions.filter((x) => !(x.examId === examId && x.sectionId === sectionId && x.subjectId === subjectId));
+      if (complete) db.markSubmissions.push({ examId, sectionId, subjectId, submittedBy: actor.id, submittedAt: new Date().toISOString() });
+    }
+    examAudit(db, actor.id, 'IMPORT_EXAM_MARKS', `${examId}/${classId}`, null, `${plan.length} students`, 'Marks CSV uploaded by Admin');
+    saveLocalDatabase(db);
+    return AppResult.success(out);
   }
 
   async getExams(campusId: string | null): Promise<AppResult<Exam[]>> {

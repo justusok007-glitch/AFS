@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, Plus, Upload } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { Exam, ExamStatus, ExamType, MarksProgressRow, Profile, Subject } from '../../../domain/models/models';
 import { StringKey } from '../../../res/strings';
@@ -15,7 +15,7 @@ import {
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from '../accountant/AccountantShared';
 import { examName, ExamStatusChip, MarksEntryGrid, subjectName, useSubjectsMap } from '../exams/ExamShared';
-import { AdminResultImport } from './AdminResultImport';
+import { ExamMarksUpload } from './ExamMarksUpload';
 import { selectCls } from '../principal/PrincipalShared';
 
 export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLookups }> = ({ admin, lookups }) => {
@@ -24,7 +24,7 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [classOfExam, setClassOfExam] = useState<Record<string, string[]>>({});
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -33,6 +33,12 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
     const r = await AppModule.examRepository.getExams(null);
     if (!r.ok) setFailed(true);
     else setExams(r.data);
+    const es = await AppModule.examRepository.getAllExamSubjects();
+    if (es.ok) {
+      const m: Record<string, string[]> = {};
+      es.data.forEach((x) => { (m[x.examId] ??= []).includes(x.classId) || m[x.examId].push(x.classId); });
+      setClassOfExam(m);
+    }
     setLoading(false);
   }, []);
   useEffect(() => {
@@ -47,10 +53,6 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   const open = exams.find((e) => e.id === openId);
   if (open) {
     return <ExamDetail admin={admin} lookups={lookups} examId={open.id} onBack={() => { setOpenId(null); void load(); }} />;
-  }
-
-  if (importing) {
-    return <AdminResultImport admin={admin} onDone={() => void load()} onClose={() => setImporting(false)} />;
   }
 
   if (creating) {
@@ -71,7 +73,6 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
   return (
     <div className="space-y-3">
       <PrimaryButton text={t('ex_new')} variant="orange" icon={<Plus className="w-4 h-4" />} onClick={() => setCreating(true)} />
-      <PrimaryButton text={t('res_imp_btn')} variant="outline" icon={<Upload className="w-4 h-4 text-[#F28C28]" />} onClick={() => setImporting(true)} />
       {exams.length === 0 ? (
         <EmptyState title={t('ex_none')} description="" />
       ) : (
@@ -82,7 +83,7 @@ export const AdminExamsSection: React.FC<{ admin: Profile; lookups: AccountantLo
               <div className="min-w-0">
                 <div className="text-sm font-bold text-[#14284B] truncate">{examName(e, language)}</div>
                 <div className="text-[11px] text-[#6B7385]">
-                  {t(`ex_type_${e.type}` as StringKey)} · {campus ? (language === 'ur' ? campus.nameUr : campus.nameEn) : t('ex_all_campus')}
+                  {t(`ex_type_${e.type}` as StringKey)} · {(classOfExam[e.id] ?? []).map((cid) => { const c = lookups.classesMap[cid]; return c ? (language === 'ur' ? c.nameUr : c.nameEn) : ''; }).filter(Boolean).join(', ') || (campus ? (language === 'ur' ? campus.nameUr : campus.nameEn) : t('ex_all_campus'))}
                 </div>
               </div>
               <ExamStatusChip status={e.status} />
@@ -103,24 +104,62 @@ const CreateExam: React.FC<{
   onCreated: (e: Exam) => void;
 }> = ({ admin, lookups, onCancel, onCreated }) => {
   const { stringResource: t, language } = useStringResource();
+  const subjects = useSubjectsMap();
   const [nameEn, setNameEn] = useState('');
   const [nameUr, setNameUr] = useState('');
   const [type, setType] = useState<ExamType>(ExamType.MONTHLY_TEST);
-  const [campus, setCampus] = useState('');
+  const [classId, setClassId] = useState('');
+  const [rows, setRows] = useState<SubRow[]>([]);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const cls = lookups.classesMap[classId];
+  const classLabel = (c: { campusId: string; nameEn: string; nameUr: string }) => {
+    const campus = lookups.campuses.find((x) => x.id === c.campusId);
+    return `${campus ? (language === 'ur' ? campus.nameUr : campus.nameEn) : ''} · ${language === 'ur' ? c.nameUr : c.nameEn}`;
+  };
+
+  useEffect(() => {
+    if (!classId) {
+      setRows([]);
+      return;
+    }
+    let off = false;
+    void AppModule.settingsRepository.getClassSubjects(classId).then((cs) => {
+      if (off || !cs.ok) return;
+      setRows(cs.data.map((x) => ({ subjectId: x.id, on: true, total: '100', pass: '33' })));
+    });
+    return () => {
+      off = true;
+    };
+  }, [classId]);
 
   const save = async () => {
+    if (!classId || !cls) return setError(t('ex_err_choose_class'));
+    const chosen = rows.filter((r) => r.on);
+    if (chosen.length === 0) return setError(t('ex_err_no_subject'));
     setBusy(true);
     setError(null);
     const r = await AppModule.examRepository.createExam(
-      { id: '', nameEn, nameUr, type, status: ExamStatus.DRAFT, campusId: campus || null, startDate: start || null, endDate: end || null },
+      { id: '', nameEn, nameUr, type, status: ExamStatus.DRAFT, campusId: cls.campusId, startDate: start || null, endDate: end || null },
+      admin.id
+    );
+    if (!r.ok) {
+      setBusy(false);
+      return setError(r.error.message);
+    }
+    const cfg = await AppModule.examRepository.configureExamSubjects(
+      r.data.id,
+      classId,
+      chosen.map((x) => ({ examId: r.data.id, classId, subjectId: x.subjectId, totalMarks: Number(x.total), passMarks: Number(x.pass) })),
       admin.id
     );
     setBusy(false);
-    if (!r.ok) return setError(r.error.message);
+    if (!cfg.ok) {
+      setError(`${cfg.error.message} (${t('ex_err_open_and_fix')})`);
+      return onCreated(r.data);
+    }
     onCreated(r.data);
   };
 
@@ -134,10 +173,33 @@ const CreateExam: React.FC<{
         selected={type}
         onSelect={setType}
       />
-      <select className={selectCls} value={campus} onChange={(e) => setCampus(e.target.value)}>
-        <option value="">{t('ex_all_campus')}</option>
-        {lookups.campuses.map((c) => (<option key={c.id} value={c.id}>{language === 'ur' ? c.nameUr : c.nameEn}</option>))}
-      </select>
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold">{t('ex_class_label')}</label>
+        <select className={selectCls} value={classId} onChange={(e) => setClassId(e.target.value)}>
+          <option value="">{t('rs_choose_class')}</option>
+          {lookups.classes.map((c) => (<option key={c.id} value={c.id}>{classLabel(c)}</option>))}
+        </select>
+      </div>
+      {classId && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-[10px] font-semibold text-[#6B7385]">
+            <span className="flex-1">{t('ex_subject')}</span>
+            <span className="w-16 text-center">{t('ex_total')}</span>
+            <span className="w-16 text-center">{t('ex_pass')}</span>
+          </div>
+          {rows.length === 0 && <p className="text-xs text-[#6B7385]">{t('ex_no_class_subjects')}</p>}
+          {rows.map((r, i) => (
+            <div key={r.subjectId} className="flex items-center gap-2">
+              <label className="flex-1 flex items-center gap-2 text-xs cursor-pointer min-w-0">
+                <input type="checkbox" checked={r.on} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, on: e.target.checked } : x)))} />
+                <span className="truncate">{subjectName(subjects, r.subjectId, language)}</span>
+              </label>
+              <input dir="ltr" inputMode="numeric" disabled={!r.on} value={r.total} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, total: e.target.value } : x)))} className="w-16 min-h-[40px] rounded-xl border border-[#E4E8F0] text-center text-sm" />
+              <input dir="ltr" inputMode="numeric" disabled={!r.on} value={r.pass} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, pass: e.target.value } : x)))} className="w-16 min-h-[40px] rounded-xl border border-[#E4E8F0] text-center text-sm" />
+            </div>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold">{t('ex_start')}</label>
@@ -197,7 +259,13 @@ const ExamDetail: React.FC<{
     void reloadExam();
   }, [reloadExam]);
 
-  const classes = lookups.classes.filter((c) => !exam?.campusId || c.campusId === exam.campusId);
+  const [examClassIds, setExamClassIds] = useState<string[] | null>(null);
+  useEffect(() => {
+    void AppModule.examRepository.getAllExamSubjects().then((r) => {
+      if (r.ok) setExamClassIds([...new Set(r.data.filter((x) => x.examId === examId).map((x) => x.classId))]);
+    });
+  }, [examId, progress.length]);
+  const classes = lookups.classes.filter((c) => (!exam?.campusId || c.campusId === exam.campusId) && (!examClassIds || examClassIds.length === 0 || examClassIds.includes(c.id)));
   const activeClass = classId || classes[0]?.id || '';
 
   // load the class subjects + the exam's saved config for the chosen class
@@ -239,26 +307,6 @@ const ExamDetail: React.FC<{
     const r = await AppModule.examRepository.configureExamSubjects(examId, activeClass, toList(rows, activeClass), admin.id);
     setBusy(false);
     if (!r.ok) return setError(r.error.message);
-    setNotice(true);
-    void reloadExam();
-  };
-
-  const copyAll = async () => {
-    setBusy(true);
-    setError(null);
-    setNotice(false);
-    for (const c of classes) {
-      const cs = await AppModule.settingsRepository.getClassSubjects(c.id);
-      if (!cs.ok) continue;
-      const have = new Set(cs.data.map((x) => x.id));
-      const list = toList(rows, c.id).filter((x) => have.has(x.subjectId));
-      const r = await AppModule.examRepository.configureExamSubjects(examId, c.id, list, admin.id);
-      if (!r.ok) {
-        setBusy(false);
-        return setError(`${language === 'ur' ? c.nameUr : c.nameEn}: ${r.error.message}`);
-      }
-    }
-    setBusy(false);
     setNotice(true);
     void reloadExam();
   };
@@ -337,10 +385,19 @@ const ExamDetail: React.FC<{
         {!locked && (
           <div className="grid grid-cols-2 gap-2">
             <PrimaryButton text={t('su_save')} variant="orange" loading={busy} onClick={() => void saveClass()} />
-            <PrimaryButton text={t('ex_copy_all')} variant="outline" loading={busy} onClick={() => void copyAll()} />
           </div>
         )}
       </SchoolCard>
+
+      {activeClass && classSubjects.length > 0 && rows.some((r) => r.on) && exam.status !== ExamStatus.PUBLISHED && (
+        <ExamMarksUpload
+          admin={admin}
+          exam={exam}
+          classId={activeClass}
+          lookups={lookups}
+          onDone={() => void reloadExam()}
+        />
+      )}
 
       {progressByClass.length > 0 && (
         <SchoolCard className="space-y-2">
