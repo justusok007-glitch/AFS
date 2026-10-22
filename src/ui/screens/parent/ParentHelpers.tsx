@@ -1,3 +1,4 @@
+import { forceRefresh } from '../../../data/supabase/sync';
 import React, { useRef, useState } from 'react';
 import {
   AlertCircle,
@@ -213,6 +214,10 @@ export const PullToRefreshContainer: React.FC<{
 }> = ({ refreshing, onRefresh, children }) => {
   const { stringResource } = useStringResource();
   const startYRef = useRef<number | null>(null);
+  // also fetches the latest data from the server first (the global pull-to-refresh skips this area)
+  const run = () => {
+    void forceRefresh().then(() => onRefresh());
+  };
   const [pullDistance, setPullDistance] = useState<number>(0);
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -233,7 +238,7 @@ export const PullToRefreshContainer: React.FC<{
 
   const handleTouchEnd = () => {
     if (pullDistance >= 48 && !refreshing) {
-      onRefresh();
+      run();
     }
     setPullDistance(0);
     startYRef.current = null;
@@ -241,6 +246,7 @@ export const PullToRefreshContainer: React.FC<{
 
   return (
     <div
+      data-no-pull
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -255,7 +261,7 @@ export const PullToRefreshContainer: React.FC<{
       >
         <button
           type="button"
-          onClick={onRefresh}
+          onClick={run}
           disabled={refreshing}
           className="ps-refresh min-h-[32px] px-3 py-1 rounded-xl bg-white border border-[#E4E8F0] text-[#14284B] text-[11px] font-semibold inline-flex items-center gap-1.5 hover:bg-[#F6F8FC] active:scale-95 transition-all cursor-pointer shadow-2xs"
         >

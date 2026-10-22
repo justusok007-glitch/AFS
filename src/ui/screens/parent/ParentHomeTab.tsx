@@ -4,7 +4,7 @@ import {
   Bell,
   CalendarCheck,
   MessageSquare,
-  Settings as SettingsIcon,
+  BookOpen,
   Wallet,
 } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
@@ -21,7 +21,7 @@ export interface ParentHomeTabProps {
   childrenList: Student[];
   selectedChild: Student;
   onSelectChild: (childId: string) => void;
-  /** Tab indexes: 1 attendance, 2 fees, 3 results, 4 messages. */
+  /** Tab indexes: 1 attendance, 2 fees, 3 results, 4 diary, 5 messages. */
   onOpenTab: (index: number) => void;
   onOpenNotifications: () => void;
   onOpenSettings: () => void;
@@ -36,7 +36,6 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
   onSelectChild,
   onOpenTab,
   onOpenNotifications,
-  onOpenSettings,
   unreadNotifications,
   unreadMessages,
 }) => {
@@ -81,9 +80,9 @@ export const ParentHomeTab: React.FC<ParentHomeTabProps> = ({
     { key: 'att', tint: '#FFEFF1', grad: ['#FF7A7A', '#E8456B'], label: t('tab_attendance'), icon: <CalendarCheck className="w-6 h-6" />, onClick: () => onOpenTab(1) },
     { key: 'fees', tint: '#FFF4DF', grad: ['#FFC15A', '#F28C28'], label: t('tab_fees'), icon: <Wallet className="w-6 h-6" />, onClick: () => onOpenTab(2), badge: pendingFee > 0 ? badge(formatRupees(pendingFee)) : undefined },
     { key: 'res', tint: '#F1EBFF', grad: ['#B993FF', '#7B5BE6'], label: t('tab_results'), icon: <Award className="w-6 h-6" />, onClick: () => onOpenTab(3) },
-    { key: 'msg', tint: '#E6F8EF', grad: ['#55E0A5', '#1FB77C'], label: t('tab_messages'), icon: <MessageSquare className="w-6 h-6" />, onClick: () => onOpenTab(4), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
+    { key: 'diary', tint: '#FFF1E0', grad: ['#FFB866', '#F28C28'], label: t('tab_diary'), icon: <BookOpen className="w-6 h-6" />, onClick: () => onOpenTab(4) },
+    { key: 'msg', tint: '#E6F8EF', grad: ['#55E0A5', '#1FB77C'], label: t('tab_messages'), icon: <MessageSquare className="w-6 h-6" />, onClick: () => onOpenTab(5), badge: unreadMessages > 0 ? badge(unreadMessages) : undefined },
     { key: 'notif', tint: '#FFEAF1', grad: ['#FF9DB3', '#F2587E'], label: t('notifications_label'), icon: <Bell className="w-6 h-6" />, onClick: onOpenNotifications, badge: unreadNotifications > 0 ? badge(unreadNotifications) : undefined },
-    { key: 'set', tint: '#E6F2FF', grad: ['#7CC4FF', '#2F80ED'], label: t('settings_title'), icon: <SettingsIcon className="w-6 h-6" />, onClick: onOpenSettings },
   ];
 
   return (
