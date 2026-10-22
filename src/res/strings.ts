@@ -564,6 +564,12 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'login_card_title'
+  | 'login_campuses'
+  | 'login_year'
+  | 'slogan_knowledge'
+  | 'slogan_character'
+  | 'slogan_success'
   | 'rf_pull'
   | 'rf_release'
   | 'rf_refreshing'
@@ -1674,6 +1680,12 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  login_card_title: 'Login to Your Account',
+  login_campuses: 'Boys & Girls Campuses',
+  login_year: 'Academic Year 2026 - 27',
+  slogan_knowledge: 'Knowledge',
+  slogan_character: 'Character',
+  slogan_success: 'Success',
   rf_pull: 'Pull down to refresh',
   rf_release: 'Release to refresh',
   rf_refreshing: 'Refreshing...',
@@ -2785,6 +2797,12 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  login_card_title: 'اپنے اکاؤنٹ میں لاگ اِن کریں',
+  login_campuses: 'بوائز اور گرلز کیمپس',
+  login_year: 'تعلیمی سال 2026 - 27',
+  slogan_knowledge: 'علم',
+  slogan_character: 'کردار',
+  slogan_success: 'کامیابی',
   rf_pull: 'تازہ کرنے کے لیے نیچے کھینچیں',
   rf_release: 'تازہ کرنے کے لیے چھوڑ دیں',
   rf_refreshing: 'تازہ ہو رہا ہے...',

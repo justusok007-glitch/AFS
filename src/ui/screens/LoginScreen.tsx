@@ -1,12 +1,14 @@
 import { CLOUD_ENABLED } from '../../data/supabase/mode';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ArrowRight,
   Calendar,
   ChevronDown,
   ChevronUp,
   Clock,
   Eraser,
   Eye,
+  GraduationCap,
   EyeOff,
   KeyRound,
   RotateCcw,
@@ -35,7 +37,6 @@ import { StringKey } from '../../res/strings';
 import {
   LanguageToggleSegment,
   PrimaryButton,
-  SkinHeaderDecor,
   SchoolCard,
   SchoolTextField,
   ShimmerPlaceholder,
@@ -499,78 +500,65 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   );
 
   return (
-    <div className="flex flex-col min-h-full bg-[#F6F8FC] pb-8 parent-skin ps-doodle">
-      {/* Curved Navy Top Bar with School Logo (5-tap hidden developer trigger) */}
-      <header className="bg-[#14284B] text-white rounded-b-[28px] px-5 pt-4 pb-5 shadow-md space-y-3 ps-header ps-principal ps-compact">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={handleLogoTap}
-              aria-label={stringResource('app_name')}
-              className="w-12 h-12 rounded-2xl bg-white border border-white/25 shadow-sm flex items-center justify-center p-1 active:scale-95 transition-transform shrink-0 cursor-pointer select-none overflow-hidden"
-            >
-              <SchoolLogo size={40} />
-            </button>
-            <div className="min-w-0 py-0.5">
-              <h1
-                className={`font-heading text-base font-bold text-white ${
-                  language === 'ur'
-                    ? 'font-urdu leading-[2.45] py-0.5'
-                    : 'leading-snug'
-                }`}
-              >
-                {stringResource('app_name')}
-              </h1>
-              <p
-                className={`text-xs text-white/75 mt-0.5 ${
-                  language === 'ur'
-                    ? 'font-urdu leading-[2.35] py-0.5'
-                    : 'leading-normal'
-                }`}
-              >
-                {stringResource('school_subtitle')}
-              </p>
-            </div>
-          </div>
-          <div className="shrink-0">
-            <LanguageToggleSegment variant="onNavy" />
-          </div>
-        </div>
+    <div className="relative flex flex-col min-h-full bg-[#FAFCFF] pb-8 overflow-hidden">
+      {/* soft blue corner curves */}
+      <svg className="absolute top-0 left-0 w-44 h-28 pointer-events-none" viewBox="0 0 176 112" fill="none" aria-hidden="true">
+        <path d="M0 0H92C62 14 34 46 0 78Z" fill="#1F5FBF" />
+        <path d="M92 0H132C96 14 56 54 0 108V78C34 46 62 14 92 0Z" fill="#DCE9FB" />
+      </svg>
+      <svg className="absolute bottom-0 right-0 w-56 h-32 pointer-events-none" viewBox="0 0 224 128" fill="none" aria-hidden="true">
+        <path d="M224 20C190 52 150 100 96 128H224Z" fill="#1F5FBF" />
+        <path d="M224 0C196 22 160 62 110 96C150 86 190 56 224 34Z" fill="#DCE9FB" />
+      </svg>
+      <svg className="absolute bottom-6 left-0 w-44 h-40 pointer-events-none opacity-[0.12]" viewBox="0 0 220 170" fill="none" stroke="#1F5FBF" strokeWidth="2" aria-hidden="true">
+        <rect x="30" y="70" width="160" height="100" />
+        <rect x="85" y="40" width="50" height="130" />
+        <path d="M85 40l25-22 25 22M110 18V2h16v9h-16" />
+        <circle cx="110" cy="62" r="9" />
+        <path d="M45 88h22v18H45zM45 120h22v18H45zM153 88h22v18h-22zM153 120h22v18h-22zM96 92h28M96 110h28M96 128h28" />
+      </svg>
 
-        <div className="pt-1 flex items-center justify-between gap-2 text-xs text-white/85">
-          <span>{stringResource('campuses_badge')}</span>
-          <span dir="ltr" className="font-mono text-[11px] text-[#F28C28]">
-            2026-27
-          </span>
-        </div>
-        <SkinHeaderDecor />
-      </header>
+      <div className="relative z-10 flex justify-end px-4 pt-4">
+        <LanguageToggleSegment variant="onSurface" />
+      </div>
 
-      <div className="px-4 pt-5 space-y-4">
+      <div className="relative z-10 px-5 pt-1 flex flex-col items-center text-center">
+        <button
+          type="button"
+          onClick={handleLogoTap}
+          aria-label={stringResource('app_name')}
+          className="active:scale-95 transition-transform cursor-pointer select-none"
+        >
+          <SchoolLogo size={132} />
+        </button>
+        <h1
+          className={`mt-3 font-heading text-[26px] font-extrabold text-[#0F2A5C] ${
+            language === 'ur' ? 'font-urdu leading-[2] tracking-normal' : 'uppercase leading-tight tracking-wide'
+          }`}
+        >
+          {stringResource('app_name')}
+        </h1>
+        <p className={`mt-1 text-base text-[#5F6B85] ${language === 'ur' ? 'font-urdu leading-[2]' : ''}`}>
+          {stringResource('login_campuses')}
+        </p>
+        <div className="mt-3 flex items-center gap-3 w-full max-w-xs text-sm text-[#6B7385]">
+          <span className="h-px flex-1 bg-[#9DB6DE]" />
+          <span className={language === 'ur' ? 'font-urdu' : ''}>{stringResource('login_year')}</span>
+          <span className="h-px flex-1 bg-[#9DB6DE]" />
+        </div>
+      </div>
+
+      <div className="relative z-10 px-4 pt-6 space-y-4">
         {resetSuccessToast && (
           <SchoolCard className="py-2.5 px-3.5">
-            <StatusChip
-              label={stringResource('dev_reset_toast')}
-              tone="success"
-            />
+            <StatusChip label={stringResource('dev_reset_toast')} tone="success" />
           </SchoolCard>
         )}
 
-        <SchoolCard className="space-y-4">
+        <SchoolCard className="space-y-4 !rounded-3xl shadow-[0_8px_30px_rgba(31,95,191,0.10)]">
           <div className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="font-heading text-lg font-bold text-[#14284B]">
-                {stringResource('login_title')}
-              </h2>
-              <StatusChip
-                label={stringResource('status_info')}
-                tone="info"
-              />
-            </div>
-            <p className="text-xs text-[#6B7385]">
-              {stringResource('login_subtitle')}
-            </p>
+            <h2 className="font-heading text-xl font-bold text-[#0F2A5C]">{stringResource('login_card_title')}</h2>
+            <p className="text-sm text-[#6B7385]">{stringResource('login_subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -605,17 +593,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               leadingIcon={<KeyRound className="w-4 h-4" />}
             />
 
-            <div className="pt-1">
-              <PrimaryButton
-                type="submit"
-                text={stringResource('login_button')}
-                onClick={() => handleSubmit()}
-                loading={isLoading}
-                variant="orange"
-              />
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full min-h-[52px] rounded-2xl bg-gradient-to-r from-[#1558B0] to-[#1E6FD0] text-white text-base font-bold flex items-center justify-center gap-2 shadow-md disabled:opacity-70 cursor-pointer active:scale-[0.99] transition-transform"
+            >
+              <span>{isLoading ? '…' : stringResource('login_button')}</span>
+              {!isLoading && <ArrowRight className="w-5 h-5 rtl:rotate-180" />}
+            </button>
           </form>
         </SchoolCard>
+
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <span className="h-px w-14 bg-[#9DB6DE]" />
+          <GraduationCap className="w-6 h-6 text-[#1558B0]" />
+          <span className="h-px w-14 bg-[#9DB6DE]" />
+        </div>
+        <p className={`text-center text-sm text-[#6B7385] flex items-center justify-center gap-2 ${language === 'ur' ? 'font-urdu leading-[2]' : ''}`}>
+          <span>{stringResource('slogan_knowledge')}</span>
+          <span className="text-[#1558B0]">•</span>
+          <span>{stringResource('slogan_character')}</span>
+          <span className="text-[#1558B0]">•</span>
+          <span>{stringResource('slogan_success')}</span>
+        </p>
 
         {isLoading && <ShimmerPlaceholder lines={2} showHeader />}
 
