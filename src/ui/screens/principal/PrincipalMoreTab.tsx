@@ -1,5 +1,6 @@
+import { DiaryTab } from '../diary/DiaryTab';
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, Bell, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Settings } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, Bell, BookOpen, ClipboardCheck, GraduationCap, LogOut, MessageSquare, Settings } from 'lucide-react';
 import { HomeTile } from '../../components/HomeTile';
 import { AppModule } from '../../../di/AppModule';
 import { addDaysIso, today } from '../../../domain/clock';
@@ -33,7 +34,7 @@ import { MessagesTab } from '../comms/MessagesTab';
 import { NoticesCard, NoticesManager } from '../comms/CommsShared';
 
 type Range = 'week' | 'month';
-export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages' | 'defaulters';
+export type MoreView = 'menu' | 'students' | 'compliance' | 'notices' | 'messages' | 'defaulters' | 'diary';
 
 export const PrincipalMoreTab: React.FC<{
   principal: Profile;
@@ -77,6 +78,7 @@ export const PrincipalMoreTab: React.FC<{
   };
 
 
+  if (view === 'diary') return <DiaryTab user={principal} onBack={() => onViewChange('menu')} />;
   if (view === 'messages') return <MessagesTab user={principal} readOnly onBack={() => onViewChange('menu')} />;
   if (view === 'notices')
     return (
@@ -113,6 +115,7 @@ export const PrincipalMoreTab: React.FC<{
         <HomeTile tone="red" label={t('tab_defaulters')} icon={<AlertTriangle className={ic} />} onClick={() => onViewChange('defaulters')} />
         <HomeTile tone="indigo" label={t('pr_more_compliance')} icon={<ClipboardCheck className={ic} />} onClick={() => onViewChange('compliance')} />
         <HomeTile tone="pink" label={t('nt_manage_btn')} icon={<Bell className={ic} />} onClick={() => onViewChange('notices')} />
+        <HomeTile tone="orange" label={t('tab_diary')} icon={<BookOpen className={ic} />} onClick={() => onViewChange('diary')} />
         <HomeTile tone="green" label={t('ms_audit_btn')} icon={<MessageSquare className={ic} />} onClick={() => onViewChange('messages')} />
         <HomeTile tone="blue" label={t('settings_open_from_more')} icon={<Settings className={ic} />} onClick={onOpenSettings} />
         <HomeTile tone="red" label={t('logout_button')} icon={<LogOut className={ic} />} onClick={onLogout} />

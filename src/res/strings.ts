@@ -106,6 +106,7 @@ export type StringKey =
   | 'tab_fees'
   | 'tab_results'
   | 'tab_messages'
+  | 'tab_diary'
   | 'tab_marks'
   | 'tab_collect'
   | 'tab_vouchers'
@@ -563,6 +564,23 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'dy_title'
+  | 'dy_new'
+  | 'dy_target'
+  | 'dy_all_sections'
+  | 'dy_text_ph'
+  | 'dy_add_photos'
+  | 'dy_post'
+  | 'dy_posting'
+  | 'dy_empty'
+  | 'dy_delete'
+  | 'dy_delete_confirm'
+  | 'dy_older'
+  | 'dy_by'
+  | 'dy_failed'
+  | 'dy_need_content'
+  | 'dy_no_section'
+  | 'dy_photo_note'
   | 'act_role_filter'
   | 'act_all_roles'
   | 'act_failed_title'
@@ -1174,6 +1192,7 @@ export const stringsEn: Record<StringKey, string> = {
   tab_fees: 'Fees',
   tab_results: 'Results',
   tab_messages: 'Messages',
+  tab_diary: 'Diary',
   tab_marks: 'Marks',
   tab_collect: 'Collect',
   tab_vouchers: 'Vouchers',
@@ -1631,6 +1650,23 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  dy_title: 'Diary',
+  dy_new: '+ New diary',
+  dy_target: 'Send to',
+  dy_all_sections: 'All sections',
+  dy_text_ph: 'Write today\'s diary here...',
+  dy_add_photos: 'Add photos (up to {n})',
+  dy_post: 'Post diary',
+  dy_posting: 'Posting...',
+  dy_empty: 'No diary yet.',
+  dy_delete: 'Delete',
+  dy_delete_confirm: 'Delete this diary?',
+  dy_older: 'Show older',
+  dy_by: 'by',
+  dy_failed: 'Could not complete. Check internet and try again.',
+  dy_need_content: 'Write something or add a photo.',
+  dy_no_section: 'You are not a class teacher of any section.',
+  dy_photo_note: 'Photos are removed after {n} days; the text stays.',
   act_role_filter: 'Role',
   act_all_roles: 'All roles',
   act_failed_title: 'Could not load activity',
@@ -2243,6 +2279,7 @@ export const stringsUr: Record<StringKey, string> = {
   tab_fees: 'فیس',
   tab_results: 'نتائج',
   tab_messages: 'پیغامات',
+  tab_diary: 'ڈائری',
   tab_marks: 'نمبر',
   tab_collect: 'وصولی',
   tab_vouchers: 'واؤچرز',
@@ -2700,6 +2737,23 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  dy_title: 'ڈائری',
+  dy_new: '+ نئی ڈائری',
+  dy_target: 'کس کو بھیجیں',
+  dy_all_sections: 'تمام سیکشنز',
+  dy_text_ph: 'آج کی ڈائری یہاں لکھیں...',
+  dy_add_photos: 'تصاویر شامل کریں (زیادہ سے زیادہ {n})',
+  dy_post: 'ڈائری بھیجیں',
+  dy_posting: 'بھیجی جا رہی ہے...',
+  dy_empty: 'ابھی کوئی ڈائری نہیں۔',
+  dy_delete: 'حذف کریں',
+  dy_delete_confirm: 'کیا یہ ڈائری حذف کریں؟',
+  dy_older: 'پرانی دکھائیں',
+  dy_by: 'از',
+  dy_failed: 'مکمل نہیں ہو سکا۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔',
+  dy_need_content: 'کچھ لکھیں یا تصویر شامل کریں۔',
+  dy_no_section: 'آپ کسی سیکشن کے کلاس ٹیچر نہیں ہیں۔',
+  dy_photo_note: 'تصاویر {n} دن بعد ہٹا دی جاتی ہیں؛ تحریر رہتی ہے۔',
   act_role_filter: 'کردار',
   act_all_roles: 'تمام کردار',
   act_failed_title: 'سرگرمی لوڈ نہیں ہو سکی',

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Award,
+  BookOpen,
   BarChart3,
   Bell,
   Building2,
@@ -60,6 +61,7 @@ import { formatClassSectionTitle } from './teacher/TeacherHelpers';
 import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
+import { DiaryTab } from './diary/DiaryTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
 import { startHeartbeat } from '../../data/supabase/activity';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
@@ -98,6 +100,11 @@ export function getRoleTabs(role: UserRole, sectionTabs: { id: string; label: st
           icon: <Award className="w-5 h-5" />,
         },
         {
+          id: 'diary',
+          labelKey: 'tab_diary',
+          icon: <BookOpen className="w-5 h-5" />,
+        },
+        {
           id: 'messages',
           labelKey: 'tab_messages',
           icon: <MessageSquare className="w-5 h-5" />,
@@ -119,6 +126,11 @@ export function getRoleTabs(role: UserRole, sectionTabs: { id: string; label: st
           id: 'marks',
           labelKey: 'tab_marks',
           icon: <ClipboardCheck className="w-5 h-5" />,
+        },
+        {
+          id: 'diary',
+          labelKey: 'tab_diary',
+          icon: <BookOpen className="w-5 h-5" />,
         },
         {
           id: 'messages',
@@ -541,6 +553,10 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
       );
     }
 
+    if (currentTab.id === 'diary') {
+      return <DiaryTab key={`diary_${selectedChild.id}`} user={session.profile} parentSectionIds={[selectedChild.sectionId]} />;
+    }
+
     if (currentTab.id === 'messages') {
       return <MessagesTab key={`msg_${selectedChild.id}`} user={session.profile} child={selectedChild} />;
     }
@@ -668,6 +684,10 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
 
     if (currentTab.id === 'marks') {
       return <TeacherMarksTab teacher={session.profile} />;
+    }
+
+    if (currentTab.id === 'diary') {
+      return <DiaryTab user={session.profile} />;
     }
 
     if (currentTab.id === 'messages') {
