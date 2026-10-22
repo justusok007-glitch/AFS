@@ -97,6 +97,7 @@ import {
   AttendanceRepository,
   AuthRepository,
   DashboardRepository,
+  RoleActionRow,
   ExamRepository,
   FeeRepository,
   MessageRepository,
@@ -4597,6 +4598,25 @@ export class FakeNoticeRepository implements NoticeRepository {
 // ============================================================================
 
 export class FakeDashboardRepository implements DashboardRepository {
+  async getRoleActions(sinceDate: string): Promise<AppResult<RoleActionRow[]>> {
+    const db = getOrSeedLocalDatabase();
+    const tally = new Map<string, number>();
+    const add = (userId: string | undefined | null, kind: RoleActionRow['kind']) => {
+      if (!userId) return;
+      const k = `${userId}|${kind}`;
+      tally.set(k, (tally.get(k) ?? 0) + 1);
+    };
+    db.attendanceSubmissions.filter((s) => s.submittedAt.slice(0, 10) >= sinceDate).forEach((s) => add(s.submittedBy, 'attendance'));
+    db.feePayments.filter((p) => !p.isVoid && p.paidOn >= sinceDate).forEach((p) => add(p.receivedBy, 'payments'));
+    db.markSubmissions.filter((m) => m.submittedAt.slice(0, 10) >= sinceDate).forEach((m) => add(m.submittedBy, 'marks'));
+    db.auditLogs.filter((a) => a.changedAt.slice(0, 10) >= sinceDate).forEach((a) => add(a.changedBy, 'admin'));
+    const out: RoleActionRow[] = [...tally.entries()].map(([k, count]) => {
+      const [userId, kind] = k.split('|');
+      return { userId, kind: kind as RoleActionRow['kind'], count };
+    });
+    return AppResult.success(out);
+  }
+
   async getPrincipalDashboardKpis(
     campusId: string | null,
     referenceDate: string

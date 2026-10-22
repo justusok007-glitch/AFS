@@ -61,6 +61,7 @@ import { TeacherAttendanceTab } from './teacher/TeacherAttendanceTab';
 import { TeacherMarksTab } from './teacher/TeacherMarksTab';
 import { MessagesTab } from './comms/MessagesTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
+import { startHeartbeat } from '../../data/supabase/activity';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
 
@@ -286,6 +287,9 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
   useEffect(() => {
     refreshMessages();
   }, [activeTabIndex, refreshMessages]);
+
+  // lets the admin see who is using the app (one tiny request about every 5 minutes while the app is open)
+  useEffect(() => startHeartbeat(), []);
 
   const [classesMap, setClassesMap] = useState<Record<string, SchoolClass>>({});
   const [sectionsMap, setSectionsMap] = useState<Record<string, Section>>({});

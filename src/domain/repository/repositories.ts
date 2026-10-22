@@ -506,7 +506,15 @@ export interface NoticeRepository {
 // 8. DASHBOARD REPOSITORY (KPI & Chart Queries)
 // ============================================================================
 
+export interface RoleActionRow {
+  userId: string;
+  kind: 'attendance' | 'payments' | 'marks' | 'admin';
+  count: number;
+}
+
 export interface DashboardRepository {
+  /** What staff did since a date, counted from records the app already keeps. */
+  getRoleActions(sinceDate: string): Promise<AppResult<RoleActionRow[]>>;
   getPrincipalDashboardKpis(
     campusId: string | null,
     referenceDate: string

@@ -562,6 +562,27 @@ export type StringKey =
   | 'pr_chart_monthly12'
   | 'pr_chart_expected'
   | 'pr_chart_daily'
+  | 'act_title'
+  | 'act_role_filter'
+  | 'act_all_roles'
+  | 'act_failed_title'
+  | 'act_failed_hint'
+  | 'act_now'
+  | 'act_today'
+  | 'act_month'
+  | 'act_never'
+  | 'act_daily_chart'
+  | 'act_ranking'
+  | 'act_none'
+  | 'act_ranking_note'
+  | 'act_kind_attendance'
+  | 'act_kind_payments'
+  | 'act_kind_marks'
+  | 'act_kind_admin'
+  | 'act_people'
+  | 'act_days_30'
+  | 'act_online'
+  | 'act_never_seen'
   | 'ex_delete_btn'
   | 'ex_delete_title'
   | 'ex_delete_body'
@@ -1609,6 +1630,27 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_monthly12: 'Monthly collection (12 months)',
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
+  act_title: 'App activity',
+  act_role_filter: 'Role',
+  act_all_roles: 'All roles',
+  act_failed_title: 'Could not load activity',
+  act_failed_hint: 'Run supabase/006_user_activity.sql once in Supabase, then try again.',
+  act_now: 'Active now',
+  act_today: 'Used today',
+  act_month: 'Last 30 days',
+  act_never: 'Not used in 30 days',
+  act_daily_chart: 'Users per day (30 days)',
+  act_ranking: 'What each role did (30 days)',
+  act_none: 'No recorded actions yet.',
+  act_ranking_note: 'Counted from attendance, payments, marks and admin records the app already keeps.',
+  act_kind_attendance: 'Attendance submitted',
+  act_kind_payments: 'Payments received',
+  act_kind_marks: 'Marks submitted',
+  act_kind_admin: 'Admin changes',
+  act_people: 'People, latest first',
+  act_days_30: 'active days',
+  act_online: 'Online now',
+  act_never_seen: 'Never seen',
   ex_delete_btn: 'Delete this exam',
   ex_delete_title: 'Delete exam?',
   ex_delete_body: 'its subjects and all marks entered for it will be deleted. This cannot be undone.',
@@ -2657,6 +2699,27 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_monthly12: 'ماہانہ وصولی (12 مہینے)',
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
+  act_title: 'ایپ کی سرگرمی',
+  act_role_filter: 'کردار',
+  act_all_roles: 'تمام کردار',
+  act_failed_title: 'سرگرمی لوڈ نہیں ہو سکی',
+  act_failed_hint: 'Supabase میں supabase/006_user_activity.sql ایک بار چلائیں، پھر دوبارہ کوشش کریں۔',
+  act_now: 'اس وقت فعال',
+  act_today: 'آج استعمال کیا',
+  act_month: 'پچھلے 30 دن',
+  act_never: '30 دن میں استعمال نہیں',
+  act_daily_chart: 'روزانہ صارفین (30 دن)',
+  act_ranking: 'ہر کردار نے کیا کیا (30 دن)',
+  act_none: 'ابھی کوئی ریکارڈ شدہ کام نہیں۔',
+  act_ranking_note: 'حاضری، ادائیگیوں، نمبروں اور ایڈمن کے ان ریکارڈز سے گنا گیا ہے جو ایپ پہلے ہی رکھتی ہے۔',
+  act_kind_attendance: 'حاضری جمع کی',
+  act_kind_payments: 'ادائیگیاں وصول کیں',
+  act_kind_marks: 'نمبر جمع کیے',
+  act_kind_admin: 'ایڈمن تبدیلیاں',
+  act_people: 'افراد، تازہ ترین پہلے',
+  act_days_30: 'فعال دن',
+  act_online: 'ابھی آن لائن',
+  act_never_seen: 'کبھی نہیں دیکھا گیا',
   ex_delete_btn: 'یہ امتحان حذف کریں',
   ex_delete_title: 'امتحان حذف کریں؟',
   ex_delete_body: 'اس کے مضامین اور درج کیے گئے تمام نمبر حذف ہو جائیں گے۔ یہ واپس نہیں ہو سکتا۔',
