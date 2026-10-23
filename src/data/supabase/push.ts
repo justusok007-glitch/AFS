@@ -1,3 +1,4 @@
+import { IS_NATIVE_APP } from '../nativeFiles';
 import { rpc, readTokens } from './client';
 
 /** Public half of the notification key (safe to keep in the app). */
@@ -41,6 +42,31 @@ async function saveToServer(sub: PushSubscription): Promise<void> {
   });
 }
 
+// ---- Android app: notifications come through Firebase (FCM) instead of the browser system
+const FCM_KEY = 'afs_fcm_token';
+let nativeReady = false;
+function openTab(tab: string) {
+  if (tabListeners.size === 0) pendingTab = tab;
+  else tabListeners.forEach((l) => l(tab));
+}
+async function nativeSync(): Promise<void> {
+  const { PushNotifications } = await import('@capacitor/push-notifications');
+  if (!nativeReady) {
+    nativeReady = true;
+    await PushNotifications.addListener('registration', (t) => {
+      try { localStorage.setItem(FCM_KEY, t.value); } catch { /* ignore */ }
+      if (readTokens()) void rpc('register_push', { p_endpoint: `fcm:${t.value}`, p_p256dh: 'fcm', p_auth: 'fcm' }).catch(() => undefined);
+    });
+    await PushNotifications.addListener('pushNotificationActionPerformed', (a) => {
+      const tab = (a.notification?.data as { tab?: string } | undefined)?.tab;
+      if (tab) openTab(tab);
+    });
+  }
+  let perm = await PushNotifications.checkPermissions();
+  if (perm.receive === 'prompt' || perm.receive === 'prompt-with-rationale') perm = await PushNotifications.requestPermissions();
+  if (perm.receive === 'granted') await PushNotifications.register();
+}
+
 /** Must be called from a button tap (the browser asks for permission). */
 export async function enablePush(): Promise<'ok' | 'denied' | 'unsupported' | 'failed'> {
   if (!PUSH_SUPPORTED) return 'unsupported';
@@ -58,6 +84,11 @@ export async function enablePush(): Promise<'ok' | 'denied' | 'unsupported' | 'f
 
 /** After sign-in: if this phone already agreed, link it to the signed-in person (a shared phone moves to the new user). */
 export async function syncPushRegistration(): Promise<void> {
+  if (IS_NATIVE_APP) {
+    if (!readTokens()) return;
+    try { await nativeSync(); } catch { /* never disturb the app */ }
+    return;
+  }
   if (!PUSH_SUPPORTED || !readTokens()) return;
   try {
     if (Notification.permission !== 'granted') {
@@ -73,6 +104,13 @@ export async function syncPushRegistration(): Promise<void> {
 
 /** On sign-out: this phone stops receiving the signed-out person's notifications. */
 export async function forgetPushOnLogout(): Promise<void> {
+  if (IS_NATIVE_APP) {
+    try {
+      const t = localStorage.getItem(FCM_KEY);
+      if (t) await rpc('unregister_push', { p_endpoint: `fcm:${t}` });
+    } catch { /* ignore */ }
+    return;
+  }
   if (!PUSH_SUPPORTED) return;
   try {
     const sub = await currentSubscription(false);

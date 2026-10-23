@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "822966176841",
+    "project_id": "alfurqanschool-ok",
+    "storage_bucket": "alfurqanschool-ok.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822966176841:android:0e409f70510d81d0840398",
+        "android_client_info": {
+          "package_name": "pk.alfurqan.okara"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMQ1en_Y0wXBCEMLQSHHPUPccibTfUPJg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

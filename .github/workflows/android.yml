@@ -40,6 +40,26 @@ jobs:
           PY
           ls android/app/src/main/res
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+      - name: Firebase notifications
+        run: |
+          cp firebase/google-services.json android/app/google-services.json
+          python3 - <<'PY'
+          import re
+          m = 'android/app/src/main/AndroidManifest.xml'
+          s = open(m).read()
+          if 'POST_NOTIFICATIONS' not in s:
+              s = s.replace('</manifest>', '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n</manifest>')
+          meta = '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notify" />\n        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/colorPrimary" />\n    </application>'
+          if 'default_notification_icon' not in s:
+              s = s.replace('</application>', '    ' + meta, 1)
+          open(m, 'w').write(s)
+          import os
+          os.makedirs('android/app/src/main/res/drawable', exist_ok=True)
+          open('android/app/src/main/res/drawable/ic_stat_notify.xml', 'w').write("""<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFFFF" android:pathData="M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2zM18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5s-1.5,0.67 -1.5,1.5v0.68C7.64,5.36 6,7.92 6,11v5l-2,2v1h16v-1l-2,-2z"/>
+          </vector>""")
+          PY
+          grep -c "colorPrimary" android/app/src/main/res/values/colors.xml || true
       - name: Keep app below status bar and above gesture bar
         run: |
           python3 - <<'PY'
