@@ -1,6 +1,6 @@
 {
   "appId": "pk.alfurqan.okara",
-  "appName": "Al Furqan School",
+  "appName": "AFS Okara",
   "webDir": "dist",
   "server": { "androidScheme": "https" },
   "android": { "allowMixedContent": false }

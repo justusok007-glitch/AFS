@@ -26,19 +26,35 @@ jobs:
         run: |
           pip install pillow
           python3 - <<'PY'
-          from PIL import Image
+          from PIL import Image, ImageDraw
           import os
           res = 'android/app/src/main/res'
-          src = Image.open('public/school-launcher-icon.png').convert('RGBA')
-          for d, px in {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}.items():
+          src = Image.open('firebase/app-icon.png').convert('RGB')
+          bg = src.getpixel((6, 6))
+          bghex = '#%02X%02X%02X' % bg
+          legacy = {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}
+          for d, px in legacy.items():
               folder = f'{res}/mipmap-{d}'
               os.makedirs(folder, exist_ok=True)
-              for n in ('ic_launcher', 'ic_launcher_round', 'ic_launcher_foreground'):
-                  src.resize((px, px), Image.LANCZOS).save(f'{folder}/{n}.png')
-          import shutil
-          shutil.rmtree(f'{res}/mipmap-anydpi-v26', ignore_errors=True)
+              full = src.resize((px, px), Image.LANCZOS)
+              full.save(f'{folder}/ic_launcher.png')
+              big = full.resize((px * 4, px * 4), Image.LANCZOS)
+              mask = Image.new('L', (px * 4, px * 4), 0)
+              ImageDraw.Draw(mask).ellipse((0, 0, px * 4 - 1, px * 4 - 1), fill=255)
+              rnd = Image.new('RGBA', (px * 4, px * 4), (0, 0, 0, 0))
+              rnd.paste(big, (0, 0), mask)
+              rnd.resize((px, px), Image.LANCZOS).save(f'{folder}/ic_launcher_round.png')
+              fg = px * 108 // 48
+              canvas = Image.new('RGBA', (fg, fg), (0, 0, 0, 0))
+              inner = int(fg * 0.84)
+              canvas.paste(src.resize((inner, inner), Image.LANCZOS), ((fg - inner) // 2, (fg - inner) // 2))
+              canvas.save(f'{folder}/ic_launcher_foreground.png')
+          os.makedirs(f'{res}/mipmap-anydpi-v26', exist_ok=True)
+          xml = '<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@color/ic_launcher_background"/>\n    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>\n'
+          for n in ('ic_launcher', 'ic_launcher_round'):
+              open(f'{res}/mipmap-anydpi-v26/{n}.xml', 'w').write(xml)
+          open(f'{res}/values/ic_launcher_background.xml', 'w').write(f'<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">{bghex}</color>\n</resources>\n')
           PY
-          ls android/app/src/main/res
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
       - name: Firebase notifications
         run: |
