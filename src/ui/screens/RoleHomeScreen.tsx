@@ -66,7 +66,7 @@ import { MessagesTab } from './comms/MessagesTab';
 import { DiaryTab } from './diary/DiaryTab';
 import { NotificationsSheet, useUnreadMessages, useUnreadNotifications } from './comms/CommsShared';
 import { startHeartbeat } from '../../data/supabase/activity';
-import { forceRefresh, refreshIfIdle, subscribeDataRefreshed } from '../../data/supabase/sync';
+import { forceRefresh, hasUnsavedChanges, pushNow, refreshIfIdle, subscribeDataRefreshed } from '../../data/supabase/sync';
 import { CLOUD_ENABLED } from '../../data/supabase/mode';
 import { TeacherHomeTab } from './teacher/TeacherHomeTab';
 import { TeacherMoreTab } from './teacher/TeacherMoreTab';
@@ -422,12 +422,28 @@ export const RoleHomeScreen: React.FC<RoleHomeScreenProps> = ({
     return () => window.clearInterval(id);
   }, []);
 
+  // internet came back (or the app was reopened): clear any stale "could not refresh" note and catch up quietly
+  useEffect(() => {
+    if (!CLOUD_ENABLED) return;
+    const onBack = () => {
+      showInd(10, '', false);
+      busyRef.current = false;
+      void (async () => {
+        if (hasUnsavedChanges()) await pushNow().catch(() => undefined);
+        await refreshIfIdle(0);
+      })();
+    };
+    window.addEventListener('online', onBack);
+    return () => window.removeEventListener('online', onBack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const doManualRefresh = async () => {
     if (busyRef.current) return;
     if (dirtyRef.current && !window.confirm(stringResource('rf_attendance_warn'))) return;
     busyRef.current = true;
     showInd(10, stringResource('rf_refreshing'), true);
-    const r = await forceRefresh();
+    const r = await Promise.race([forceRefresh(), new Promise<'failed'>((res) => window.setTimeout(() => res('failed'), 15000))]);
     showInd(10, r === 'ok' ? stringResource('rf_done') : r === 'unsaved' ? stringResource('rf_unsaved') : stringResource('rf_failed'), true);
     window.setTimeout(() => {
       showInd(10, '', false);
