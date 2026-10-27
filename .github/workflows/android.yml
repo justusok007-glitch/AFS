@@ -76,8 +76,8 @@ jobs:
           </vector>""")
           PY
           grep -c "colorPrimary" android/app/src/main/res/values/colors.xml || true
-          sed -i 's/android:windowSoftInputMode="[^"]*"//; s/<activity /<activity android:windowSoftInputMode="adjustResize" /' android/app/src/main/AndroidManifest.xml
-          grep -n "windowSoftInputMode" android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:windowSoftInputMode="[^"]*"//; s/<activity/<activity android:windowSoftInputMode="adjustResize"/' android/app/src/main/AndroidManifest.xml
+          grep -n "windowSoftInputMode" android/app/src/main/AndroidManifest.xml || true
       - name: Keep app below status bar and above gesture bar
         run: |
           python3 - <<'PY'
