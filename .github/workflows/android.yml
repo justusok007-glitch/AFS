@@ -1,6 +1,10 @@
 name: Android APK
 on:
   workflow_dispatch:
+    inputs:
+      stock:
+        description: 'Test build without the screen-edge patch (true/false)'
+        default: 'false'
 permissions:
   contents: write
 jobs:
@@ -79,6 +83,7 @@ jobs:
           sed -i 's/android:windowSoftInputMode="[^"]*"//; s/<activity/<activity android:windowSoftInputMode="adjustResize"/' android/app/src/main/AndroidManifest.xml
           grep -n "windowSoftInputMode" android/app/src/main/AndroidManifest.xml || true
       - name: Keep app below status bar and above gesture bar
+        if: ${{ inputs.stock != 'true' }}
         run: |
           python3 - <<'PY'
           import glob
@@ -147,5 +152,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete apk-latest --cleanup-tag --yes || true
-          gh release create apk-latest AlFurqanSchool.apk --title "Al Furqan School test APK (build ${{ github.run_number }})" --notes "Test build ${{ github.run_number }}" --prerelease
+          TAG=apk-latest; if [ "${{ inputs.stock }}" = "true" ]; then TAG=apk-test; fi
+          gh release delete $TAG --cleanup-tag --yes || true
+          gh release create $TAG AlFurqanSchool.apk --title "Al Furqan School test APK (build ${{ github.run_number }})" --notes "Test build ${{ github.run_number }}" --prerelease
