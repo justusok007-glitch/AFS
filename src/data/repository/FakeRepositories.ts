@@ -1529,6 +1529,12 @@ export class FakeStudentRepository implements StudentRepository {
       });
     }
     const previous = db.students[idx];
+    const newNo = student.admissionNo.trim();
+    if (!newNo) return AppResult.failure({ kind: 'ValidationFailed', message: 'Admission number cannot be empty.' });
+    if (db.students.some((x) => x.id !== student.id && x.admissionNo.trim().toLowerCase() === newNo.toLowerCase())) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: `Admission number ${newNo} already exists.` });
+    }
+    student = { ...student, admissionNo: newNo };
     db.students[idx] = student;
     db.auditLogs.unshift({
       id: `aud_${Date.now()}`,

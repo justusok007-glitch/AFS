@@ -564,6 +564,8 @@ export type StringKey =
   | 'pr_chart_expected'
   | 'pr_chart_daily'
   | 'act_title'
+  | 'st_adm_no'
+  | 'st_adm_no_hint'
   | 'rs_ov_title'
   | 'rs_ov_pick_exam'
   | 'rs_ov_class'
@@ -1712,6 +1714,8 @@ export const stringsEn: Record<StringKey, string> = {
   pr_chart_expected: 'Expected vs collected (6 months)',
   pr_chart_daily: 'Daily collection',
   act_title: 'App activity',
+  st_adm_no: 'Admission No',
+  st_adm_no_hint: 'Leave empty to create one automatically. Use the same number as in your fee files.',
   rs_ov_title: 'All classes at a glance',
   rs_ov_pick_exam: 'Choose an exam to compare all classes',
   rs_ov_class: 'Class',
@@ -2861,6 +2865,8 @@ export const stringsUr: Record<StringKey, string> = {
   pr_chart_expected: 'متوقع بمقابلہ وصول شدہ (6 مہینے)',
   pr_chart_daily: 'روزانہ وصولی',
   act_title: 'ایپ کی سرگرمی',
+  st_adm_no: 'داخلہ نمبر',
+  st_adm_no_hint: 'خالی چھوڑیں تو خود بخود بن جائے گا۔ فیس فائلوں والا نمبر ہی لکھیں۔',
   rs_ov_title: 'تمام کلاسز ایک نظر میں',
   rs_ov_pick_exam: 'تمام کلاسز کا موازنہ دیکھنے کے لیے امتحان چنیں',
   rs_ov_class: 'کلاس',

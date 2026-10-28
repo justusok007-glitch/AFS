@@ -305,6 +305,7 @@ const StudentForm: React.FC<{
   onSaved: (s: Student, cred?: CredentialSlip) => void;
 }> = ({ admin, lookups, sectionOptions, existing, onCancel, onSaved }) => {
   const { stringResource: t } = useStringResource();
+  const [admNo, setAdmNo] = useState(existing?.admissionNo ?? '');
   const [name, setName] = useState(existing?.name ?? '');
   const [nameUr, setNameUr] = useState(existing?.nameUr ?? '');
   const [father, setFather] = useState(existing?.fatherName ?? '');
@@ -416,6 +417,7 @@ const StudentForm: React.FC<{
       const r = await AppModule.studentRepository.update(
         {
           ...existing,
+          admissionNo: admNo.trim() || existing.admissionNo,
           name: name.trim(),
           nameUr: nameUr.trim(),
           fatherName: father.trim(),
@@ -449,7 +451,7 @@ const StudentForm: React.FC<{
       admissionPaid: admPaid,
     };
     const r = await AppModule.studentRepository.admitStudent(
-      { name, nameUr, fatherName: father, gender, dateOfBirth: dob, sectionId, admissionDate: admDate, guardianPhone: phone, guardianPhone2: phone2, parent, opening },
+      { admissionNo: admNo.trim() || undefined, name, nameUr, fatherName: father, gender, dateOfBirth: dob, sectionId, admissionDate: admDate, guardianPhone: phone, guardianPhone2: phone2, parent, opening },
       admin
     );
     setSaving(false);
@@ -464,6 +466,10 @@ const StudentForm: React.FC<{
   return (
     <SchoolCard className="space-y-3">
       <h3 className="font-heading text-sm font-bold text-[#14284B]">{existing ? t('st_form_edit_title') : t('st_form_admit_title')}</h3>
+      <div className="space-y-1">
+        <SchoolTextField label={t('st_adm_no')} value={admNo} onValueChange={setAdmNo} forceLtrValue />
+        {!existing && <p className="text-[11px] text-[#6B7385]">{t('st_adm_no_hint')}</p>}
+      </div>
       <SchoolTextField label={t('st_name_en')} value={name} onValueChange={setName} errorText={errors.name} />
       <div><SchoolTextField urdu label={t('st_name_ur')} value={nameUr} onValueChange={setNameUr} errorText={errors.nameUr} /></div>
       <SchoolTextField label={t('st_father')} value={father} onValueChange={setFather} errorText={errors.father} />
