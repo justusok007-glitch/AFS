@@ -2561,9 +2561,22 @@ export class FakeFeeRepository implements FeeRepository {
         continue;
       }
       const campus = head.campus.trim() ? findCampusByText(db, head.campus) : undefined;
-      const no = head.admissionNo.trim().toLowerCase();
-      const matches = db.students.filter((st) => st.admissionNo.toLowerCase() === no && (!campus || st.campusId === campus.id));
-      if (matches.length === 0) { bad(`No student with Adm No ${head.admissionNo}.`); continue; }
+      // compare numbers the forgiving way: Urdu/Arabic digits, spaces and invisible marks do not matter
+      const admKey = (v: string) =>
+        v.replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+          .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+          .replace(/[\s\u200b-\u200f\u202a-\u202e\ufeff]/g, '')
+          .replace(/\.0+$/, '')
+          .toLowerCase();
+      const no = admKey(head.admissionNo);
+      const sameNo = db.students.filter((st) => admKey(st.admissionNo) === no);
+      const matches = sameNo.filter((st) => !campus || st.campusId === campus.id);
+      if (matches.length === 0 && sameNo.length > 0 && campus) {
+        const there = db.campuses.find((c) => c.id === sameNo[0].campusId);
+        bad(`Adm No ${head.admissionNo} belongs to the ${there?.nameEn ?? 'other'} campus, but the file says "${head.campus}". Fix the Campus column.`);
+        continue;
+      }
+      if (matches.length === 0) { bad(`No student with Adm No ${head.admissionNo} (${db.students.length} students are loaded on this phone). Pull down to refresh and try again.`); continue; }
       if (matches.length > 1) { bad(`Adm No ${head.admissionNo} exists in both campuses - add the Campus column.`); continue; }
       const student = matches[0];
       const warnings: string[] = [];
