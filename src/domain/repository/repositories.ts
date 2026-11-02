@@ -356,6 +356,8 @@ export interface FeeRepository {
   getPaymentsForStudent(studentId: string): Promise<AppResult<FeePayment[]>>;
   getAllVouchers(): Promise<AppResult<FeeVoucher[]>>;
   getAllPayments(): Promise<AppResult<FeePayment[]>>;
+  /** Each active student's monthly fee (class tuition after the student's concession). */
+  getMonthlyFees(): Promise<AppResult<{ studentId: string; campusId: string; amount: number }[]>>;
   getDefaulters(
     campusId: string | null
   ): Promise<AppResult<FeeDefaulterSummary[]>>;

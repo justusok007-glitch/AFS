@@ -3551,6 +3551,22 @@ export class FakeFeeRepository implements FeeRepository {
     return AppResult.success(db.feeVouchers);
   }
 
+  async getMonthlyFees(): Promise<AppResult<{ studentId: string; campusId: string; amount: number }[]>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    const classOf: Record<string, string> = {};
+    db.sections.forEach((s) => (classOf[s.id] = s.classId));
+    return AppResult.success(
+      db.students
+        .filter((stu) => stu.status === StudentStatus.ACTIVE)
+        .map((stu) => {
+          const base = db.classFeeStructures.find((c) => c.classId === classOf[stu.sectionId] && c.feeHeadId === 'fh_tuition')?.amount ?? 2000;
+          const concession = db.studentConcessions.find((c) => c.studentId === stu.id && c.feeHeadId === 'fh_tuition');
+          return { studentId: stu.id, campusId: stu.campusId, amount: computeNetTuition(base, concession) };
+        })
+    );
+  }
+
   async getAllPayments(): Promise<AppResult<FeePayment[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();

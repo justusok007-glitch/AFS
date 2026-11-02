@@ -67,6 +67,8 @@ export type StringKey =
   | 'fb_at_girls'
   | 'fb_this_month'
   | 'fb_new_arrears'
+  | 'fb_received_month'
+  | 'fb_total_pending'
   | 'fb_other'
   | 'fb_charged'
   | 'fb_received'
@@ -1218,6 +1220,8 @@ export const stringsEn: Record<StringKey, string> = {
   fb_at_girls: 'Girls campus counter',
   fb_this_month: 'This month\'s fee',
   fb_new_arrears: 'New arrears (since Oct 2026)',
+  fb_received_month: 'Received this month',
+  fb_total_pending: 'Total pending',
   fb_other: 'Other dues',
   fb_charged: 'Charged',
   fb_received: 'Received',
@@ -2370,6 +2374,8 @@ export const stringsUr: Record<StringKey, string> = {
   fb_at_girls: 'گرلز کیمپس کاؤنٹر',
   fb_this_month: 'اس ماہ کی فیس',
   fb_new_arrears: 'نئے بقایا جات (اکتوبر 2026 سے)',
+  fb_received_month: 'اس ماہ وصول',
+  fb_total_pending: 'کل بقایا',
   fb_other: 'دیگر واجبات',
   fb_charged: 'واجب',
   fb_received: 'وصول',
