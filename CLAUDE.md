@@ -1,9 +1,10 @@
 # AFS – Al Furqan School Okara app (project guide for Claude)
 
-Read this first. It is the memory of the project, so the owner does not have to re-explain it.
+Read this first, then read `MEMORY.md` (history, decisions, open problems, gotchas). Together they are the memory of the project, so the owner does not have to re-explain it.
+No secrets belong in these files or in the repo (the repo is public). Keys live only in Supabase secrets / the owner's accounts.
 
 ## Owner and how to work with him
-- Owner: **Saqib Khalil** (teacher at Al Furqan College Okara), justusok007@gmail.com, Okara, Pakistan. Not a programmer: explain in plain, short steps, one thing at a time.
+- Owner: **Saqib Khalil** (teacher at Al Furqan College Okara), Okara, Pakistan. Not a programmer: explain in plain, short steps, one thing at a time.
 - He tests every change on his **Android phone** and runs **SQL files himself** in the Supabase SQL editor. He cannot run commands. So: always say exactly what he must do (run which SQL file, deploy which function, install which APK).
 - Discuss first when he says "discuss"; otherwise just do the work. Keep answers short. He writes English; the app is English + Urdu (RTL).
 - Reply with the download link after a new APK. Do not paste long code at him unless he asks.
@@ -60,6 +61,7 @@ Accounts are created **only by the admin** (public sign-up is closed by a databa
 - Printing (window.print) may not work inside the Android WebView; not tested.
 - Deferred by the owner: WhatsApp fee reminders, printable Urdu report cards / fee slips.
 - Free Supabase plan pauses after about a week of no use; consider upgrading before launch.
+- Student form has an **Admission No** box (add and edit); the daily fee CSV matches students by this number (forgiving about Urdu digits/spaces).
 - The in-app name on the login page still reads "Al Furqan School Okara"; phone name is "AFS Okara".
 
 ## Next steps (owner's plan)
