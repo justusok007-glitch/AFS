@@ -33,7 +33,7 @@ const net = (it: { amount: number; waivedAmount?: number }) => Math.max(0, it.am
  * Previous arrears: charged / received (all receipts) / pending, from the bills and receipts.
  * New arrears (Oct 2026 to last month): pending now, and money received this month for those months.
  * This month's fee: the students' monthly fees, received for this month (and advances), pending.
- * Admission fee and Annual charges: charged on this month's bills, received this month, pending on this month's bills.
+ * Admission fee and Annual charges: charged on this month's bills, received this month, pending = everything still unpaid (earlier months included).
  * Monthly fee money goes to the month written on the receipt ("Fee For"); a receipt without the month
  * fills the student's most recent month first, then the months before it.
  */
@@ -59,11 +59,10 @@ export function computeBreakdown(
         if (v.billingMonth >= NEW_ARREARS_FROM && v.billingMonth < month) g.newArrears.pending += open;
         else if (v.billingMonth < NEW_ARREARS_FROM) g.other.charged! += net(it);
       } else if (it.feeHeadId === 'fh_admission' || it.feeHeadId === 'fh_annual') {
-        if (v.billingMonth === month) {
-          const x = g[it.feeHeadId === 'fh_admission' ? 'admission' : 'annual'];
-          x.charged! += net(it);
-          x.pending += open;
-        }
+        // charged: this month's bills; pending: still unpaid from earlier months too (last month's closing + this month)
+        const x = g[it.feeHeadId === 'fh_admission' ? 'admission' : 'annual'];
+        if (v.billingMonth === month) x.charged! += net(it);
+        if (v.billingMonth <= month) x.pending += open;
       } else g.other.charged! += net(it);
     }
   }
