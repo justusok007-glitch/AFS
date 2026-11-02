@@ -33,7 +33,7 @@ const net = (it: { amount: number; waivedAmount?: number }) => Math.max(0, it.am
  * Previous arrears: charged / received (all receipts) / pending, from the bills and receipts.
  * New arrears (Oct 2026 to last month): pending now, and money received this month for those months.
  * This month's fee: the students' monthly fees, received for this month (and advances), pending.
- * Admission fee and Annual charges: received this month, pending on this month's bills.
+ * Admission fee and Annual charges: charged on this month's bills, received this month, pending on this month's bills.
  * Monthly fee money goes to the month written on the receipt ("Fee For"); a receipt without the month
  * fills the student's most recent month first, then the months before it.
  */
@@ -44,8 +44,8 @@ export function computeBreakdown(
     arrears: { charged: 0, received: 0, pending: 0 },
     newArrears: { charged: null, received: 0, pending: 0 },
     month: { charged: monthlyFees.reduce((sum, f) => sum + f.amount, 0), received: 0, pending: 0 },
-    admission: { charged: null, received: 0, pending: 0 },
-    annual: { charged: null, received: 0, pending: 0 },
+    admission: { charged: 0, received: 0, pending: 0 },
+    annual: { charged: 0, received: 0, pending: 0 },
     other: { charged: 0, received: 0, pending: 0 },
   };
   const tuitionDue: Record<string, Record<string, number>> = {}; // student -> month -> monthly fee billed
@@ -59,7 +59,11 @@ export function computeBreakdown(
         if (v.billingMonth >= NEW_ARREARS_FROM && v.billingMonth < month) g.newArrears.pending += open;
         else if (v.billingMonth < NEW_ARREARS_FROM) g.other.charged! += net(it);
       } else if (it.feeHeadId === 'fh_admission' || it.feeHeadId === 'fh_annual') {
-        if (v.billingMonth === month) g[it.feeHeadId === 'fh_admission' ? 'admission' : 'annual'].pending += open;
+        if (v.billingMonth === month) {
+          const x = g[it.feeHeadId === 'fh_admission' ? 'admission' : 'annual'];
+          x.charged! += net(it);
+          x.pending += open;
+        }
       } else g.other.charged! += net(it);
     }
   }
@@ -170,7 +174,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
           <div className="space-y-2.5">
             {rows.filter((r) => (r.id !== 'other' && r.id !== 'newArrears') || (groups[r.id].charged ?? 0) > 0 || groups[r.id].received > 0 || groups[r.id].pending > 0).map((r) => {
               const x = groups[r.id];
-              const base = x.charged ?? x.received + x.pending;
+              const base = r.id === 'admission' || r.id === 'annual' ? x.received + x.pending : x.charged ?? x.received + x.pending;
               const pct = base > 0 ? Math.min(100, Math.round((x.received / base) * 100)) : 0;
               return (
                 <div key={r.id} className="space-y-1">
@@ -185,7 +189,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
                     {x.charged !== null && (
                       <div><div className="text-[#6B7385]">{t('fb_charged')}</div><Money v={x.charged} className="font-semibold text-[#14284B]" /></div>
                     )}
-                    <div><div className="text-[#6B7385]">{x.charged === null ? t('fb_received_month') : t('fb_received')}</div><Money v={x.received} className="font-semibold text-[#2E9E5B]" /></div>
+                    <div><div className="text-[#6B7385]">{r.id === 'newArrears' || r.id === 'admission' || r.id === 'annual' ? t('fb_received_month') : t('fb_received')}</div><Money v={x.received} className="font-semibold text-[#2E9E5B]" /></div>
                     <div><div className="text-[#6B7385]">{t('fb_pending')}</div><Money v={x.pending} className="font-semibold text-[#D64545]" /></div>
                   </div>
                 </div>
