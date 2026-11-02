@@ -5,7 +5,7 @@ Keep this file updated at the end of every work session: move finished items out
 ## Timeline (newest last)
 - Built the web app (React/TS/Vite) with a local demo database, then connected Supabase (SQL files 001–013 in `supabase/`).
 - Features added in order: accounts created by admin only, attendance + unlocks, fees/vouchers/payments, results, activity log, diary with photos (30-day photo purge), daily backup + restore, security fixes (009, 011 closes sign-up, 013 privacy), pull-to-refresh + auto refresh + speed fixes, new login page, parent Diary tab, phone Back-button stack, Web Push notifications, admin results overview, merge duplicate parent accounts.
-- Oct 2026: Capacitor Android app (APK) built on GitHub Actions; fixed status-bar overlap (builds 4–5); offline note clears when internet returns (build 6); Firebase (FCM) notifications for the APK (build 7, works); app name **AFS Okara** and new icon (build 8); Admission No box in the student form (build 13).
+- Oct 2026: Capacitor Android app (APK) built on GitHub Actions; fixed status-bar overlap (builds 4–5); offline note clears when internet returns (build 6); Firebase (FCM) notifications for the APK (build 7, works); app name **AFS Okara** and new icon (build 8); Admission No box in the student form (build 13); Fee breakdown: New arrears bar since Oct 2026, This month's fee = current month + advances only (build 14).
 - Owner created a Firebase project and put the Firebase service-account secret in Supabase himself. The send-push Edge Function is deployed by pasting code into the Supabase dashboard (Verify JWT off).
 
 ## Open problems (not solved yet)
@@ -22,6 +22,7 @@ Keep this file updated at the end of every work session: move finished items out
 - Old APKs keep working after updates; database changes must be additive so old builds do not break.
 
 ## Gotchas learned the hard way
+- Fee breakdown bars follow the receipt: daily import saves `[by:...]` (fee type) and `[mon:YYYY-MM=amt]` (Fee For month) in remarks. Receipts without a month fill the most recent month first, then older. Re-uploading an old daily file adds a missing `[mon:]` tag (money unchanged).
 - Admission numbers: before build 13 the form had no Admission No box and auto-made `AFS-B-2026-001` style numbers; fee CSV rows use the school's real number (e.g. 1112), so match failed. Fixed by adding the box.
 - CI is the only typecheck; always push, wait for green, read annotations for `error TS`.
 - Hooks must not use a state variable before it is declared (caused TS2448 once).
