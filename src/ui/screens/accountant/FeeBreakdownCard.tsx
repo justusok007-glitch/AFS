@@ -8,21 +8,30 @@ import { SchoolCard, ShimmerPlaceholder, TabRow } from '../../components/SchoolC
 import { useStringResource } from '../../theme/LocaleContext';
 import { AccountantLookups } from './AccountantShared';
 
-type GroupId = 'arrears' | 'month' | 'admission' | 'annual' | 'other';
+type GroupId = 'arrears' | 'newArrears' | 'month' | 'admission' | 'annual' | 'other';
 interface Totals { charged: number; received: number }
+
+/** Monthly fees from this month onward are "new arrears" when left unpaid (the app started in Oct 2026). */
+const NEW_ARREARS_FROM = '2026-10';
+
+const emptyGroups = (): Record<GroupId, number> => ({ arrears: 0, newArrears: 0, month: 0, admission: 0, annual: 0, other: 0 });
+
+/** Which bar a tuition month belongs to: this month and later (advances) = this month; Oct 2026 to last month = new arrears. */
+const groupOfMonth = (billingMonth: string, month: string): GroupId =>
+  billingMonth >= month ? 'month' : billingMonth >= NEW_ARREARS_FROM ? 'newArrears' : 'other';
 
 const Money: React.FC<{ v: number; className?: string }> = ({ v, className }) => (
   <span dir="ltr" className={`font-mono tabular-nums ${className ?? ''}`}>{formatRupees(v)}</span>
 );
 
-/** Charged per group comes from the bills; this month's group also holds fees billed for later months (advances). */
+/** Charged per group comes from the bills. */
 function chargedByGroup(vouchers: FeeVoucher[], month: string): Record<GroupId, number> {
-  const g: Record<GroupId, number> = { arrears: 0, month: 0, admission: 0, annual: 0, other: 0 };
+  const g = emptyGroups();
   for (const v of vouchers) {
     for (const it of v.items) {
       const id: GroupId =
         it.feeHeadId === 'fh_arrears' ? 'arrears'
-        : it.feeHeadId === 'fh_tuition' && v.billingMonth >= month ? 'month'
+        : it.feeHeadId === 'fh_tuition' ? groupOfMonth(v.billingMonth, month)
         : it.feeHeadId === 'fh_admission' ? 'admission'
         : it.feeHeadId === 'fh_annual' ? 'annual'
         : 'other';
@@ -32,28 +41,75 @@ function chargedByGroup(vouchers: FeeVoucher[], month: string): Record<GroupId, 
   return g;
 }
 
-const GROUP_OF_CATEGORY: Record<string, GroupId> = { ARREARS: 'arrears', MONTHLY: 'month', ADMISSION: 'admission', ANNUAL: 'annual' };
-const GROUP_OF_HEAD: Record<string, GroupId> = { fh_arrears: 'arrears', fh_tuition: 'month', fh_admission: 'admission', fh_annual: 'annual' };
+const GROUP_OF_CATEGORY: Record<string, GroupId> = { ARREARS: 'arrears', ADMISSION: 'admission', ANNUAL: 'annual' };
+const GROUP_OF_HEAD: Record<string, GroupId> = { fh_arrears: 'arrears', fh_admission: 'admission', fh_annual: 'annual' };
 
-/** Received per group, by the fee type the cashier wrote on the receipt (bills' allocation when there is none). */
-function receivedByGroup(payments: FeePayment[]): Record<GroupId, number> {
-  const g: Record<GroupId, number> = { arrears: 0, month: 0, admission: 0, annual: 0, other: 0 };
+const tagParts = (remarks: string | null | undefined, tag: string): [string, number][] => {
+  const m = new RegExp(`\\[${tag}:([^\\]]+)\\]`).exec(remarks ?? '');
+  return m ? m[1].split(',').map((part) => { const [k, v] = part.split('='); return [k, Number(v) || 0] as [string, number]; }) : [];
+};
+
+/**
+ * Received per group, by the fee type the cashier wrote on the receipt (bills' allocation when there is none).
+ * Monthly fee money goes to the month written on the receipt ("Fee For"). When a receipt does not say the month,
+ * it fills the student's most recent month first, then the months before it.
+ */
+function receivedByGroup(payments: FeePayment[], vouchers: FeeVoucher[], month: string): Record<GroupId, number> {
+  const g = emptyGroups();
+  const byMonth: Record<string, Record<string, number>> = {}; // student -> month -> monthly fee received
+  const unknown: Record<string, number> = {}; // student -> monthly fee received without a month
+  const addMonth = (st: string, m: string, v: number) => { (byMonth[st] ??= {}); byMonth[st][m] = (byMonth[st][m] ?? 0) + v; };
+
   for (const p of payments) {
     if (p.isVoid) continue;
-    const declared = /\[by:([^\]]+)\]/.exec(p.remarks ?? '');
-    if (declared) {
-      for (const part of declared[1].split(',')) {
-        const [k, v] = part.split('=');
-        g[GROUP_OF_CATEGORY[k] ?? 'other'] += Number(v) || 0;
+    const by = tagParts(p.remarks, 'by');
+    let monthly = 0;
+    if (by.length) {
+      for (const [k, v] of by) {
+        if (k === 'MONTHLY') monthly += v;
+        else g[GROUP_OF_CATEGORY[k] ?? 'other'] += v;
       }
     } else {
-      for (const a of p.allocations ?? []) g[GROUP_OF_HEAD[a.feeHeadId ?? ''] ?? 'other'] += a.allocatedAmount;
+      for (const a of p.allocations ?? []) {
+        if (a.feeHeadId === 'fh_tuition') monthly += a.allocatedAmount;
+        else g[GROUP_OF_HEAD[a.feeHeadId ?? ''] ?? 'other'] += a.allocatedAmount;
+      }
     }
+    let known = 0;
+    for (const [m, v] of tagParts(p.remarks, 'mon')) {
+      const take = Math.min(v, monthly - known);
+      if (take <= 0) break;
+      addMonth(p.studentId, m, take);
+      known += take;
+    }
+    if (monthly > known) unknown[p.studentId] = (unknown[p.studentId] ?? 0) + monthly - known;
+  }
+
+  // money without a month: most recent billed month first, then older months
+  for (const [st, amount] of Object.entries(unknown)) {
+    const due: Record<string, number> = {};
+    vouchers.filter((v) => v.studentId === st).forEach((v) =>
+      v.items.filter((it) => it.feeHeadId === 'fh_tuition').forEach((it) => {
+        due[v.billingMonth] = (due[v.billingMonth] ?? 0) + Math.max(0, it.amount - (it.waivedAmount ?? 0));
+      })
+    );
+    let left = amount;
+    for (const m of Object.keys(due).sort().reverse()) {
+      const room = Math.max(0, due[m] - (byMonth[st]?.[m] ?? 0));
+      const take = Math.min(left, room);
+      if (take > 0) { addMonth(st, m, take); left -= take; }
+      if (left <= 0) break;
+    }
+    if (left > 0) addMonth(st, month, left);
+  }
+
+  for (const months of Object.values(byMonth)) {
+    for (const [m, v] of Object.entries(months)) g[groupOfMonth(m, month)] += v;
   }
   return g;
 }
 
-/** Fee breakdown: previous arrears, this month's fee, admission and annual charges (charged / received / pending). */
+/** Fee breakdown: previous arrears, new arrears (since Oct 2026), this month's fee, admission and annual charges (charged / received / pending). */
 export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ lookups }) => {
   const { stringResource: t, language } = useStringResource();
   const [campus, setCampus] = useState('ALL');
@@ -76,7 +132,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
     (v.ok ? v.data : []).forEach((x) => (campusOf[x.studentId] = x.campusId));
     const pays = pay.ok ? pay.data.filter((p) => campus === 'ALL' || campusOf[p.studentId] === campus) : [];
     const charged = chargedByGroup(list, month);
-    const received = receivedByGroup(pays);
+    const received = receivedByGroup(pays, list, month);
     const merged = {} as Record<GroupId, Totals>;
     (Object.keys(charged) as GroupId[]).forEach((k) => (merged[k] = { charged: charged[k], received: received[k] }));
     setGroups(merged);
@@ -87,6 +143,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
 
   const rows: { id: GroupId; label: string }[] = [
     { id: 'arrears', label: t('acc_cat_ARREARS') },
+    { id: 'newArrears', label: t('fb_new_arrears') },
     { id: 'month', label: t('fb_this_month') },
     { id: 'admission', label: t('acc_cat_ADMISSION') },
     { id: 'annual', label: t('acc_cat_ANNUAL') },
@@ -108,7 +165,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
       ) : (
         <>
           <div className="space-y-2.5">
-            {rows.filter((r) => r.id !== 'other' || groups.other.charged > 0).map((r) => {
+            {rows.filter((r) => (r.id !== 'other' && r.id !== 'newArrears') || groups[r.id].charged > 0 || groups[r.id].received > 0).map((r) => {
               const x = groups[r.id];
               const pending = Math.max(0, x.charged - x.received);
               const pct = x.charged > 0 ? Math.min(100, Math.round((x.received / x.charged) * 100)) : 0;

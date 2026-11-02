@@ -2522,9 +2522,14 @@ export class FakeFeeRepository implements FeeRepository {
         const k = r.feeFor === 'ARREARS' ? 'ARREARS' : r.feeFor === 'ADMISSION' ? 'ADMISSION' : r.feeFor === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
         by[k] = (by[k] ?? 0) + (r.amount ?? 0);
       });
+      // which month each monthly-fee line was for (used by the fee breakdown bars)
+      const mon: Record<string, number> = {};
+      ls.forEach((r) => { if (/^\d{4}-\d{2}$/.test(r.feeFor)) mon[r.feeFor] = (mon[r.feeFor] ?? 0) + (r.amount ?? 0); });
       const at = ls.find((r) => r.collectedAt)?.collectedAt;
-      return `[by:${Object.entries(by).map(([k, v]) => `${k}=${v}`).join(',')}]${at ? `[at:${at}]` : ''}`;
+      const monTag = Object.keys(mon).length ? `[mon:${Object.entries(mon).map(([k, v]) => `${k}=${v}`).join(',')}]` : '';
+      return `[by:${Object.entries(by).map(([k, v]) => `${k}=${v}`).join(',')}]${monTag}${at ? `[at:${at}]` : ''}`;
     };
+    const monTagOf = (tags: string) => /\[mon:[^\]]+\]/.exec(tags)?.[0] ?? '';
     const seenReceipts = new Set(db.feePayments.map((p) => p.receiptNo.toLowerCase()));
     const priority: Record<string, number> = {};
     db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
@@ -2596,6 +2601,10 @@ export class FakeFeeRepository implements FeeRepository {
         if (old && old.studentId === student.id && old.amount === total && !(old.remarks ?? '').includes('[by:')) {
           old.remarks = `${old.remarks ?? 'Daily fee file'} ${tags}`;
           out(true, null, ['Receipt details updated (amounts unchanged).'], student.name);
+        } else if (old && old.studentId === student.id && old.amount === total && !(old.remarks ?? '').includes('[mon:') && monTagOf(tags)) {
+          // older upload: add the fee month only, money unchanged
+          old.remarks = `${old.remarks ?? ''}${monTagOf(tags)}`;
+          out(true, null, ['Fee month added to this receipt (amounts unchanged).'], student.name);
         } else {
           bad(`Receipt ${head.receiptNo} is already recorded.`);
         }
