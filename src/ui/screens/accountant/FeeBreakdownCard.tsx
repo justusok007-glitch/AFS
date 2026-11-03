@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppModule } from '../../../di/AppModule';
 import { currentMonth, today } from '../../../domain/clock';
 import { formatRupees } from '../../../domain/formatters/SchoolFormatters';
@@ -14,6 +15,18 @@ interface Totals { charged: number | null; received: number; pending: number }
 
 /** Monthly fees from this month onward are "new arrears" when left unpaid (the app started in Oct 2026). */
 const NEW_ARREARS_FROM = '2026-10';
+
+/** The month picker starts here (the first month in the app). */
+const FIRST_MONTH = NEW_ARREARS_FROM;
+const shiftMonth = (m: string, by: number): string => {
+  const [y, mo] = m.split('-').map(Number);
+  const d = new Date(y, mo - 1 + by, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const lastDayOf = (m: string): string => {
+  const [y, mo] = m.split('-').map(Number);
+  return `${m}-${String(new Date(y, mo, 0).getDate()).padStart(2, '0')}`;
+};
 
 const Money: React.FC<{ v: number; className?: string }> = ({ v, className }) => (
   <span dir="ltr" className={`font-mono tabular-nums ${className ?? ''}`}>{formatRupees(v)}</span>
@@ -33,18 +46,18 @@ const net = (it: { amount: number; waivedAmount?: number }) => Math.max(0, it.am
  * Received on every bar = receipts dated this month only (they add up to this month's total collection).
  * Previous arrears: charged (opening arrears), received this month, pending now.
  * New arrears (Oct 2026 to last month): received this month for those months, pending now.
- * This month's fee: the students' monthly fees, received this month for this month (or later), pending (advances count as paid).
+ * Month's fee: the students' monthly fees (current month; other months: that month's bills), received this month for this month (or later), pending (advances count as paid).
  * Admission fee and Annual charges: charged on this month's bills, received this month, pending = everything still unpaid (earlier months included).
  * Monthly fee money goes to the month written on the receipt ("Fee For"); a receipt without the month
  * uses the month bill the money was booked to; failing that, the most recent month up to the payment date.
  */
 export function computeBreakdown(
-  vouchers: FeeVoucher[], payments: FeePayment[], monthlyFees: { studentId: string; amount: number }[], month: string
+  vouchers: FeeVoucher[], payments: FeePayment[], monthlyFees: { studentId: string; amount: number }[] | null, month: string
 ): Record<GroupId, Totals> {
   const g: Record<GroupId, Totals> = {
     arrears: { charged: 0, received: 0, pending: 0 },
     newArrears: { charged: null, received: 0, pending: 0 },
-    month: { charged: monthlyFees.reduce((sum, f) => sum + f.amount, 0), received: 0, pending: 0 },
+    month: { charged: monthlyFees ? monthlyFees.reduce((sum, f) => sum + f.amount, 0) : 0, received: 0, pending: 0 },
     admission: { charged: 0, received: 0, pending: 0 },
     annual: { charged: 0, received: 0, pending: 0 },
     other: { charged: 0, received: 0, pending: 0 },
@@ -60,6 +73,7 @@ export function computeBreakdown(
         (tuitionDue[v.studentId] ??= {});
         tuitionDue[v.studentId][v.billingMonth] = (tuitionDue[v.studentId][v.billingMonth] ?? 0) + net(it);
         if (v.billingMonth >= NEW_ARREARS_FROM && v.billingMonth < month) g.newArrears.pending += open;
+        if (!monthlyFees && v.billingMonth === month) g.month.charged! += net(it); // an earlier/later month: its bills
         else if (v.billingMonth < NEW_ARREARS_FROM) g.other.charged! += net(it);
       } else if (it.feeHeadId === 'fh_admission' || it.feeHeadId === 'fh_annual') {
         // charged: this month's bills; pending: still unpaid from earlier months too (last month's closing + this month)
@@ -77,9 +91,11 @@ export function computeBreakdown(
     allTime[id] += v;
     if (thisMonth) g[id].received += v;
   };
+  let paidForMonth = 0; // all money ever received for the selected month's fee
   const addMonth = (st: string, m: string, v: number, thisMonth: boolean) => {
     (assigned[st] ??= {});
     assigned[st][m] = (assigned[st][m] ?? 0) + v;
+    if (m === month) paidForMonth += v;
     book(m >= month ? 'month' : m >= NEW_ARREARS_FROM ? 'newArrears' : 'other', v, thisMonth);
   };
   const sorted = payments.filter((p) => !p.isVoid).sort((x, y) => x.paidOn.localeCompare(y.paidOn));
@@ -130,7 +146,7 @@ export function computeBreakdown(
     }
   }
   g.arrears.pending = Math.max(0, g.arrears.charged! - allTime.arrears);
-  g.month.pending = Math.max(0, g.month.charged! - allTime.month); // fees paid in advance count as paid
+  g.month.pending = Math.max(0, g.month.charged! - paidForMonth); // fees paid in advance count as paid
   g.other.pending = Math.max(0, g.other.charged! - allTime.other);
   return g;
 }
@@ -142,7 +158,12 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
   const [groups, setGroups] = useState<Record<GroupId, Totals> | null>(null);
   const [report, setReport] = useState<FeeCollectionReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const month = currentMonth();
+  const nowMonth = currentMonth();
+  const [month, setMonth] = useState(nowMonth);
+  const monthOptions: string[] = [];
+  for (let m = FIRST_MONTH; m <= nowMonth; m = shiftMonth(m, 1)) monthOptions.push(m);
+  const monthName = (m: string) =>
+    new Date(`${m}-15T00:00:00`).toLocaleDateString(language === 'ur' ? 'ur-PK' : 'en-GB', { month: 'long', year: 'numeric' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -151,7 +172,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
       AppModule.feeRepository.getAllPayments(),
       AppModule.feeRepository.getMonthlyFees(),
       AppModule.feeRepository.getCollectionReport({
-        fromDate: `${month}-01`, toDate: today(), campusId: campus === 'ALL' ? null : campus,
+        fromDate: `${month}-01`, toDate: month === nowMonth ? today() : lastDayOf(month), campusId: campus === 'ALL' ? null : campus,
       }),
     ]);
     const list = v.ok ? v.data.filter((x) => campus === 'ALL' || x.campusId === campus) : [];
@@ -160,16 +181,16 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
     (mf.ok ? mf.data : []).forEach((x) => (campusOf[x.studentId] ??= x.campusId));
     const pays = pay.ok ? pay.data.filter((p) => campus === 'ALL' || campusOf[p.studentId] === campus) : [];
     const fees = mf.ok ? mf.data.filter((x) => campus === 'ALL' || x.campusId === campus) : [];
-    setGroups(computeBreakdown(list, pays, fees, month));
+    setGroups(computeBreakdown(list, pays, month === nowMonth ? fees : null, month));
     setReport(r.ok ? r.data : null);
     setLoading(false);
-  }, [campus, month]);
+  }, [campus, month, nowMonth]);
   useEffect(() => { void load(); }, [load]);
 
   const rows: { id: GroupId; label: string }[] = [
     { id: 'arrears', label: t('acc_cat_ARREARS') },
     { id: 'newArrears', label: t('fb_new_arrears') },
-    { id: 'month', label: t('fb_this_month') },
+    { id: 'month', label: month === nowMonth ? t('fb_this_month') : `${t('fb_month_fee')} (${monthName(month)})` },
     { id: 'admission', label: t('acc_cat_ADMISSION') },
     { id: 'annual', label: t('acc_cat_ANNUAL') },
     { id: 'other', label: t('fb_other') },
@@ -184,6 +205,20 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
   return (
     <SchoolCard className="space-y-3">
       <h3 className="font-heading text-sm font-bold text-[#14284B]">{t('fb_title')}</h3>
+      <div className="flex items-center gap-2" dir="ltr">
+        <button type="button" aria-label="Previous month" disabled={month <= FIRST_MONTH} onClick={() => setMonth(shiftMonth(month, -1))}
+          className="w-9 h-9 shrink-0 rounded-full border border-[#D5DAE5] flex items-center justify-center disabled:opacity-30 cursor-pointer">
+          <ChevronLeft className="w-4 h-4 text-[#14284B]" />
+        </button>
+        <select value={month} onChange={(e) => setMonth(e.target.value)} dir={language === 'ur' ? 'rtl' : 'ltr'}
+          className="flex-1 min-w-0 h-9 rounded-lg border border-[#D5DAE5] bg-white px-2 text-sm font-semibold text-[#14284B] text-center">
+          {monthOptions.map((m) => <option key={m} value={m}>{monthName(m)}</option>)}
+        </select>
+        <button type="button" aria-label="Next month" disabled={month >= nowMonth} onClick={() => setMonth(shiftMonth(month, 1))}
+          className="w-9 h-9 shrink-0 rounded-full border border-[#D5DAE5] flex items-center justify-center disabled:opacity-30 cursor-pointer">
+          <ChevronRight className="w-4 h-4 text-[#14284B]" />
+        </button>
+      </div>
       <TabRow tabs={campusTabs} selected={campus} onSelect={setCampus} />
       {loading || !groups ? (
         <ShimmerPlaceholder lines={4} />

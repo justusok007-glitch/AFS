@@ -70,6 +70,7 @@ export type StringKey =
   | 'fb_received_month'
   | 'fb_total_pending'
   | 'fb_total_received_month'
+  | 'fb_month_fee'
   | 'fb_other'
   | 'fb_charged'
   | 'fb_received'
@@ -1223,7 +1224,8 @@ export const stringsEn: Record<StringKey, string> = {
   fb_new_arrears: 'New arrears (since Oct 2026)',
   fb_received_month: 'Received this month',
   fb_total_pending: 'Total pending',
-  fb_total_received_month: 'Total received this month',
+  fb_total_received_month: 'Total received in this month',
+  fb_month_fee: 'Monthly fee',
   fb_other: 'Other dues',
   fb_charged: 'Charged',
   fb_received: 'Received',
@@ -2379,6 +2381,7 @@ export const stringsUr: Record<StringKey, string> = {
   fb_received_month: 'اس ماہ وصول',
   fb_total_pending: 'کل بقایا',
   fb_total_received_month: 'اس ماہ کل وصولی',
+  fb_month_fee: 'ماہانہ فیس',
   fb_other: 'دیگر واجبات',
   fb_charged: 'واجب',
   fb_received: 'وصول',
