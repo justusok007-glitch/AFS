@@ -35,7 +35,7 @@ const net = (it: { amount: number; waivedAmount?: number }) => Math.max(0, it.am
  * This month's fee: the students' monthly fees, received for this month (and advances), pending.
  * Admission fee and Annual charges: charged on this month's bills, received this month, pending = everything still unpaid (earlier months included).
  * Monthly fee money goes to the month written on the receipt ("Fee For"); a receipt without the month
- * fills the student's most recent month first, then the months before it.
+ * uses the month bill the money was booked to; failing that, the most recent month up to the payment date.
  */
 export function computeBreakdown(
   vouchers: FeeVoucher[], payments: FeePayment[], monthlyFees: { studentId: string; amount: number }[], month: string
@@ -49,6 +49,8 @@ export function computeBreakdown(
     other: { charged: 0, received: 0, pending: 0 },
   };
   const tuitionDue: Record<string, Record<string, number>> = {}; // student -> month -> monthly fee billed
+  const monthOfVoucher: Record<string, string> = {};
+  vouchers.forEach((v) => (monthOfVoucher[v.id] = v.billingMonth));
   for (const v of vouchers) {
     for (const it of v.items) {
       const open = Math.max(0, net(it) - (it.paidAmount ?? 0));
@@ -100,14 +102,29 @@ export function computeBreakdown(
       left -= take;
     }
     if (left > 0) {
-      // no month on the receipt: most recent billed month first, then older months
-      const due = tuitionDue[p.studentId] ?? {};
-      for (const m of Object.keys(due).sort().reverse()) {
-        const take = Math.min(left, Math.max(0, due[m] - (assigned[p.studentId]?.[m] ?? 0)));
+      // no month written on the receipt: use the month bill the money was booked to
+      const byVoucher: Record<string, number> = {};
+      for (const a of p.allocations ?? []) {
+        if (a.feeHeadId !== 'fh_tuition') continue;
+        const m = monthOfVoucher[a.voucherId];
+        if (m) byVoucher[m] = (byVoucher[m] ?? 0) + a.allocatedAmount;
+      }
+      for (const m of Object.keys(byVoucher).sort()) {
+        const take = Math.min(left, byVoucher[m]);
+        if (take > 0) { addMonth(p.studentId, m, take, thisMonth); left -= take; }
+      }
+    }
+    if (left > 0) {
+      // still unknown: the most recent month up to the payment month first, then older months, then later months
+      const paidMonth = p.paidOn.slice(0, 7);
+      const ms = Object.keys(tuitionDue[p.studentId] ?? {}).sort();
+      const order = [...ms.filter((m) => m <= paidMonth).reverse(), ...ms.filter((m) => m > paidMonth)];
+      for (const m of order) {
+        const take = Math.min(left, Math.max(0, tuitionDue[p.studentId][m] - (assigned[p.studentId]?.[m] ?? 0)));
         if (take > 0) { addMonth(p.studentId, m, take, thisMonth); left -= take; }
         if (left <= 0) break;
       }
-      if (left > 0) addMonth(p.studentId, month, left, thisMonth);
+      if (left > 0) addMonth(p.studentId, paidMonth, left, thisMonth);
     }
   }
   g.arrears.pending = Math.max(0, g.arrears.charged! - g.arrears.received);
