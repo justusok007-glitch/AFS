@@ -30,9 +30,10 @@ const tagParts = (remarks: string | null | undefined, tag: string): [string, num
 const net = (it: { amount: number; waivedAmount?: number }) => Math.max(0, it.amount - (it.waivedAmount ?? 0));
 
 /**
- * Previous arrears: charged / received (all receipts) / pending, from the bills and receipts.
- * New arrears (Oct 2026 to last month): pending now, and money received this month for those months.
- * This month's fee: the students' monthly fees, received for this month (and advances), pending.
+ * Received on every bar = receipts dated this month only (they add up to this month's total collection).
+ * Previous arrears: charged (opening arrears), received this month, pending now.
+ * New arrears (Oct 2026 to last month): received this month for those months, pending now.
+ * This month's fee: the students' monthly fees, received this month for this month (or later), pending (advances count as paid).
  * Admission fee and Annual charges: charged on this month's bills, received this month, pending = everything still unpaid (earlier months included).
  * Monthly fee money goes to the month written on the receipt ("Fee For"); a receipt without the month
  * uses the month bill the money was booked to; failing that, the most recent month up to the payment date.
@@ -70,22 +71,23 @@ export function computeBreakdown(
   }
 
   const assigned: Record<string, Record<string, number>> = {}; // student -> month -> monthly fee money so far
+  // Received on the bars = receipts dated this month only. All-time money is kept only to work out Pending.
+  const allTime: Record<GroupId, number> = { arrears: 0, newArrears: 0, month: 0, admission: 0, annual: 0, other: 0 };
+  const book = (id: GroupId, v: number, thisMonth: boolean) => {
+    allTime[id] += v;
+    if (thisMonth) g[id].received += v;
+  };
   const addMonth = (st: string, m: string, v: number, thisMonth: boolean) => {
     (assigned[st] ??= {});
     assigned[st][m] = (assigned[st][m] ?? 0) + v;
-    if (m >= month) g.month.received += v;
-    else if (m >= NEW_ARREARS_FROM) { if (thisMonth) g.newArrears.received += v; }
-    else g.other.received += v;
+    book(m >= month ? 'month' : m >= NEW_ARREARS_FROM ? 'newArrears' : 'other', v, thisMonth);
   };
   const sorted = payments.filter((p) => !p.isVoid).sort((x, y) => x.paidOn.localeCompare(y.paidOn));
   for (const p of sorted) {
     const thisMonth = p.paidOn.slice(0, 7) === month;
     const by = tagParts(p.remarks, 'by');
     let monthly = 0;
-    const other = (id: GroupId, v: number) => {
-      if (id === 'arrears' || id === 'other') g[id].received += v;
-      else if (thisMonth) g[id].received += v;
-    };
+    const other = (id: GroupId, v: number) => book(id, v, thisMonth);
     if (by.length) {
       for (const [k, v] of by) { if (k === 'MONTHLY') monthly += v; else other(GROUP_OF_CATEGORY[k] ?? 'other', v); }
     } else {
@@ -127,9 +129,9 @@ export function computeBreakdown(
       if (left > 0) addMonth(p.studentId, paidMonth, left, thisMonth);
     }
   }
-  g.arrears.pending = Math.max(0, g.arrears.charged! - g.arrears.received);
-  g.month.pending = Math.max(0, g.month.charged! - g.month.received);
-  g.other.pending = Math.max(0, g.other.charged! - g.other.received);
+  g.arrears.pending = Math.max(0, g.arrears.charged! - allTime.arrears);
+  g.month.pending = Math.max(0, g.month.charged! - allTime.month); // fees paid in advance count as paid
+  g.other.pending = Math.max(0, g.other.charged! - allTime.other);
   return g;
 }
 
@@ -176,7 +178,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
     { id: 'ALL', label: t('campus_both') },
     ...lookups.campuses.map((c) => ({ id: c.id, label: language === 'ur' ? c.nameUr : c.nameEn })),
   ];
-  const sum = (k: 'pending') => (groups ? Object.values(groups).reduce((s, x) => s + x[k], 0) : 0);
+  const sum = (k: 'pending' | 'received') => (groups ? Object.values(groups).reduce((s, x) => s + x[k], 0) : 0);
   const cats = (Object.entries(report?.byCategory ?? {}) as [FeeCategory, number][]).filter(([, v]) => v > 0);
 
   return (
@@ -190,7 +192,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
           <div className="space-y-2.5">
             {rows.filter((r) => (r.id !== 'other' && r.id !== 'newArrears') || (groups[r.id].charged ?? 0) > 0 || groups[r.id].received > 0 || groups[r.id].pending > 0).map((r) => {
               const x = groups[r.id];
-              const base = r.id === 'admission' || r.id === 'annual' ? x.received + x.pending : x.charged ?? x.received + x.pending;
+              const base = x.received + x.pending;
               const pct = base > 0 ? Math.min(100, Math.round((x.received / base) * 100)) : 0;
               return (
                 <div key={r.id} className="space-y-1">
@@ -205,7 +207,7 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
                     {x.charged !== null && (
                       <div><div className="text-[#6B7385]">{t('fb_charged')}</div><Money v={x.charged} className="font-semibold text-[#14284B]" /></div>
                     )}
-                    <div><div className="text-[#6B7385]">{r.id === 'newArrears' || r.id === 'admission' || r.id === 'annual' ? t('fb_received_month') : t('fb_received')}</div><Money v={x.received} className="font-semibold text-[#2E9E5B]" /></div>
+                    <div><div className="text-[#6B7385]">{t('fb_received_month')}</div><Money v={x.received} className="font-semibold text-[#2E9E5B]" /></div>
                     <div><div className="text-[#6B7385]">{t('fb_pending')}</div><Money v={x.pending} className="font-semibold text-[#D64545]" /></div>
                   </div>
                 </div>
@@ -213,6 +215,10 @@ export const FeeBreakdownCard: React.FC<{ lookups: AccountantLookups }> = ({ loo
             })}
           </div>
           <div className="flex items-center justify-between text-xs font-bold border-t border-[#E4E8F0] pt-2">
+            <span className="text-[#14284B]">{t('fb_total_received_month')}</span>
+            <Money v={sum('received')} className="text-[#2E9E5B]" />
+          </div>
+          <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-[#14284B]">{t('fb_total_pending')}</span>
             <Money v={sum('pending')} className="text-[#D64545]" />
           </div>
