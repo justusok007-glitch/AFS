@@ -22,6 +22,7 @@ Keep this file updated at the end of every work session: move finished items out
 - Old APKs keep working after updates; database changes must be additive so old builds do not break.
 
 ## Gotchas learned the hard way
+- Daily fee upload used to refuse receipts for students with no bills (new admissions, e.g. Adm 1115) -> missing from totals. Build 20: the receipt creates the first bill. Refused receipts need the file re-uploaded.
 - Fee breakdown bars follow the receipt: daily import saves `[by:...]` (fee type) and `[mon:YYYY-MM=amt]` (Fee For month) in remarks. Receipts without a `[mon:]` tag use the month of the voucher their tuition allocation went to (build 18 fix: before, October money was counted as November); last fallback = most recent month up to the payment date. Re-uploading an old daily file adds a missing `[mon:]` tag (money unchanged).
 - Admission numbers: before build 13 the form had no Admission No box and auto-made `AFS-B-2026-001` style numbers; fee CSV rows use the school's real number (e.g. 1112), so match failed. Fixed by adding the box.
 - CI is the only typecheck; always push, wait for green, read annotations for `error TS`.
