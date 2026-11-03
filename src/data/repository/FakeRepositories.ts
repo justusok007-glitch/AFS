@@ -2612,7 +2612,7 @@ export class FakeFeeRepository implements FeeRepository {
       }
 
       const realVouchers = db.feeVouchers.filter((v) => v.studentId === student.id);
-      if (realVouchers.length === 0) { bad('This student has no opening balance yet. Upload the opening balance sheet first.'); continue; }
+      // a new student with no bills yet: the bill is created from the receipt (month fee, admission fee, annual charges)
       // work on copies; only saved when every line of the receipt fits
       const work: FeeVoucher[] = structuredClone(realVouchers).sort((x, y) => x.billingMonth.localeCompare(y.billingMonth));
       const pre = student.campusId === 'campus_g' ? 'G-' : 'B-';
@@ -2627,6 +2627,18 @@ export class FakeFeeRepository implements FeeRepository {
       const newPaidItem = (v: FeeVoucher, feeHeadId: string, description: string, amount: number) => {
         v.items.push({ feeHeadId, description, amount, waivedAmount: 0, paidAmount: amount });
         addAlloc(v, feeHeadId, amount);
+      };
+      const newVoucher = (billingMonth: string): FeeVoucher => {
+        const no2 = nextVoucherNo(pre);
+        const v: FeeVoucher = {
+          id: `vch_${no2.toLowerCase()}`, voucherNo: no2, studentId: student.id, campusId: student.campusId, billingMonth,
+          issueDate: `${billingMonth}-01`, dueDate: `${billingMonth}-10`, items: [], status: VoucherStatus.PAID,
+        };
+        db.feeVouchers.push(v); // reserves the number while this file is processed
+        created.push(v);
+        work.push(v);
+        work.sort((x, y) => x.billingMonth.localeCompare(y.billingMonth));
+        return v;
       };
       const summary: string[] = [];
       let failed: string | null = null;
@@ -2645,18 +2657,12 @@ export class FakeFeeRepository implements FeeRepository {
         };
         const byAge = (x: Slot, y: Slot) => x.v.billingMonth.localeCompare(y.v.billingMonth) || (priority[x.item.feeHeadId] ?? 99) - (priority[y.item.feeHeadId] ?? 99);
 
-        if (isMonth && !work.some((v) => v.billingMonth === line.feeFor) && line.feeFor > work[work.length - 1].billingMonth) {
-          // a month that is not billed yet: the fee is paid in advance
-          const no2 = nextVoucherNo(pre);
-          const v: FeeVoucher = {
-            id: `vch_${no2.toLowerCase()}`, voucherNo: no2, studentId: student.id, campusId: student.campusId, billingMonth: line.feeFor,
-            issueDate: `${line.feeFor}-01`, dueDate: `${line.feeFor}-10`, items: [], status: VoucherStatus.PAID,
-          };
-          db.feeVouchers.push(v); // reserves the number while this file is processed
-          created.push(v);
-          work.push(v);
+        if (isMonth && !work.some((v) => v.billingMonth === line.feeFor) && (work.length === 0 || line.feeFor > work[work.length - 1].billingMonth)) {
+          // a month that is not billed yet (paid in advance, or a new student's first bill)
+          const fresh = work.length === 0;
+          const v = newVoucher(line.feeFor);
           newPaidItem(v, 'fh_tuition', `Monthly Tuition Fee (${line.feeFor})`, left);
-          summary.push(`${label}: Rs ${left} paid in advance`);
+          summary.push(`${label}: Rs ${left} ${fresh ? 'monthly fee (first bill created)' : 'paid in advance'}`);
           left = 0;
         } else if (isMonth) {
           const m = openSlots().filter((x) => x.v.billingMonth === line.feeFor && x.item.feeHeadId === 'fh_tuition');
@@ -2677,7 +2683,8 @@ export class FakeFeeRepository implements FeeRepository {
           const head2 = line.feeFor === 'ADMISSION' ? 'fh_admission' : 'fh_annual';
           takeFrom(openSlots().filter((x) => x.item.feeHeadId === head2).sort(byAge));
           if (left > 0) {
-            newPaidItem(work[work.length - 1], head2, label, left); // a charge paid on the spot
+            const into = work.find((v) => v.billingMonth === head.date.slice(0, 7)) ?? work[work.length - 1] ?? newVoucher(head.date.slice(0, 7));
+            newPaidItem(into, head2, label, left); // a charge paid on the spot
             left = 0;
           }
           summary.push(`${label}: Rs ${line.amount}`);
