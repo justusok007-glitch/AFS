@@ -2530,7 +2530,8 @@ export class FakeFeeRepository implements FeeRepository {
       return `[by:${Object.entries(by).map(([k, v]) => `${k}=${v}`).join(',')}]${monTag}${at ? `[at:${at}]` : ''}`;
     };
     const monTagOf = (tags: string) => /\[mon:[^\]]+\]/.exec(tags)?.[0] ?? '';
-    const seenReceipts = new Set(db.feePayments.map((p) => p.receiptNo.toLowerCase()));
+    // a cancelled (voided) receipt does not count: its number can be uploaded again
+    const seenReceipts = new Set(db.feePayments.filter((p) => !p.isVoid).map((p) => p.receiptNo.toLowerCase()));
     const priority: Record<string, number> = {};
     db.feeHeads.forEach((h) => (priority[h.id] = h.priority));
     let allocSeq = db.paymentAllocations.reduce((m, a) => Math.max(m, Number(/(\d+)$/.exec(a.id)?.[1] ?? 0)), 0);
@@ -2596,7 +2597,7 @@ export class FakeFeeRepository implements FeeRepository {
       const tags = paymentTags(lines);
       if (seenReceipts.has(head.receiptNo.trim().toLowerCase())) {
         // already saved: only fill in the missing fee-type / counter details, never change money
-        const old = db.feePayments.find((x) => x.receiptNo.toLowerCase() === head.receiptNo.trim().toLowerCase());
+        const old = db.feePayments.find((x) => !x.isVoid && x.receiptNo.toLowerCase() === head.receiptNo.trim().toLowerCase());
         const total = lines.reduce((sum, r) => sum + (r.amount ?? 0), 0);
         if (old && old.studentId === student.id && old.amount === total && !(old.remarks ?? '').includes('[by:')) {
           old.remarks = `${old.remarks ?? 'Daily fee file'} ${tags}`;
@@ -2606,7 +2607,10 @@ export class FakeFeeRepository implements FeeRepository {
           old.remarks = `${old.remarks ?? ''}${monTagOf(tags)}`;
           out(true, null, ['Fee month added to this receipt (amounts unchanged).'], student.name);
         } else {
-          bad(`Receipt ${head.receiptNo} is already recorded.`);
+          const who = old ? db.students.find((x) => x.id === old.studentId) : undefined;
+          bad(old
+            ? `Receipt ${head.receiptNo} is already saved for ${who?.name ?? 'another student'}${who?.admissionNo ? ` (Adm ${who.admissionNo})` : ''}: Rs ${old.amount} on ${old.paidOn}. Check the receipt number in the file.`
+            : `Receipt ${head.receiptNo} is already recorded.`);
         }
         continue;
       }
@@ -2706,7 +2710,8 @@ export class FakeFeeRepository implements FeeRepository {
         if (at >= 0) db.feeVouchers[at] = v; else db.feeVouchers.push(v);
       });
       const amount = lines.reduce((sum, r) => sum + (r.amount ?? 0), 0);
-      const paymentId = `pay_${head.receiptNo.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${student.id}`;
+      let paymentId = `pay_${head.receiptNo.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${student.id}`;
+      for (let n = 2; db.feePayments.some((x) => x.id === paymentId); n++) paymentId = `${paymentId.replace(/_r\d+$/, '')}_r${n}`; // a cancelled copy keeps its id
       db.feePayments.push({
         id: paymentId, receiptNo: head.receiptNo.trim(), studentId: student.id, amount, paidOn: head.date,
         method: PaymentMethod.CASH, receivedBy: actor.id, isVoid: false, reference: null,
