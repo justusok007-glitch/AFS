@@ -3579,6 +3579,59 @@ export class FakeFeeRepository implements FeeRepository {
     );
   }
 
+  async changeStudentMonthlyFee(
+    studentId: string,
+    newFee: number,
+    mode: 'now' | 'start',
+    actorId: string
+  ): Promise<AppResult<{ updated: number; skippedPaid: number }>> {
+    await simulateLocalDelay();
+    const db = getOrSeedLocalDatabase();
+    if (!Number.isInteger(newFee) || newFee < 0) {
+      return AppResult.failure({ kind: 'ValidationFailed', message: 'Enter a valid whole-rupee fee.' });
+    }
+    const stu = db.students.find((x) => x.id === studentId);
+    if (!stu) return AppResult.failure({ kind: 'NotFound', entity: 'Student', id: studentId, message: 'Student not found.' });
+    const classId = db.sections.find((x) => x.id === stu.sectionId)?.classId;
+    const base = db.classFeeStructures.find((c) => c.classId === classId && c.feeHeadId === 'fh_tuition')?.amount ?? 2000;
+    const oldConcession = db.studentConcessions.find((c) => c.studentId === studentId && c.feeHeadId === 'fh_tuition');
+    const oldFee = computeNetTuition(base, oldConcession);
+    db.studentConcessions = db.studentConcessions.filter((c) => !(c.studentId === studentId && c.feeHeadId === 'fh_tuition'));
+    db.studentConcessions.push({
+      studentId, feeHeadId: 'fh_tuition', type: ConcessionType.OVERRIDE, value: newFee,
+      reason: `Monthly fee changed by admin (${mode === 'now' ? 'from now' : 'from the start'})`,
+    });
+    const nowMonth = today().slice(0, 7);
+    let updated = 0;
+    let skippedPaid = 0;
+    db.feeVouchers.forEach((v) => {
+      if (v.studentId !== studentId) return;
+      if (mode === 'now' && v.billingMonth < nowMonth) return;
+      const item = v.items.find((it) => it.feeHeadId === 'fh_tuition');
+      if (!item) return;
+      if ((item.paidAmount ?? 0) > 0) { skippedPaid += 1; return; }
+      item.amount = newFee;
+      item.waivedAmount = 0;
+      const total = v.items.reduce((sum, i) => sum + i.amount - (i.waivedAmount ?? 0), 0);
+      const paid = v.items.reduce((sum, i) => sum + (i.paidAmount ?? 0), 0);
+      v.status = paid >= total ? VoucherStatus.PAID : paid > 0 ? VoucherStatus.PARTIAL : VoucherStatus.UNPAID;
+      updated += 1;
+    });
+    db.auditLogs.unshift({
+      id: `aud_${Date.now()}`,
+      action: 'CHANGE_MONTHLY_FEE',
+      tableName: 'fee_vouchers',
+      recordId: studentId,
+      oldValue: String(oldFee),
+      newValue: String(newFee),
+      reason: `${stu.admissionNo} - ${stu.name}: monthly fee ${oldFee} to ${newFee} (${mode === 'now' ? 'from now' : 'from the start'}); ${updated} bill(s) updated, ${skippedPaid} paid bill(s) kept`,
+      changedBy: actorId,
+      changedAt: new Date().toISOString(),
+    });
+    saveLocalDatabase(db);
+    return AppResult.success({ updated, skippedPaid });
+  }
+
   async getAllPayments(): Promise<AppResult<FeePayment[]>> {
     await simulateLocalDelay();
     const db = getOrSeedLocalDatabase();

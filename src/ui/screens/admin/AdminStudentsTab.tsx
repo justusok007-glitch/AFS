@@ -324,6 +324,9 @@ const StudentForm: React.FC<{
   const [admFee, setAdmFee] = useState('');
   const [admPaid, setAdmPaid] = useState(false);
   const [netTouched, setNetTouched] = useState(false);
+  const [editFee, setEditFee] = useState('');
+  const [origFee, setOrigFee] = useState('');
+  const [feeScope, setFeeScope] = useState<'now' | 'start'>('now');
   const [sectionId, setSectionId] = useState(existing?.sectionId ?? '');
   const [parentMode, setParentMode] = useState<'none' | 'create' | 'link'>('none');
   const [parentQuery, setParentQuery] = useState('');
@@ -335,6 +338,14 @@ const StudentForm: React.FC<{
 
   const [linked, setLinked] = useState<Profile[]>([]);
   const [editParent, setEditParent] = useState<Profile | null>(null);
+  useEffect(() => {
+    if (!existing) return;
+    void (async () => {
+      const r = await AppModule.feeRepository.getMonthlyFees();
+      const f = r.ok ? r.data.find((x) => x.studentId === existing.id) : undefined;
+      if (f) { setEditFee(String(f.amount)); setOrigFee(String(f.amount)); }
+    })();
+  }, [existing]);
   const reloadLinked = useCallback(async () => {
     if (!existing) return;
     const r = await AppModule.studentRepository.parentsOfStudent(existing.id);
@@ -399,6 +410,11 @@ const StudentForm: React.FC<{
     if (!admDate || admDate > today()) e.adm = t('st_err_admission_date');
     if (!existing && parentMode === 'create' && fatherUr.trim().length < 2) e.fatherUr = t('st_err_father_ur');
     if (!existing && parentMode === 'link' && !parentId) e.parent = t('st_parent_pick');
+    const feeChanged = !!existing && editFee.trim() !== origFee.trim();
+    if (feeChanged) {
+      const n = Number(editFee);
+      if (editFee.trim() === '' || !Number.isInteger(n) || n < 0) e.editFee = t('st_err_edit_fee');
+    }
     const money = (v: string) => (v.trim() === '' ? 0 : Number(v));
     const amounts = [actualFee, netFee, annual, admFee].map(money);
     if (!existing) {
@@ -431,8 +447,18 @@ const StudentForm: React.FC<{
         },
         admin.id
       );
-      setSaving(false);
-      if (!r.ok) return setFormError(r.error.message);
+      if (!r.ok) {
+        setSaving(false);
+        return setFormError(r.error.message);
+      }
+      if (feeChanged) {
+        const fr = await AppModule.feeRepository.changeStudentMonthlyFee(existing.id, Number(editFee), feeScope, admin.id);
+        setSaving(false);
+        if (!fr.ok) return setFormError(fr.error.message);
+        window.alert(t('st_fee_changed').replace('{n}', String(fr.data.updated)).replace('{m}', String(fr.data.skippedPaid)));
+      } else {
+        setSaving(false);
+      }
       return onSaved(r.data);
     }
 
@@ -506,6 +532,26 @@ const StudentForm: React.FC<{
       </div>
       <SchoolTextField label={t('st_phone')} value={phone} onValueChange={setPhone} errorText={errors.phone} forceLtrValue />
       <SchoolTextField label={t('st_phone2')} value={phone2} onValueChange={setPhone2} errorText={errors.phone2} forceLtrValue />
+
+      {existing && (
+        <div className="space-y-2 border-t border-[#E4E8F0] pt-3">
+          <label className="block text-xs font-bold text-[#14284B]">{t('st_fees_heading')}</label>
+          <SchoolTextField label={t('st_edit_fee')} value={editFee} onValueChange={setEditFee} errorText={errors.editFee} forceLtrValue />
+          {editFee.trim() !== origFee.trim() && (
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-2 text-xs text-[#14284B]">
+                <input type="radio" name="feeScope" checked={feeScope === 'now'} onChange={() => setFeeScope('now')} />
+                {t('st_fee_from_now')}
+              </label>
+              <label className="flex items-center gap-2 text-xs text-[#14284B]">
+                <input type="radio" name="feeScope" checked={feeScope === 'start'} onChange={() => setFeeScope('start')} />
+                {t('st_fee_from_start')}
+              </label>
+              <p className="text-[11px] text-[#6B7385]">{t('st_fee_scope_hint')}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {!existing && (
         <div className="space-y-2 border-t border-[#E4E8F0] pt-3">

@@ -358,6 +358,17 @@ export interface FeeRepository {
   getAllPayments(): Promise<AppResult<FeePayment[]>>;
   /** Each active student's monthly fee (class tuition after the student's concession). */
   getMonthlyFees(): Promise<AppResult<{ studentId: string; campusId: string; amount: number }[]>>;
+  /**
+   * Admin: change one student's monthly tuition.
+   * 'now' = this month's bill and later; 'start' = every earlier bill too.
+   * Bills that already have money received on their tuition are never touched.
+   */
+  changeStudentMonthlyFee(
+    studentId: string,
+    newFee: number,
+    mode: 'now' | 'start',
+    actorId: string
+  ): Promise<AppResult<{ updated: number; skippedPaid: number }>>;
   getDefaulters(
     campusId: string | null
   ): Promise<AppResult<FeeDefaulterSummary[]>>;

@@ -916,6 +916,12 @@ export type StringKey =
   | 'st_fees_heading'
   | 'st_actual_fee'
   | 'st_net_fee'
+  | 'st_edit_fee'
+  | 'st_fee_from_now'
+  | 'st_fee_from_start'
+  | 'st_fee_scope_hint'
+  | 'st_err_edit_fee'
+  | 'st_fee_changed'
   | 'st_annual_charges'
   | 'st_admission_fee'
   | 'st_paid'
@@ -2071,6 +2077,12 @@ export const stringsEn: Record<StringKey, string> = {
   st_fees_heading: 'Fees',
   st_actual_fee: 'Actual fee (monthly)',
   st_net_fee: 'Net fee (monthly, after concession)',
+  st_edit_fee: 'Monthly fee',
+  st_fee_from_now: 'From now (this month onward)',
+  st_fee_from_start: 'From the start (all unpaid bills)',
+  st_fee_scope_hint: 'Bills that already have money received are never changed.',
+  st_err_edit_fee: 'Enter a valid whole-rupee fee.',
+  st_fee_changed: 'Fee updated. Bills changed: {n}, paid bills kept: {m}.',
   st_annual_charges: 'Annual charges',
   st_admission_fee: 'Admission fee',
   st_paid: 'Paid',
@@ -3227,6 +3239,12 @@ export const stringsUr: Record<StringKey, string> = {
   st_fees_heading: 'فیس',
   st_actual_fee: 'اصل فیس (ماہانہ)',
   st_net_fee: 'خالص فیس (ماہانہ، رعایت کے بعد)',
+  st_edit_fee: 'ماہانہ فیس',
+  st_fee_from_now: 'ابھی سے (اس مہینے سے آگے)',
+  st_fee_from_start: 'شروع سے (تمام غیر ادا شدہ بل)',
+  st_fee_scope_hint: 'جن بلوں پر رقم وصول ہو چکی ہے وہ کبھی تبدیل نہیں ہوں گے۔',
+  st_err_edit_fee: 'درست فیس (پورے روپے) درج کریں۔',
+  st_fee_changed: 'فیس تبدیل ہو گئی۔ تبدیل شدہ بل: {n}، ادا شدہ بل برقرار: {m}۔',
   st_annual_charges: 'سالانہ چارجز',
   st_admission_fee: 'داخلہ فیس',
   st_paid: 'ادا شدہ',
